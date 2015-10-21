@@ -1,0 +1,1294 @@
+<html>
+    <head>
+        <?php echo SYS_HEAD; ?>
+        <?php
+        $reviewable = 0;
+
+        if (Application_Model_User::checkPermissionByRoleName('物料管理员') || Application_Model_User::checkPermissionByRoleName('系统管理员')) {
+            $reviewable = 1;
+        }
+        $user_session = new Zend_Session_Namespace('user');
+        $user = $user_session->user_info['employee_id'];
+
+        ?>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/common.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/models.js"></script>.js
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/comboxtree.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/MaterielCodeSelect.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/zeroclipboard/ZeroClipboard.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/function.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/createField.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/fileSelect.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/downloadFile.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/codeSelect.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/codeFileSelect.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/uploadify.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/FileView.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/jquery-1.11.1.min.js"></script>
+        <style type="text/css">
+            .x-fieldset{border:1px solid #B5B8C8;display:block;}
+            .x-fieldset-none{border:0;display:block;padding:0;}
+            .x-grid-cell.myreview
+            {
+                background-color: #9fc;
+            }
+            .fileQueue {
+                height: 150px;
+                overflow: auto;
+                border: 1px solid #E5E5E5;
+                margin-bottom: 2px;
+            }
+        </style>
+        <script type="text/javascript">
+            Ext.require([
+                'Ext.*'
+            ]);
+            Ext.define('Ext.ux.CustomTrigger', {
+                extend: 'Ext.form.field.Trigger',
+                alias: 'widget.customtrigger',
+                // override onTriggerClick
+                onTriggerClick: function() {
+                    Ext.Msg.alert('Status', 'You clicked my trigger!');
+                }
+            });
+
+            Ext.onReady(function() {
+                Ext.QuickTips.init();
+
+                Ext.define('materiel', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [{name: "id"},
+                        {name: "code"},
+                        {name: "type"},
+                        {name: "name"},
+                        {name: "description"},
+                        {name: "remark"},
+                        {name: "ver"},
+                        {name: "unit"},
+                        {name: "state"},
+                        {name: "manufacturers"},
+                        {name: "supply1"},
+                        {name: "supply2"},
+                        {name: "mpq"},
+                        {name: "moq"},
+                        {name: "tod"},
+                        {name: "supply_code1"},
+                        {name: "supply_cname1"},
+                        {name: "supply_ename1"},
+                        {name: "supply_code2"},
+                        {name: "supply_cname2"},
+                        {name: "supply_ename2"},
+                        {name: "type_name"},
+                        {name: "unit_name"},
+                        {name: "creater"},
+                        {name: "create_time", type: 'date', dateFormat: 'timestamp'},
+                        {name: "archive_time", type: 'date', dateFormat: 'timestamp'},
+                        {name: "step_name"},
+                        {name: "review_state"},
+                        {name: "mytype"},
+                        {name: "auto"},
+                        {name: "tsr"},
+                        {name: "tsr_id"},
+                        {name: "data_file"},
+                        {name: "data_file_id"},
+                        {name: "first_report"},
+                        {name: "first_report_id"}
+                    ]
+                });
+
+                Ext.define('desc', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [{name: "id"},
+                        {name: "mid"},
+                        {name: "code"},
+                        {name: "type_before"},
+                        {name: "type_name"},
+                        {name: "type_after"},
+                        {name: "type_name_after"},
+                        {name: "desc_before"},
+                        {name: "desc_after"},
+                        {name: "supply1_before"},
+                        {name: "supply1_code_before"},
+                        {name: "supply1_cname_before"},
+                        {name: "supply1_after"},
+                        {name: "supply1_code_after"},
+                        {name: "supply1_cname_after"},
+                        {name: "supply2_before"},
+                        {name: "supply2_code_before"},
+                        {name: "supply2_cname_before"},
+                        {name: "supply2_after"},
+                        {name: "supply2_code_after"},
+                        {name: "supply2_cname_after"},
+                        {name: "manufacturers_before"},
+                        {name: "manufacturers_after"},
+                        {name: "name_before"},
+                        {name: "name_after"},
+                        {name: "remark"},
+                        {name: "state"},
+                        {name: "step_name"},
+                        {name: "review_state"},
+                        {name: "mytype"},
+                        {name: "creater"},
+                        {name: "create_time", type: 'date', dateFormat: 'timestamp'},
+                        {name: "archive_time", type: 'date', dateFormat: 'timestamp'},
+                        {name: "step_name"},
+                        {name: "review_state"},
+                        {name: "ver_before"},
+                        {name: "ver_after"},
+                        {name: "record"},
+                        {name: "data_file_before"},
+                        {name: "data_file_after"},
+                        {name: "data_file_id_before"},
+                        {name: "data_file_id_after"},
+                        {name: "first_report_before"},
+                        {name: "first_report_after"},
+                        {name: "first_report_id_before"},
+                        {name: "first_report_id_after"},
+                        {name: "tsr_before"},
+                        {name: "tsr_after"},
+                        {name: "tsr_id_before"},
+                        {name: "tsr_id_after"}
+                    ]
+                });
+                Ext.define('bpartner', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [{name: "id"},
+                        {name: "text"}
+                    ]
+                });
+                Ext.define('codemaster', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [{name: "id"},
+                        {name: "code"},
+                        {name: 'text'}
+                    ]
+                });
+
+                var store = Ext.create('Ext.data.Store', {
+                    model: 'materiel',
+                    proxy: {
+                        type: 'ajax',
+                        reader: 'json',
+                        url: '<?php echo HOME_PATH; ?>/public/product/list/getlistnopage?model=desc'
+                    },
+                    autoLoad: false
+                });
+
+                var personal = "<?php if (isset($_GET['personal'])) echo 3 ?>";
+                var descStore = Ext.create('Ext.data.Store', {
+                    pageSize: 50,
+                    model: 'desc',
+                    proxy: {
+                        type: 'ajax',
+                        reader: {
+                            root: 'topics',
+                            totalProperty: 'totalCount'
+                        },
+                        url: '<?php echo HOME_PATH; ?>/public/product/desc/getlist/mytype/' + personal
+                    },
+                    autoLoad: true
+                });
+
+                var supplyStore = Ext.create('Ext.data.Store', {
+                    model: 'bpartner',
+                    proxy: {
+                        type: 'ajax',
+                        reader: 'json',
+                        url: '<?php echo HOME_PATH; ?>/public/product/apply/getsupply'
+                    },
+                    autoLoad: true
+                });
+
+                var uploadStore = Ext.create('Ext.data.Store', {
+                    model: 'upload',
+                    proxy: {
+                        type: 'ajax',
+                        reader: 'json',
+                        url: getRootPath() + '/public/dcc/upload/getfiles/type/1'
+                    },
+                    autoLoad: false
+                });
+                var employeeTreeStore = Ext.create('Ext.data.TreeStore', {
+                    proxy: {
+                        type: 'ajax',
+                        url: '<?php echo HOME_PATH; ?>/public/dcc/upload/gettree',
+                        actionMethods: 'post'
+                    },
+                    sorters: [{
+                            property: 'leaf',
+                            direction: 'ASC'
+                        },
+                        {
+                            property: 'text',
+                            direction: 'ASC'
+                        }]
+                });
+
+                var rowEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+                    clicksToEdit: 1
+                });
+
+                var required = '<span style="color:red;font-weight:bold" data-qtip="Required">*</span>';
+
+                var form = new Ext.form.Panel({
+                    width: 600,
+                    bodyPadding: 2,
+                    layout: 'form',
+                    border:0,
+                    waitMsgTarget: true,
+                    fieldDefaults: {
+                        labelAlign: 'right',
+                        labelWidth: 95,
+                        msgTarget: 'side'
+                    },
+                    items: [{
+                            layout: 'column',
+                            border: 0,
+                            items: [{
+                                    columnWidth: 0.5,
+                                    border: 0,
+                                    layout: 'form',
+                                    items: [{
+                                            xtype: 'textfield',
+                                            id: 'id',
+                                            name: 'id',
+                                            hidden: true
+                                        }, {
+                                            xtype: 'textfield',
+                                            id: 'mid',
+                                            name: 'mid',
+                                            hidden: true
+                                        }, {
+                                            xtype: 'triggerfield',
+                                            fieldLabel: '物料编码',
+                                            afterLabelTextTpl: required,
+                                            id: 'code',
+                                            editable: false,
+                                            name: 'code',
+                                            flex: 1.3,
+                                            allowBlank: false,
+                                            triggerCls: 'x-form-search-trigger',
+                                            onTriggerClick: function() {
+                                                store.removeAll();
+                                                var params = new Array();
+                                                params["mid"] = "id";
+                                                params["code"] = "code";
+                                                params["type_name"] = "type_name";
+                                                params["supply1_before"] = "supply1";
+                                                params["supply1_after"] = "supply1";
+                                                params["supply2_before"] = "supply2";
+                                                params["supply2_after"] = "supply2";
+                                                params["manufacturers_before"] = "manufacturers";
+                                                params["manufacturers_after"] = "manufacturers";
+                                                params["name_before"] = "name";
+                                                params["name_after"] = "name";
+                                                params["desc_before"] = "description";
+                                                params["desc_after"] = "description";
+                                                // 文件
+                                                params['data_file_id_before'] = "data_file_id";
+                                                params['data_file_id_after'] = "data_file_id";
+                                                params['data_file_before'] = "data_file";
+                                                params['data_file_after'] = "data_file";
+                                                params['tsr_id_before'] = "tsr_id";
+                                                params['tsr_id_after'] = "tsr_id";
+                                                params['tsr_before'] = "tsr";
+                                                params['tsr_after'] = "tsr";
+                                                params['first_report_id_before'] = "first_report_id";
+                                                params['first_report_id_after'] = "first_report_id";
+                                                params['first_report_before'] = "first_report";
+                                                params['first_report_after'] = "first_report";
+                                                var winCodeSelect = createCodeSelect(store, params);
+                                                winCodeSelect.show();
+                                            },
+                                            listeners: {
+                                                change: function(obj, newValue, oldValue, eOpts) {
+                                                    if (newValue) {
+                                                        Ext.getCmp('desc_field').show();
+                                                        Ext.getCmp('type_name').show();
+                                                        // show message if there is a pr/po
+                                                        Ext.Ajax.request({
+                                                            url: '<?php echo HOME_PATH; ?>/public/product/desc/checkcode',
+                                                            params: {code: newValue},
+                                                            method: 'GET',
+                                                            success: function(response, options) {
+                                                                var data = Ext.JSON.decode(response.responseText);
+                                                                if(data.result) {
+                                                                    Ext.MessageBox.alert('提示', '物料' + data.code + '还有未关闭的采购订单');
+                                                                }
+                                                            },
+                                                            failure: function(form, action) {
+                                                                Ext.MessageBox.alert('错误', action.result.info);
+                                                            }
+                                                        });
+                                                    } else {
+                                                        Ext.getCmp('desc_field').hide();
+                                                        Ext.getCmp('type_name').hide();
+                                                    }
+                                                }
+                                            }
+                                        }]
+                                }, {
+                                    columnWidth: 0.5,
+                                    border: 0,
+                                    layout: 'form',
+                                    items: [{
+                                            xtype: 'displayfield',
+                                            fieldLabel: '编码类别',
+                                            hidden: true,
+                                            id: 'type_name',
+                                            name: 'type_name'
+                                        }]
+                                }]
+                        }, {
+                            xtype: 'fieldset',
+                            title: '变更信息',
+                            id: 'desc_field',
+                            hidden: true,
+                            items: [{
+                                    layout: 'form', // 第四行
+                                    border:0,
+                                    items: [{
+                                            xtype: 'fieldcontainer',
+                                            layout: 'hbox',
+                                            fieldLabel: '物料名称',
+                                            width: 500,
+                                            defaults: {
+                                                hideLabel: true
+                                            },
+                                            items: [{
+                                                    xtype: 'textfield',
+                                                    fieldLabel: '物料名称',
+                                                    readOnly: true,
+                                                    id: 'name_before',
+                                                    name: 'name_before'
+                                                }, {
+                                                    xtype: 'displayfield',
+                                                    value: ' → '
+                                                }, {
+                                                    xtype: 'textfield',
+                                                    fieldLabel: '物料名称',
+                                                    id: 'name_after',
+                                                    name: 'name_after'
+                                                }
+                                            ]
+                                        }, {
+                                            xtype: 'fieldcontainer',
+                                            layout: 'hbox',
+                                            fieldLabel: '供应商1',
+                                            width: 500,
+                                            defaults: {
+                                                hideLabel: true
+                                            },
+                                            items: [{
+                                                    xtype: 'combobox',
+                                                    fieldLabel: '供应商1',
+                                                    id: 'supply1_before',
+                                                    name: 'supply1_before',
+                                                    displayField: 'text',
+                                                    disabled: true,
+                                                    store: supplyStore,
+                                                    valueField: 'id'
+                                                }, {
+                                                    xtype: 'displayfield',
+                                                    value: ' → '
+                                                }, {
+                                                    xtype: 'combobox',
+                                                    fieldLabel: '供应商1',
+                                                    afterLabelTextTpl: required,
+                                                    id: 'supply1_after',
+                                                    name: 'supply1_after',
+                                                    displayField: 'text',
+                                                    valueField: 'id',
+//                                                    allowBlank: false,
+                                                    minChars: 1, //默认时4
+                                                    store: supplyStore,
+                                                    queryParam: 'q',
+                                                    queryMode: 'remote',
+                                                    triggerAction: 'last'
+                                                }
+                                            ]
+                                        }, {
+                                            xtype: 'fieldcontainer',
+                                            layout: 'hbox',
+                                            fieldLabel: '供应商2',
+                                            width: 500,
+                                            defaults: {
+                                                hideLabel: true
+                                            },
+                                            items: [{
+                                                    xtype: 'combobox',
+                                                    id: 'supply2_before',
+                                                    name: 'supply2_before',
+                                                    disabled: true,
+                                                    displayField: 'text',
+                                                    store: supplyStore,
+                                                    valueField: 'id'
+                                                }, {
+                                                    xtype: 'displayfield',
+                                                    value: ' → '
+                                                }, {
+                                                    xtype: 'combobox',
+                                                    afterLabelTextTpl: required,
+                                                    id: 'supply2_after',
+                                                    name: 'supply2_after',
+                                                    displayField: 'text',
+                                                    valueField: 'id',
+                                                    minChars: 1, //默认时4
+                                                    store: supplyStore,
+                                                    queryParam: 'q',
+                                                    queryMode: 'remote',
+                                                    triggerAction: 'last'
+                                                }
+                                            ]
+                                        }, {
+                                            xtype: 'fieldcontainer',
+                                            layout: 'hbox',
+                                            fieldLabel: '制造商',
+                                            width: 500,
+                                            defaults: {
+                                                hideLabel: true
+                                            },
+                                            items: [{
+                                                    xtype: 'textfield',
+                                                    fieldLabel: '制造商',
+                                                    readOnly: true,
+                                                    id: 'manufacturers_before',
+                                                    name: 'manufacturers_before'
+                                                }, {
+                                                    xtype: 'displayfield',
+                                                    value: ' → '
+                                                }, {
+                                                    xtype: 'textfield',
+                                                    fieldLabel: '制造商',
+                                                    id: 'manufacturers_after',
+                                                    name: 'manufacturers_after'
+                                                }
+                                            ]
+                                        }, {
+                                        xtype: 'fieldcontainer',
+                                        layout: 'hbox',
+                                        fieldLabel: 'TSR',
+                                        width: 500,
+                                        defaults: {
+                                            hideLabel: true
+                                        },
+                                        items: [{
+                                            xtype: 'textfield',
+                                            hidden: true,
+                                            readOnly: true,
+                                            id: 'tsr_id_before',
+                                            name: 'tsr_id_before'
+                                        }, {
+                                            xtype: 'textfield',
+                                            fieldLabel: 'TSR',
+                                            readOnly: true,
+                                            id: 'tsr_before',
+                                            name: 'tsr_before'
+                                        }, {
+                                            xtype: 'displayfield',
+                                            value: ' → '
+                                        }, {
+                                            xtype: 'textfield',
+                                            hidden: true,
+                                            id: 'tsr_id_after',
+                                            name: 'tsr_id_after'
+                                        }, {
+                                            xtype: 'triggerfield',
+                                            triggerCls: 'x-form-search-trigger',
+                                            editable: false,
+                                            fieldLabel: 'TSR',
+                                            id: 'tsr_after',
+                                            name: 'tsr_after',
+                                            onTriggerClick: function () {
+                                                // 文件选择
+                                                uploadStore.load({params: {search_archive: 0, search_del: 0}});
+                                                var fileSelect = lib.dcc.FileSelect({store: uploadStore, returnId: 'tsr_id_after', returnValue: 'tsr_after', grid: null, userid: <?php echo $user?>});
+                                                fileSelect.show();
+                                            }
+                                        }
+                                        ]
+                                    }, {
+                                        xtype: 'fieldcontainer',
+                                        layout: 'hbox',
+                                        fieldLabel: '数据手册',
+                                        width: 500,
+                                        defaults: {
+                                            hideLabel: true
+                                        },
+                                        items: [{
+                                            xtype: 'textfield',
+                                            hidden: true,
+                                            readOnly: true,
+                                            id: 'data_file_id_before',
+                                            name: 'data_file_id_before'
+                                        }, {
+                                            xtype: 'textfield',
+                                            fieldLabel: '数据手册',
+                                            readOnly: true,
+                                            id: 'data_file_before',
+                                            name: 'data_file_before'
+                                        }, {
+                                            xtype: 'displayfield',
+                                            value: ' → '
+                                        }, {
+                                            xtype: 'textfield',
+                                            hidden: true,
+                                            id: 'data_file_id_after',
+                                            name: 'data_file_id_after'
+                                        }, {
+                                            xtype: 'triggerfield',
+                                            triggerCls: 'x-form-search-trigger',
+                                            editable: false,
+                                            fieldLabel: '数据手册',
+                                            id: 'data_file_after',
+                                            name: 'data_file_after',
+                                            onTriggerClick: function () {
+                                                // 文件选择
+                                                uploadStore.load({params: {search_archive: 0, search_del: 0}});
+                                                var fileSelect = lib.dcc.FileSelect({store: uploadStore, returnId: 'data_file_id_after', returnValue: 'data_file_after', grid: null, userid: <?php echo $user?>});
+                                                fileSelect.show();
+                                            }
+                                        }
+                                        ]
+                                    }, {
+                                        xtype: 'fieldcontainer',
+                                        layout: 'hbox',
+                                        fieldLabel: '样品检验报告',
+                                        width: 500,
+                                        defaults: {
+                                            hideLabel: true
+                                        },
+                                        items: [{
+                                            xtype: 'textfield',
+                                            hidden: true,
+                                            readOnly: true,
+                                            id: 'first_report_id_before',
+                                            name: 'first_report_id_before'
+                                        }, {
+                                            xtype: 'textfield',
+                                            fieldLabel: '样品检验报告',
+                                            readOnly: true,
+                                            id: 'first_report_before',
+                                            name: 'first_report_before'
+                                        }, {
+                                            xtype: 'displayfield',
+                                            value: ' → '
+                                        }, {
+                                            xtype: 'textfield',
+                                            hidden: true,
+                                            id: 'first_report_id_after',
+                                            name: 'first_report_id_after'
+                                        }, {
+                                            xtype: 'triggerfield',
+                                            triggerCls: 'x-form-search-trigger',
+                                            editable: false,
+                                            fieldLabel: '样品检验报告',
+                                            id: 'first_report_after',
+                                            name: 'first_report_after',
+                                            onTriggerClick: function () {
+                                                // 文件选择
+                                                uploadStore.load({params: {search_archive: 0, search_del: 0}});
+                                                var fileSelect = lib.dcc.FileSelect({store: uploadStore, returnId: 'first_report_id_after', returnValue: 'first_report_after', grid: null, userid: <?php echo $user?>});
+                                                fileSelect.show();
+                                            }
+                                        }
+                                        ]
+                                    }, {
+                                            xtype: 'fieldcontainer',
+                                            layout: 'hbox',
+                                            fieldLabel: '描述',
+                                            defaults: {
+                                                hideLabel: true
+                                            },
+                                            items: [{
+                                                    xtype: 'textarea',
+                                                    rows: 2,
+                                                    cols: 18,
+                                                    readOnly: true,
+                                                    id: 'desc_before',
+                                                    name: 'desc_before'
+                                                }, {
+                                                    xtype: 'displayfield',
+                                                    value: ' → '
+                                                }, {
+                                                    xtype: 'textarea',
+                                                    rows: 2,
+                                                    cols: 18,
+                                                    maxLength: 150,
+                                                    allowBlank: false,
+                                                    id: 'desc_after',
+                                                    name: 'desc_after'
+                                                }
+                                            ]
+                                        }, {
+                                            xtype: 'textarea',
+                                            fieldLabel: '备注',
+                                            rows: 2,
+                                            name: 'remark'
+                                        }]
+                                }
+                            ]
+                        }
+                    ]
+                });
+
+                // 转审
+                var trans = {
+                        xtype : 'employeebobox',
+                        fieldLabel: '转审给',
+                        itemId: 'transfer',
+                        id: 'transfer',
+                        name: 'transfer',
+                        width: 460,
+                        hidden: true,
+                        allowBlank: false,
+                    };
+
+                var reviewForm = new Ext.form.Panel({
+                    width: 400,
+                    bodyPadding: 2,
+                    layout: 'form',
+                    border:0,
+                    waitMsgTarget: true,
+                    fieldDefaults: {
+                        labelAlign: 'right',
+                        labelWidth: 95,
+                        msgTarget: 'side'
+                    },
+                    items: [{
+                            xtype: 'textfield',
+                            name: 'id',
+                            hidden: true
+                        },{
+                            xtype: 'textfield',
+                            id: 'ids',
+                            name: 'ids',
+                            hidden: true
+                        }, {
+                            xtype: 'textfield',
+                            name: 'final',
+                            id: 'final',
+                            value: 0,
+                            hidden: true
+                        }, {
+                            xtype: 'textfield',
+                            name: 'transfer_id',
+                            id: 'transfer_id',
+                            hidden: true
+                        }, {
+                            xtype: 'radiogroup',
+                            fieldLabel: '审批结果',
+                            allowBlank: false,
+                            cls: 'x-check-group-alt',
+                            width: 300,
+                            items: [
+                                {boxLabel: '批准', name: 'review_result', inputValue: 1},
+                                {boxLabel: '拒绝', name: 'review_result', inputValue: 2},
+                                {boxLabel: '转审', name: 'review_result', inputValue: 3}
+                            ],
+                            listeners: {
+                                change: function(obj, newValue, oldValue, e) {
+                                    var transfer = Ext.getCmp('transfer');
+                                    if (newValue.review_result === 3) {
+                                        transfer.setVisible(true);
+                                        transfer.setDisabled(false);
+                                    } else {
+                                        transfer.setVisible(false);
+                                        transfer.setDisabled(true);
+                                    }
+                                }
+                            }
+                        }, trans, {
+                            xtype: 'textarea',
+                            fieldLabel: '备注',
+                            rows: 2,
+                            name: 'remark1'
+                        }
+                    ]
+                });
+
+                var win = new Ext.Window({
+                    xtype: "window",
+                    title: '物料编码变更申请',
+                    modal: true,
+                    x: 300,
+                    y: 60,
+                    layout: 'fit',
+                    closeAction: 'hide',
+                    items: [form],
+                    buttons: [{
+                            text: '提交',
+                            formBind: true,
+                            handler: function() {
+                                var window = this.up('window');
+                                var form = window.down('form').getForm();
+                                if (eq(Ext.getCmp('supply1_before').getValue(), Ext.getCmp('supply1_after').getValue())
+                                    && eq(Ext.getCmp('supply2_before').getValue(), Ext.getCmp('supply2_after').getValue())
+                                    && eq(Ext.getCmp('desc_before').getValue(), Ext.getCmp('desc_after').getValue())
+                                    && eq(Ext.getCmp('name_before').getValue(), Ext.getCmp('name_after').getValue())
+                                    && eq(Ext.getCmp('tsr_id_before').getValue(), Ext.getCmp('tsr_id_after').getValue())
+                                    && eq(Ext.getCmp('first_report_id_before').getValue(), Ext.getCmp('first_report_id_after').getValue())
+                                    && eq(Ext.getCmp('data_file_id_before').getValue(), Ext.getCmp('data_file_id_after').getValue())
+                                    && eq(Ext.getCmp('manufacturers_before').getValue(), Ext.getCmp('manufacturers_after').getValue())) {
+                                    Ext.MessageBox.alert('提示', "没有变更");
+                                    return false;
+                                }
+                                if (form.isValid()) {
+                                    form.submit({
+                                        clientValidation: true,
+                                        url: '<?php echo HOME_PATH; ?>/public/product/desc/save',
+                                        submitEmptyText: false,
+                                        waitMsg: '提交中，请稍后...',
+                                        method: 'POST',
+                                        success: function(form, action) {
+                                            Ext.MessageBox.alert('提示', action.result.info);
+                                            if (action.result.success) {
+                                                descStore.reload();
+                                                form.reset();
+                                                window.hide();
+                                            } else {
+                                                Ext.MessageBox.alert('错误', action.result.info);
+                                            }
+                                        },
+                                        failure: function(form, action) {
+                                            Ext.MessageBox.alert('错误', action.result.info);
+                                        }
+                                    });
+                                }
+                            }
+                        }, {
+                            text: '取消',
+                            handler: function() {
+                                win.hide();
+                            }
+                        }]
+                });
+
+                var reviewWin = new Ext.Window({
+                    xtype: "window",
+                    title: '审批',
+                    modal: true,
+                    layout: 'fit',
+                    closeAction: 'hide',
+                    items: [reviewForm],
+                    buttons: [{
+                            text: '提交',
+                            formBind: true,
+                            handler: function() {
+                                var thisForm = reviewForm;
+                                var form = thisForm.getForm();
+                                if (form.isValid()) {
+                                    form.submit({
+                                        submitEmptyText: false,
+                                        url: '<?php echo HOME_PATH; ?>/public/product/desc/review/',
+                                        waitMsg: '提交中，请稍后...',
+                                        params: {review_id: form.getRecord().get('review_id')},
+                                        success: function(form, action) {
+                                            if (action.result.success) {
+                                                Ext.MessageBox.alert('提示', action.result.info);
+
+                                                descStore.reload();
+                                                form.reset();
+                                                reviewWin.hide();
+                                            } else {
+                                                Ext.MessageBox.alert('错误', action.result.info);
+                                            }
+                                        },
+                                        failure: function(form, action) {
+                                            Ext.MessageBox.alert('错误', action.result.info);
+                                        }
+                                    });
+                                }
+                            }
+                        }, {
+                            text: '取消',
+                            handler: function() {
+                                reviewWin.hide();
+                            }
+                        }]
+                });
+
+                var grid = Ext.create('Ext.grid.Panel', {
+                    store: descStore,
+                    border:0,
+                    selType: 'checkboxmodel',
+                    columnLines: true,
+                    viewConfig: {
+                        stripeRows: false
+                    },
+                    tbar: [{
+                            xtype: 'textfield',
+                            id: 'search_code',
+                            width: 120,
+                            emptyText: '物料代码...',
+                            listeners: {
+                                specialKey: function(field, e) {
+                                    if (e.getKey() == Ext.EventObject.ENTER) {
+                                        descStore.loadPage(1);
+                                    }
+                                }
+                            }
+                        }, {
+                            xtype: 'textfield',
+                            id: 'search_description',
+                            width: 120,
+                            emptyText: '物料描述...',
+                            listeners: {
+                                specialKey: function(field, e) {
+                                    if (e.getKey() == Ext.EventObject.ENTER) {
+                                        descStore.loadPage(1);
+                                    }
+                                }
+                            }
+                        }, {
+                            xtype: 'textfield',
+                            id: 'search_tag',
+                            width: 120,
+                            emptyText: '模糊查询...',
+                            listeners: {
+                                specialKey: function(field, e) {
+                                    if (e.getKey() == Ext.EventObject.ENTER) {
+                                        descStore.loadPage(1);
+                                    }
+                                }
+                            }
+                        }, {
+                            xtype: 'combobox',
+                            id: 'search_state',
+                            emptyText: '状态...',
+                            width: 100,
+                            store: [['Active', '审核完毕'], ['Reviewing', '审核中'], ['Return', '被退回']]
+                        }, {
+                            text: '查询',
+                            iconCls: 'icon-search',
+                            handler: function() {
+                                var search_code = Ext.getCmp('search_code').getValue();
+                                var search_description = Ext.getCmp('search_description').getValue();
+                                var search_tag = Ext.getCmp('search_tag').getValue();
+                                var search_state = Ext.getCmp('search_state').getValue();
+                                descStore.baseParams = {
+                                    search_desc_before: search_description,
+                                    search_code: search_code,
+                                    search_tag: search_tag,
+                                    search_state: search_state
+                                }
+                                descStore.loadPage(1);
+                            }
+                        }, {
+                            text: '变更申请',
+                            scope: this,
+                            handler: function() {
+                                form.getForm().reset();
+                                Ext.getCmp('code').setDisabled(false);
+                                win.show();
+                            }
+                        }, {
+                            text: '编辑',
+                            scope: this,
+                            handler: function() {
+                                var selection = grid.getView().getSelectionModel().getSelection();
+                                if (selection.length <= 0) {
+                                    Ext.MessageBox.alert('请注意', '请您选择要编辑的记录！');
+                                    return false;
+                                } else if (selection.length >= 2) {
+                                    Ext.MessageBox.alert('请注意', '不能同时编辑多个数据！');
+                                    return false;
+                                }
+
+                                var record = selection[0];
+                                if (record.get('state') !== 'Return') {
+                                    Ext.MessageBox.alert('请注意', '不能编辑此记录！');
+                                } else if (("" + record.get('mytype')).indexOf('1') === -1) {
+                                    Ext.MessageBox.alert('请注意', '您没有权限编辑此记录！');
+                                } else {
+                                    var record = selection[0];
+
+                                    form.getForm().reset();
+                                    form.getForm().loadRecord(record);
+                                    Ext.getCmp('desc_field').show();
+                                    Ext.getCmp('code').show();
+                                    Ext.getCmp('code').setDisabled(true);
+                                    win.show();
+                                }
+                            }
+                        }, {
+                            text: '删除',
+                            scope: this,
+                            handler: function() {
+                                var selection = grid.getView().getSelectionModel().getSelection();
+                                if (selection.length > 0) {
+                                    // 检查是否有数据不能删除
+                                    for (var i = 0; i < selection.length; i++) {
+                                        var record = selection[i];
+                                        if (("" + record.get('mytype')).indexOf('1') === -1 || record.get('state') !== 'Return') {
+                                            Ext.MessageBox.alert('请注意', '物料代码:' + record.data.code + '的数据不能删除！');
+                                            return;
+                                        }
+                                    }
+
+                                    // 格式正确则提交修改数据
+                                    Ext.MessageBox.confirm('确认', '确定删除所选内容？', function(button, text) {
+                                        if (button == 'yes') {
+                                            descStore.remove(selection);
+                                            var deleteRecords = descStore.getRemovedRecords();
+                                            var changeRows = {
+                                                deleted: []
+                                            }
+
+                                            for (var i = 0; i < deleteRecords.length; i++) {
+                                                changeRows.deleted.push(deleteRecords[i].data)
+                                            }
+
+                                            var json = Ext.JSON.encode(changeRows);
+                                            Ext.Msg.wait('提交中，请稍后...', '提示');
+                                            Ext.Ajax.request({
+                                                url: '<?php echo HOME_PATH; ?>/public/product/desc/remove',
+                                                params: {json: json},
+                                                method: 'POST',
+                                                success: function(response, options) {
+                                                    var data = Ext.JSON.decode(response.responseText);
+                                                    if (data.success) {
+                                                        Ext.MessageBox.alert('提示', data.info);
+                                                        descStore.reload();
+                                                    } else {
+                                                        Ext.MessageBox.alert('错误', data.info);
+                                                    }
+                                                },
+                                                failure: function(form, action) {
+                                                    Ext.MessageBox.alert('错误', action.result.info);
+                                                }
+                                            });
+                                        }
+                                    });
+                                } else {
+                                    Ext.MessageBox.alert('错误', '没有选择删除对象！');
+                                }
+                            }
+                        }, {
+                            text: '审批',
+                            scope: this,
+                            handler: function() {
+                                var selection = grid.getView().getSelectionModel().getSelection();
+                                if (selection.length <= 0) {
+                                    Ext.MessageBox.alert('请注意', '请选择要审批的记录！');
+                                    return false;
+                                }
+                                var ids = '';
+                                var code = new Array();
+                                var reviewable = <?php echo $reviewable; ?>;
+                                for (var i = 0; i < selection.length; i++) {
+                                    var record = selection[i];
+                                    if (record.get('state') !== 'Reviewing') {
+                                       Ext.MessageBox.alert('请注意', '物料代码' + record.get('code') + '不能审批！');
+                                       return false;
+                                    } else if (!reviewable && ("" + record.get('mytype')).indexOf('3') === -1) {
+                                       Ext.MessageBox.alert('请注意', '物料代码' + record.get('code') + '您没有权限审批！');
+                                       return false;
+                                    }
+                                    if(ids) ids += ",";
+                                    ids += record.data.id;
+                                    code.push(record.data.code);
+                                }
+                                // show message if there is a pr/po
+                                Ext.Ajax.request({
+                                    url: '<?php echo HOME_PATH; ?>/public/product/desc/checkcode',
+                                    params: {code: code.join(',')},
+                                    method: 'GET',
+                                    success: function(response, options) {
+                                        var data = Ext.JSON.decode(response.responseText);
+                                        if(data.result) {
+                                            Ext.MessageBox.alert('提示', '物料' + data.code + '还有未关闭的采购订单');
+                                        }
+                                    },
+                                    failure: function(form, action) {
+                                        Ext.MessageBox.alert('错误', action.result.info);
+                                    }
+                                });
+
+                                reviewForm.getForm().reset();
+                                reviewForm.getForm().loadRecord(record);
+                                Ext.getCmp("ids").setValue(ids);
+                                reviewWin.show();
+                            }
+                        }],
+                    plugins: rowEditing,
+                    columns: [{
+                            text: 'ID',
+                            width: 40,
+                            hidden: true,
+                            locked: true,
+                            dataIndex: 'id'
+                        }, {
+                            text: '物料代码',
+                            width: 140,
+                            sortable: true,
+                            dataIndex: 'code'
+                        }, {
+                            text: '物料类别',
+                            width: 200,
+                            dataIndex: 'type_name',
+                            renderer: showTitle
+                        }, {
+                            text: '描述',
+                            width: 180,
+                            dataIndex: 'desc_before',
+                            renderer: showTitle
+                        }, {
+                            text: '版本',
+                            width: 180,
+                            dataIndex: 'ver_before',
+                            renderer: function(value, p, record) {
+                                if (value && record.data.ver_after) {
+                                    return value + " → " + record.data.ver_after;
+                                }
+                                ;
+
+                            }
+                        }, {
+                            text: '状态',
+                            width: 80,
+                            dataIndex: 'state',
+                            renderer: function(value) {
+                                if (value == 'Reviewing')
+                                    return '审核中';
+                                else if (value == 'Obsolete')
+                                    return '作废';
+                                else if (value == 'Return')
+                                    return '被退回';
+                                else
+                                    return '审核完毕';
+                            }
+                        }, {
+                            text: '审核阶段',
+                            width: 200,
+                            dataIndex: 'step_name',
+                            renderer: showTitle
+                        }, {
+                            text: '审核情况',
+                            width: 120,
+                            dataIndex: 'review_state',
+                            renderer: function(value, p, record) {
+                                if (String(record.get('mytype')).indexOf('3') !== -1) {
+                                    p.css = "myreview";
+                                }
+                                var tip = value.replace(/,/g, '<br />');
+                                p.tdAttr = 'data-qtip="' + tip + '"';
+                                return value;
+                            }
+                        }, {
+                            text: '变更内容',
+                            width: 240,
+                            dataIndex: 'desc',
+                            renderer: function(val, p, record) {
+                                var r = "";
+                                if (!eq(record.data.name_before, record.data.name_after)) {
+                                    if (r)
+                                        r += ",";
+                                    r += "名称：" + record.data.name_before + " → " + record.data.name_after;
+                                }
+                                if (!eq(record.data.desc_before, record.data.desc_after)) {
+                                    if (r)
+                                        r += ",";
+                                    r += "描述：" + record.data.desc_before + " → " + record.data.desc_after;
+                                }
+                                if (!eq(record.data.supply1_before, record.data.supply1_after)) {
+                                    if (r)
+                                        r += ",";
+                                    sb = "";
+                                    if (record.data.supply1_before)
+                                        sb = record.data.supply1_code_before + record.data.supply1_cname_before;
+                                    sa = "";
+                                    if (record.data.supply1_after)
+                                        sa = record.data.supply1_code_after + record.data.supply1_cname_after;
+                                    r += "供应商1：" + sb + " → " + sa;
+                                }
+                                if (!eq(record.data.supply2_before, record.data.supply2_after)) {
+                                    if (r)
+                                        r += ",";
+                                    sb = "";
+                                    if (record.data.supply2_before)
+                                        sb = record.data.supply2_code_before + record.data.supply2_cname_before;
+                                    sa = "";
+                                    if (record.data.supply2_after)
+                                        sa = record.data.supply2_code_after + record.data.supply2_cname_after;
+                                    r += "供应商2：" + sb + " → " + sa;
+                                }
+                                if (!eq(record.data.manufacturers_before, record.data.manufacturers_after)) {
+                                    if (r)
+                                        r += ",";
+                                    r += "制造商：" + record.data.manufacturers_before + " → " + record.data.manufacturers_after;
+                                }
+                                if (!eq(record.data.data_file_id_before, record.data.data_file_id_after)) {
+                                    if (r)
+                                        r += ",";
+                                    r += "数据手册：" + record.data.data_file_before + " → " + record.data.data_file_after;
+                                }
+                                if (!eq(record.data.tsr_id_before, record.data.tsr_id_after)) {
+                                    if (r)
+                                        r += ",";
+                                    r += "TSR：" + record.data.tsr_before + " → " + record.data.tsr_after;
+                                }
+                                if (!eq(record.data.first_report_id_before, record.data.first_report_id_after)) {
+                                    if (r)
+                                        r += ",";
+                                    r += "样品检验报告：" + record.data.first_report_before + " → " + record.data.first_report_after;
+                                }
+                                r = r.replace("null", "");
+
+                                r = r.replace(/</g, '&#60;');
+                                r = r.replace(/>/g, '&#62;');
+                                var tip = r.replace(/,/g, '<br />');
+                                p.tdAttr = 'data-qtip="' + tip + '"';
+                                return r;
+                            }
+                        }, {
+                            text: '备注',
+                            width: 180,
+                            dataIndex: 'remark',
+                            renderer: showTitle
+                        }, {
+                            text: '变更完成时间',
+                            width: 120,
+                            dataIndex: 'archive_time',
+                            renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+                        }, {
+                            text: '申请人',
+                            width: 80,
+                            hidden: true,
+                            dataIndex: 'creater'
+                        }, {
+                            text: '审批记录',
+                            width: 180,
+                            dataIndex: 'record',
+                            renderer: showTitle
+                        }, {
+                            text: '申请时间',
+                            width: 80,
+                            hidden: true,
+                            dataIndex: 'create_time',
+                            renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+                        }],
+                    listeners: {
+                        itemdblclick: function(grid) {
+        //                viewAction(grid);
+                        },
+                        'cellclick': function(obj, td, cellIndex, record, tr, rowIndex, e, eOpts ) {
+			            	if(cellIndex == 7) {
+			            		var r = "";
+                                if (!eq(record.data.name_before, record.data.name_after)) {
+                                    if (r)
+                                        r += ",";
+                                    r += "名称：" + record.data.name_before + " → " + record.data.name_after;
+                                }
+                                if (!eq(record.data.desc_before, record.data.desc_after)) {
+                                    if (r)
+                                        r += ",";
+                                    r += "描述：" + record.data.desc_before + " → " + record.data.desc_after;
+                                }
+                                if (!eq(record.data.supply1_before, record.data.supply1_after)) {
+                                    if (r)
+                                        r += ",";
+                                    sb = "";
+                                    if (record.data.supply1_before)
+                                        sb = record.data.supply1_code_before + record.data.supply1_cname_before;
+                                    sa = "";
+                                    if (record.data.supply1_after)
+                                        sa = record.data.supply1_code_after + record.data.supply1_cname_after;
+                                    r += "供应商1：" + sb + " → " + sa;
+                                }
+                                if (!eq(record.data.supply2_before, record.data.supply2_after)) {
+                                    if (r)
+                                        r += ",";
+                                    sb = "";
+                                    if (record.data.supply2_before)
+                                        sb = record.data.supply2_code_before + record.data.supply2_cname_before;
+                                    sa = "";
+                                    if (record.data.supply2_after)
+                                        sa = record.data.supply2_code_after + record.data.supply2_cname_after;
+                                    r += "供应商2：" + sb + " → " + sa;
+                                }
+                                if (!eq(record.data.manufacturers_before, record.data.manufacturers_after)) {
+                                    if (r)
+                                        r += ",";
+                                    r += "制造商：" + record.data.manufacturers_before + " → " + record.data.manufacturers_after;
+                                }
+                                r = r.replace("null", "");
+                                var clip = new ZeroClipboard.Client();//新建对象
+							    clip.setText(r);//设置要复制的内容
+							    //clip.glue( 'clip_button' );//绑定到一个id为clip_button的元素上
+			            	}
+			            }
+                    },
+                    bbar: Ext.create('Ext.PagingToolbar', {
+                        store: descStore,
+                        displayInfo: true,
+                        displayMsg: '显示 {0} - {1} 共 {2}',
+                        emptyMsg: "没有数据",
+                        items: [{
+                            xtype: 'numberfield',
+                            id: 'page_size_set',
+                            value: 50,
+                            width: 150,
+                            hideTrigger: true,
+                            labelAlign: 'right',
+                            fieldLabel: '每页显示',
+                            listeners: {
+                                specialKey :function(field,e){
+                                    if (e.getKey() == Ext.EventObject.ENTER){
+                                        var thisStore = this.up('pagingtoolbar').getStore();
+                                        thisStore.pageSize = Ext.getCmp('page_size_set').getValue();
+                                        thisStore.loadPage(1);
+                                    }
+                                }
+                            }
+                        }]
+
+                    })
+                });
+
+                descStore.on("beforeload", function() {
+                    var search_code = Ext.getCmp('search_code').getValue();
+                    var search_description = Ext.getCmp('search_description').getValue();
+                    var search_tag = Ext.getCmp('search_tag').getValue();
+                    var search_state = Ext.getCmp('search_state').getValue();
+
+                    Ext.apply(descStore.proxy.extraParams, {
+                        search_desc_before: search_description,
+                        search_code: search_code,
+                        search_tag: search_tag,
+                        search_state: search_state
+                    });
+                });
+
+
+                Ext.create('Ext.container.Viewport', {
+                    layout: 'border',
+                    border:0,
+                    rtl: true,
+                    items: [{
+                            region: 'center',
+                            layout: 'fit',
+                            border:0,
+                            plain: true,
+                            items: [grid]
+                        }]
+                });
+            });
+        </script>
+    </head>
+    <body>
+    <link
+        href="<?php echo HOME_PATH ?>/public/js/uploadify/css/uploadify.css"
+        rel="stylesheet" type="text/css" media="screen" />
+
+    <script
+        src="<?php echo HOME_PATH ?>/public/js/uploadify/scripts/jquery.uploadify.min.js"></script>
+    <script
+        src="<?php echo HOME_PATH ?>/public/js/uploadify/scripts/swfobject.js"></script>
+
+    </body>
+</html>

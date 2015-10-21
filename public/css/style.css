@@ -1,0 +1,199 @@
+@CHARSET "UTF-8";
+a:link { text-decoration: none;color: #333}
+a:hover { text-decoration:none;color: #999} 
+p {
+    margin:5px;
+}
+.x-grid-row-summary .x-grid-cell-inner {
+	font-weight: bold;
+	font-size: 16px;
+	color: #467500;
+}
+.declare-text{
+	font-size: 12px;
+	color: #FFFFFF;
+	text-shadow: 0 1px 0 #3E6790;
+}
+.login-info{
+    font-size: 12px;
+    color: #FFFFFF;
+	text-align: right;
+	padding-right: 5px;
+	padding-top: 2px;
+	text-shadow: 0 1px 0 #3E6790;	
+}
+.login-info-text{
+	vertical-align:middle;
+	float:right; 
+	height:40px;
+	padding-right: 10px;
+	line-height:40px;
+}
+.sys-info{
+	vertical-align:middle;
+	font-weight:bold;
+	float:right; 
+	height:35px;
+	padding-right: 10px;
+	line-height:35px;
+	cursor:pointer;	
+}
+.sys-msg{
+	font-size: 16px;
+	color: #FFFF00;
+}
+.login-bg{
+    height:100%;
+    background:url(../images/login_bg.jpg) repeat-x center center;
+}
+.login-bg-top{
+    height:100px;
+	padding-top: 50px;
+    background:url(../images/login-head.png) no-repeat center center;
+}
+.view-delete-row .x-grid-cell {
+	text-decoration: line-through;
+    color: #FF0000;
+}
+.view-update-row .x-grid-cell {
+	font-weight: bold;
+    color: #000093;
+}
+.gray-row .x-grid-cell { 
+    background-color: #DEDEDE;
+    color: #000;
+}
+.dark-row .x-grid-cell { 
+    background-color: #dddddd;
+    color: #000;
+}
+.light-yellow-row .x-grid-cell { 
+    background-color: #FFFACD;
+    color: #000;
+}
+.light-green-row .x-grid-cell { 
+    background-color: #CAFF70;
+    color: #000;
+}
+.light-blue-row .x-grid-cell { 
+    background-color: #E0FFFF;
+    color: #000;
+}
+.light-red-row .x-grid-cell { 
+    background-color: #ffe2e2;
+    color: #900;
+}
+span.cke_wrapper cke_ltr,table.cke_editor, td.cke_contents, span.cke_skin_kama, span.cke_wrapper, span.cke_browser_webkit{
+
+    height: 100%!important;
+
+}
+.text-title{
+	padding: 10px 0;
+    font-size: 16px;
+    font-weight:bold;
+    color: #0000FF;
+}
+.content-head{
+    margin:0 auto;
+    height: 40px;
+    border-left: 1px solid #D8D8D8; 
+    border-right: 1px solid #D8D8D8;    
+    background:url(../images/top_bg.jpg) repeat-x center center;
+}
+.content-mid{
+    margin:0 auto;
+    background-color: #FFFFFF;
+    border-left: 1px solid #D8D8D8;
+    border-right: 1px solid #D8D8D8;
+}
+.content-mid-top{
+    text-align: center;
+    padding: 10px;
+}
+.content-foot{
+	font-size: 12px;
+	color: #FFFFFF;
+	text-shadow: 0 1px 0 #3E6790;
+    text-align:center;
+    height:40px;
+    line-height:40px;
+    margin:0 auto;
+    border-left: 1px solid #D8D8D8;
+    border-right: 1px solid #D8D8D8;
+    background:url(../images/top_bg.jpg) repeat-x center center;
+}
+.content-foot-btn{
+    text-align: center;
+    padding : 10px;
+}
+.comment_body{
+	text-align: left;
+	padding: 10px;
+}
+.comment-head{
+	padding-top: 5px;
+	padding-bottom: 5px;
+	background-color: #FFFFCE;
+	border-top: 1px solid #D8D8D8;
+    border-bottom: 1px solid #D8D8D8;
+}
+.comment-content{
+	background-color: #FFFFDF;
+	border-top: 1px solid #D8D8D8;
+    border-bottom: 1px solid #D8D8D8;
+}
+.x-grid-cell.bg-green{
+	background-color: #ADFF2F;
+}
+.x-grid-cell.bg-red{
+	background-color: #FF0000;
+}
+.x-grid-cell.bg-orange{
+	background-color: #FF8C00;
+}
+.x-grid-cell.bg-blue{
+	background-color: #7FFFD4;
+}
+.x-grid-cell.bg-gray{
+	background-color: #EEEEEE;
+}
+.x-grid-cell.bg-yellow{
+	background-color: #FFFF00;
+}
+
+.news{
+	margin:0 auto;
+	box-shadow: 0 0 5px #999999;
+    width: 1200px;	
+}
+.news_content{
+	padding: 20px;
+	border-top: 1px solid #EBEBEB;
+	border-bottom: 1px solid #EBEBEB;
+}
+.comment_head {
+    background-color: #EEEEEE;
+    clear:both;
+    overflow:auto;
+}
+.comment_head_l {
+	padding: 10px;
+	vertical-align:text-bottom;
+    float: left;
+	width: 40%;
+}
+.comment_head_r {
+	padding: 10px;
+    text-align: right;
+	width: 95%;
+}
+.comment_content{
+	text-align: left;
+	padding: 10px;
+}
+.eoa_table {font-size:12px;color:#333333;width:100%;border-width: 1px;border-color: #1566a0;border-collapse: collapse;}
+.eoa_table th {color: #ffffff;font-size:12px;background-color:#3892d3;border-width: 1px;padding: 8px;border-style: solid;border-color: #1566a0;text-align:left;}
+.eoa_table tr {background-color:#ffffff;}
+.eoa_table td {font-size:12px;border-width: 1px;padding: 8px;border-style: solid;border-color: #1566a0;}
+.eoa_table tr:hover {background-color:#dff2ff;}

@@ -1,0 +1,685 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<?php
+		$editable = 1;
+	    $exportable = 1;
+	    $oneexportable = 1;
+
+		if(Application_Model_User::checkPermissionByRoleName('BOM管理员')
+		  || Application_Model_User::checkPermissionByRoleName('系统管理员')){
+			$exportable = 0;
+			$editable = 0;
+		}
+		if(Application_Model_User::checkPermissionByRoleName('BOM查询-批量导出')
+		  || Application_Model_User::checkPermissionByRoleName('系统管理员')
+		  || Application_Model_User::checkPermissionByRoleName('BOM管理员')){
+			$oneexportable = 0;
+		}
+	?>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/public/js/common.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/models.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/public/js/comboxtree.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/createField.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/public/js/fileSelect.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/downloadFile.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/public/js/MaterielCodeSelect.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/public/js/bom.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/product/views/scripts/bom/js/import.js"></script>
+<style type="text/css">
+.x-fieldset{border:1px solid #B5B8C8;display:block;}
+.x-fieldset-none{border:0;display:block;padding:0;}
+.x-grid-cell.myreview
+{
+    background-color: #9fc;
+}
+</style>
+<script type="text/javascript">
+Ext.require([
+    'Ext.*'
+]);
+Ext.define('Ext.ux.CustomTrigger', {
+    extend: 'Ext.form.field.Trigger',
+    alias: 'widget.customtrigger',
+
+    // override onTriggerClick
+    onTriggerClick: function() {
+        Ext.Msg.alert('Status', 'You clicked my trigger!');
+    }
+});
+
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+
+    Ext.define('bom', {
+        extend: 'Ext.data.Model',
+        idProperty: 'id',
+        fields: [{ name: "id" },
+                 { name: "bom" },
+                 { name: "ver" },
+                 { name: "description" },
+                 { name: "description_head" },
+                 { name: "upd_type" },
+                 { name: "upd_reason" },
+                 { name: "reason_type" },
+                 { name: "reason_type_name" },
+                 { name: "remark" },
+                 { name: "remark_head" },
+                 { name: "type" },
+                 { name: "project_no_name" },
+                 { name: "bom_file" },
+                 { name: "file_ver" },
+                 { name: "file_desc" },
+                 { name: "state" },
+                 { name: "creater" },
+                 { name: "create_time", type: 'date', dateFormat: 'timestamp' },
+                 { name: "archive_time", type: 'date', dateFormat: 'timestamp' },
+                 { name: "step_name" },
+                 { name: "review_state" },
+                 { name: "mytype" },
+                 { name: "auto" },
+                 { name: "record"}
+                ]
+    });
+
+    Ext.define('codemaster', {
+        extend: 'Ext.data.Model',
+        idProperty: 'id',
+        fields: [{ name: "id" },
+                 { name: "code" },
+                 { name: 'text'}
+                ]
+    });
+
+    var personal = "<?php if(isset($_GET['personal'])) echo 3 ?>";
+    var store = Ext.create('Ext.data.Store', {
+        pageSize: 100,
+        model: 'fa',
+        remoteSort: true,
+        proxy: {
+            type: 'ajax',
+            reader: {
+                root: 'topics',
+                totalProperty: 'totalCount'
+            },
+            url: '<?php echo HOME_PATH; ?>/public/product/bomme/getlist/mytype/' + personal
+        },
+        autoLoad: false
+    });
+
+    var rowEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+        clicksToEdit: 1
+    });
+
+    var viewAction = function(panel, action) {
+    	var tip = "查看";
+    	viewWin.setTitle("BOM查看");
+    	if(action == 'review') {
+    		tip = "审批";
+    	    viewWin.setTitle("BOM审批");
+    	}
+        var selection = panel.getSelectionModel().getSelection();
+        if (selection.length <= 0) {
+            Ext.MessageBox.alert('请注意', '请您选择要' + tip + '的记录！');
+            return false;
+        } else if (selection.length >= 2) {
+            Ext.MessageBox.alert('请注意', '不能同时' + tip + '多个数据！');
+            return false;
+        }
+        var store = panel.getStore();
+        var record = selection[0];
+        if(record.data.nid == 0) {
+        	Ext.MessageBox.alert('请注意', '此BOM没有审核数据');
+        	return;
+        }
+        var type = record.get('type');
+        viewForm.getForm().reset();
+        viewForm.getForm().loadRecord(record);
+
+        // 清空自定义区域
+        var ownerField = Ext.getCmp("reviewForm_ownerField");
+        ownerField.hide();
+        ownerField.removeAll();
+        // 添加自定义区域
+        var table = "";
+        var upd_type = viewForm.getForm().findField("upd_type");
+        var reason_type_name = viewForm.getForm().findField("reason_type_name");
+        var upd_reason = viewForm.getForm().findField("upd_reason");
+        var description = viewForm.getForm().findField("description_head");
+        if(type == 'new') {
+        	table = "oa_product_bom_new";
+        	upd_type.hide();
+        	reason_type_name.hide();
+        	upd_reason.hide();
+        	description.setFieldLabel("描述");
+        } else {
+        	table = "oa_product_bom_upd";
+        	upd_type.show();
+        	reason_type_name.show();
+        	upd_reason.show();
+        	description.setFieldLabel("升版描述");
+        }
+        var menu = table + "_" + record.get('nid');
+        createDisplay(ownerField, menu, null);
+
+        // 清空审核历史区域
+        var reviewField = Ext.getCmp("reviewField");
+        reviewField.hide();
+        reviewField.removeAll();
+
+        // 添加审核历史区域
+        reviewField.add(createRecordGrid(table, record.data.nid, false));
+        reviewField.show();
+        reviewField.collapse();
+
+        viewWin.show();
+    };
+
+    var viewForm = new Ext.form.Panel({
+        width: 690,
+        bodyPadding: 2,
+        id: "myViewForm",
+        layout:'form',
+        autoScroll: true,
+        waitMsgTarget: true,
+
+        fieldDefaults: {
+            labelAlign: 'right',
+            labelWidth: 95,
+            msgTarget: 'side'
+        },
+
+        items: [{
+            xtype: 'fieldset',
+            title: '基本信息',
+            baseCls: 'x-fieldset',
+            width: 660,
+            items: [{
+                    xtype: 'textfield',
+                    hidden: true,
+                    name: 'nid'
+                }, {
+                    xtype: 'displayfield',
+                    fieldLabel: 'BOM号',
+                    name: 'code'
+                }, {
+                    xtype: 'displayfield',
+                    fieldLabel: '升版类型',
+                    name: 'upd_type'
+                }, {
+                    xtype: 'displayfield',
+                    fieldLabel: '升版原因分类',
+                    name: 'reason_type_name'
+                }, {
+                    xtype: 'displayfield',
+                    fieldLabel: '升版原因',
+                    name: 'upd_reason'
+                }, {
+                    xtype: 'displayfield',
+                    fieldLabel: '描述',
+                    name: 'description_head'
+                }, {
+                    xtype: 'displayfield',
+                    fieldLabel: '备注',
+                    name: 'remark_head'
+                }
+            ]
+        }, {
+            id: 'reviewForm_ownerField',
+            xtype: 'fieldset',
+            title: '自定义信息',
+            width: 660,
+            hidden: true,
+            items: []
+        }, {
+            id: 'reviewField',
+            xtype: 'fieldset',
+            width: 660,
+            collapsed: true,
+            collapsible: true,
+            title: '审核历史',
+            items: [],
+            listeners: {
+                expand: function(f, o) {
+                    var store = this.up('form').down('grid').getStore();
+                    var upd_type = viewForm.getForm().findField("upd_type").getValue();
+                    var table = "";
+                    if(!upd_type || upd_type == 'new') {
+                    	table = "oa_product_bom_new";
+                    } else {
+                    	table = "oa_product_bom_upd";
+                    }
+                    if (store.getTotalCount() === 0) {
+                        store.load({
+                            params: {
+                                table: table,
+                                id: this.up('form').getRecord().get('nid')
+                            }
+                        });
+                    }
+                }
+            }
+        }
+    ]
+    });
+
+    var viewWin = new Ext.Window({
+        xtype : "window",
+        title: 'BOM查看',
+        modal: true,
+        layout: 'fit',
+        autoHeight: true,
+        maxHeight: 460,
+        maximizable: true,
+	    x: 200,
+	    y: 60,
+        closable: true,
+        items: [viewForm],
+        buttons: [{
+            text: '查看BOM',
+            handler: function(){
+            	// 插入草稿
+            	var form = viewForm.getForm()
+            	var nid = form.findField("nid").getValue();
+            	var type = form.findField("upd_type").getValue();
+            	if(nid) {
+            		var bomForm = lib.bom.bomForm({grid: grid, type: type, nid: nid, step: 'view'});
+        	        bomForm.show();
+            	} else {
+            		Ext.MessageBox.alert('提示', "加载BOM失败");
+            	}
+
+            }
+        }, {
+            text: '关闭',
+            handler: function(){
+            	viewWin.hide();
+            }
+        }]
+    });
+
+    var grid = Ext.create('Ext.grid.Panel', {
+        store: store,
+        id : 'bomGrid',
+        border:0,
+        selType: 'checkboxmodel',
+        columnLines: true,
+        viewConfig: {
+            stripeRows: false, // 取消偶数行背景色
+            getRowClass: function(record) {
+                if ("Obsolete" == record.get('state')) {
+                    // 当分类启用状态为false时，设置背景色
+                    return 'dark-row';
+                }
+            }
+        },
+        tbar: [{
+            xtype: 'textfield',
+            id: 'search_fa',
+            width: 120,
+            emptyText: '上级物料...',
+            listeners: {
+            	specialKey :function(field,e){
+                    if (e.getKey() == Ext.EventObject.ENTER){
+                    	store.loadPage(1);
+                    }
+                }
+            }
+        }, {
+            xtype: 'textfield',
+            id: 'search_son',
+            width: 120,
+            emptyText: '下级物料...',
+            listeners: {
+            	specialKey :function(field,e){
+                    if (e.getKey() == Ext.EventObject.ENTER){
+                    	store.loadPage(1);
+                    }
+                }
+            }
+        }, {
+            xtype: 'textfield',
+            id: 'search_key',
+            width: 200,
+            emptyText: '模糊查询，多个关键字以空格隔开',
+            listeners: {
+            	specialKey :function(field,e){
+                    if (e.getKey() == Ext.EventObject.ENTER){
+                    	store.loadPage(1);
+                    }
+                }
+            }
+        }, {
+            xtype: 'datefield',
+            format: 'Y-m-d',
+            width: 100,
+            id: 'search_archive_date_from',
+            emptyText: '归档日期从...'
+        }, {
+            xtype: 'datefield',
+            format: 'Y-m-j',
+            width: 100,
+            id: 'search_archive_date_to',
+            emptyText: '归档日期至...'
+        }, {
+            xtype: 'combobox',
+            id: 'search_state',
+            emptyText: '状态...',
+            width: 100,
+//             store: [['EBOM', 'EBOM'], ['MBOM', 'MBOM'], ['EOL', 'EOL'], ['Pre-EOL', 'Pre-EOL'], ['Obsolete', 'Obsolete']]
+            store: [['EBOM', '已归档'], ['Obsolete', '旧版作废']]
+        }, {
+            text: '查询',
+            xtype: 'splitbutton',
+            iconCls: 'icon-search',
+            handler: function() {
+                var search_key = Ext.getCmp('search_key').getValue();
+                var search_fa = Ext.getCmp('search_fa').getValue();
+                var search_son = Ext.getCmp('search_son').getValue();
+                var search_state = Ext.getCmp('search_state').getValue();
+                var search_archive_date_from = Ext.getCmp('search_archive_date_from').getValue();
+                var search_archive_date_to = Ext.getCmp('search_archive_date_to').getValue();
+                store.baseParams = {
+                	search_key: search_key,
+                    search_fa: search_fa,
+                    search_son: search_son,
+                    search_state: search_state,
+                    search_archive_date_from: search_archive_date_from,
+                    search_archive_date_to: search_archive_date_to
+                };
+                store.loadPage(1);
+            },
+            menu: [{
+                    text: '导出（单文件）',
+                    hidden: true,
+                    disabled: <?php echo $oneexportable ?>,
+                    iconCls: 'icon-export',
+                    handler: function() {
+		                var search_key = Ext.getCmp('search_key').getValue();
+		                var search_fa = Ext.getCmp('search_fa').getValue();
+		                var search_son = Ext.getCmp('search_son').getValue();
+		                var search_state = Ext.getCmp('search_state').getValue();
+		                var search_archive_date_from = Ext.getCmp('search_archive_date_from').getValue();
+		                var search_archive_date_to = Ext.getCmp('search_archive_date_to').getValue();
+
+                        Ext.Msg.wait('加载中，请稍后...', '提示');
+                        Ext.Ajax.request({
+                            url: '<?php echo HOME_PATH; ?>/public/product/bom/exportcsvone',
+                            params: {
+			                	search_key: search_key,
+			                    search_fa: search_fa,
+			                    search_son: search_son,
+			                    search_state: search_state,
+		                        search_archive_date_from: search_archive_date_from,
+		                        search_archive_date_to: search_archive_date_to,
+                                source: 'list'
+                            },
+                            timeout : 300000,
+                            method: 'POST',
+                            success: function(response, options) {
+                                var url = '<?php echo HOME_PATH; ?>/public/dcc/download/downcsv/path/' + response.responseText;
+                                Ext.Msg.hide();
+                                window.open(url);
+                            }
+                        });
+                    }
+                }, {
+                    text: '导出（多文件）',
+                    hidden: true,
+                    disabled: <?php echo $oneexportable ?>,
+                    iconCls: 'icon-export',
+                    handler: function() {
+		                var search_key = Ext.getCmp('search_key').getValue();
+		                var search_fa = Ext.getCmp('search_fa').getValue();
+		                var search_son = Ext.getCmp('search_son').getValue();
+		                var search_state = Ext.getCmp('search_state').getValue();
+		                var search_archive_date_from = Ext.getCmp('search_archive_date_from').getValue();
+		                var search_archive_date_to = Ext.getCmp('search_archive_date_to').getValue();
+
+                        Ext.Msg.wait('加载中，请稍后...', '提示');
+                        Ext.Ajax.request({
+                            url: '<?php echo HOME_PATH; ?>/public/product/bom/exportcsv',
+                            params: {
+			                	search_key: search_key,
+			                    search_fa: search_fa,
+			                    search_son: search_son,
+			                    search_state: search_state,
+		                        search_archive_date_from: search_archive_date_from,
+		                        search_archive_date_to: search_archive_date_to,
+                                source: 'list'
+                            },
+                            timeout : 300000,
+                            method: 'POST',
+                            success: function(response, options) {
+                                var url = '<?php echo HOME_PATH; ?>/public/dcc/download/downcsv/path/' + response.responseText;
+                                Ext.Msg.hide();
+                                window.open(url);
+                            }
+                        });
+                    }
+                }, {
+                    text: '导出升版（单文件）',
+                    hidden: true,
+                    disabled: <?php echo $oneexportable ?>,
+                    iconCls: 'icon-export',
+                    handler: function() {
+		                var search_key = Ext.getCmp('search_key').getValue();
+		                var search_fa = Ext.getCmp('search_fa').getValue();
+		                var search_son = Ext.getCmp('search_son').getValue();
+		                var search_state = Ext.getCmp('search_state').getValue();
+		                var search_archive_date_from = Ext.getCmp('search_archive_date_from').getValue();
+		                var search_archive_date_to = Ext.getCmp('search_archive_date_to').getValue();
+
+                        Ext.Msg.wait('加载中，请稍后...', '提示');
+                        Ext.Ajax.request({
+                            url: '<?php echo HOME_PATH; ?>/public/product/bom/exportcsvone',
+                            params: {
+			                	search_key: search_key,
+			                    search_fa: search_fa,
+			                    search_son: search_son,
+			                    search_state: search_state,
+		                        search_archive_date_from: search_archive_date_from,
+		                        search_archive_date_to: search_archive_date_to,
+		                        upd_flg: 1,
+                                source: 'list'
+                            },
+                            method: 'POST',
+                            success: function(response, options) {
+                                var url = '<?php echo HOME_PATH; ?>/public/dcc/download/downcsv/path/' + response.responseText;
+                                Ext.Msg.hide();
+                                window.open(url);
+                            }
+                        });
+                    }
+                }, {
+                    text: '导出升版（多文件）',
+                    hidden: true,
+                    disabled: <?php echo $oneexportable ?>,
+                    iconCls: 'icon-export',
+                    handler: function() {
+		                var search_key = Ext.getCmp('search_key').getValue();
+		                var search_fa = Ext.getCmp('search_fa').getValue();
+		                var search_son = Ext.getCmp('search_son').getValue();
+		                var search_state = Ext.getCmp('search_state').getValue();
+		                var search_archive_date_from = Ext.getCmp('search_archive_date_from').getValue();
+		                var search_archive_date_to = Ext.getCmp('search_archive_date_to').getValue();
+
+                        Ext.Msg.wait('加载中，请稍后...', '提示');
+                        Ext.Ajax.request({
+                            url: '<?php echo HOME_PATH; ?>/public/product/bom/exportcsv',
+                            params: {
+			                	search_key: search_key,
+			                    search_fa: search_fa,
+			                    search_son: search_son,
+			                    search_state: search_state,
+		                        search_archive_date_from: search_archive_date_from,
+		                        search_archive_date_to: search_archive_date_to,
+		                        upd_flg: 1,
+                                source: 'list'
+                            },
+                            method: 'POST',
+                            success: function(response, options) {
+                                var url = '<?php echo HOME_PATH; ?>/public/dcc/download/downcsv/path/' + response.responseText;
+                                Ext.Msg.hide();
+                                window.open(url);
+                            }
+                        });
+                    }
+                }]
+        }],
+        plugins: rowEditing,
+        columns: [{
+            text: 'ID',
+            width: 40,
+            hidden: true,
+            dataIndex: 'id'
+        }, {
+            text: 'BOM号',
+            width: 180,
+            dataIndex: 'code',
+            renderer: function(value, p, record){
+            	if(!value) return "";
+                var tip = "点击查看BOM";
+                p.tdAttr = 'data-qtip="' + tip + '"';
+                var recordkey = record.data.recordkey;
+                icon = '<img src="<?php echo HOME_PATH; ?>/public/images/icons/view_gray.png"></img>';
+                if (value) {
+                    icon = '<img src="<?php echo HOME_PATH; ?>/public/images/icons/view.png" onclick="viewBom(' + recordkey + ')" style="cursor:pointer;"></img>';
+                }
+                return icon + " " + value;
+            }
+        },{
+            text: '版本',
+            width: 50,
+            dataIndex: 'ver',
+            renderer: function(value, p, record) {
+            	if(value && value > 1.0) {
+            		var left_code = record.get('code');
+            		var right_code = record.get('code');
+            		var left_ver = record.get('ver');
+            		left_ver = (Number(left_ver)-0.1).toFixed(1);
+            		var right_ver = record.get('ver');
+            		value = '<a href="#" onclick="viewUpdDetail(\'' + left_code + '\',\'' + right_code + '\',\'' + left_ver + '\',\'' + right_ver + '\')" style="cursor:pointer;">V' + value + '</a>';
+            		return value;
+            	}
+            	if(value) value = "V" + value;
+            	return value;
+            }
+        },{
+            text: '状态',
+            width: 80,
+            dataIndex: 'state' ,
+            renderer: function(value) {
+                if(value == 'EBOM') {
+                    return '已归档';
+                } else if(value == 'Obsolete') {
+                    return '旧版作废';
+                }
+            } 
+        },{
+            text: '物料名称',
+            width: 260,
+            dataIndex: 'name',
+            renderer: showTitle
+        },{
+            text: '物料描述',
+            width: 300,
+            dataIndex: 'description',
+            renderer: showTitle
+        },{
+            text: '产品型号',
+            width: 180,
+            dataIndex: 'project_no_name',
+            renderer: showTitle
+        },{
+            text: '关联文件',
+            width: 180,
+            dataIndex: 'bom_file',
+            renderer: showTitle
+        },{
+            text: '文件版本',
+            width: 60,
+            dataIndex: 'file_ver',
+            renderer: showTitle
+        },{
+            text: '文件描述',
+            width: 180,
+            dataIndex: 'file_desc',
+            renderer: showTitle
+        }, {
+            text: '归档时间',
+            width: 140,
+            dataIndex: 'archive_time',
+            renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+        }, {
+            text: '备注',
+            width: 300,
+            dataIndex: 'remark',
+            renderer: showTitle
+        }],
+        listeners: {
+            itemdblclick: function(grid) {
+                viewAction(grid, 'view');
+            }
+        },
+        bbar: Ext.create('Ext.PagingToolbar', {
+            store: store,
+            displayInfo: true,
+            displayMsg: '显示 {0} - {1} 共 {2}',
+            emptyMsg: "没有数据",
+            items: [{
+                xtype: 'numberfield',
+                id: 'page_size_set',
+                value: 50,
+                width: 150,
+                hideTrigger: true,
+                labelAlign: 'right',
+                fieldLabel: '每页显示',
+                listeners: {
+                	specialKey :function(field,e){
+                        if (e.getKey() == Ext.EventObject.ENTER){
+                            var thisStore = this.up('pagingtoolbar').getStore();
+                            thisStore.pageSize = Ext.getCmp('page_size_set').getValue();
+                            thisStore.loadPage(1);
+                        }
+                    }
+                }
+            }]
+        })
+    });
+
+    store.on("beforeload", function() {
+        var search_key = Ext.getCmp('search_key').getValue();
+        var search_fa = Ext.getCmp('search_fa').getValue();
+        var search_son = Ext.getCmp('search_son').getValue();
+        var search_state = Ext.getCmp('search_state').getValue();
+        var search_archive_date_from = Ext.getCmp('search_archive_date_from').getValue();
+        var search_archive_date_to = Ext.getCmp('search_archive_date_to').getValue();
+        Ext.apply(store.proxy.extraParams, {
+        	search_key: search_key,
+            search_fa: search_fa,
+            search_son: search_son,
+            search_state: search_state,
+            search_archive_date_from: search_archive_date_from,
+            search_archive_date_to: search_archive_date_to
+        });
+    });
+
+    Ext.create('Ext.container.Viewport', {
+        layout: 'border',
+        border:0,
+        rtl: true,
+        items: [{
+            region: 'center',
+            border:0,
+            layout: 'fit',
+            plain: true,
+            items:[grid]
+        }]
+    });
+});
+</script>
+</head>
+<body>
+</body>
+</html>

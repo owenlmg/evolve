@@ -1,0 +1,174 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+var user_id = <?php echo $this->user_id?>;
+var hraAdmin = <?php echo $this->hraAdmin?>;
+var default_manager_id = <?php echo $this->default_manager_id?>;
+var vacation_qty_left = <?php echo $this->vacation_qty_left?>;
+
+var default_date_from = '<?php echo $this->default_date_from?>';
+var default_date_to = '<?php echo $this->default_date_to?>';
+
+var active_tab = <?php echo $this->active_tab?>;
+
+var hraBtnHidden = true;
+
+if(hraAdmin == 1){
+	hraBtnHidden = false;
+}
+
+Ext.require(['*']);
+
+Ext.Loader.setConfig({
+	enabled:true,
+	disableCaching:false,
+	paths:{
+		'Go':homePath+'/library/ext/plugins/Go'
+	}
+});
+
+Ext.define('Selection', {
+    extend: 'Ext.data.Model',
+    fields: [{name: 'id', type: 'int'}, {name: 'name'}]
+});
+
+//用工形式
+var typeListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+       type: 'ajax',
+       reader: 'json',
+       url: homePath+'/public/hra/employee/gettype/option/list'
+    },
+    autoLoad: true
+});
+
+var typeRender = function (val){
+	if(val > 0){
+		index = typeListStore.findExact('id',val); 
+   if (index != -1){
+       rs = typeListStore.getAt(index).data; 
+       return rs.name; 
+   }
+   return val;
+	}else{
+		return '无';
+	}
+};
+
+// 员工数据源
+var employeeListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/admin/account/getuserlist'
+    },
+    autoLoad: true
+});
+
+// 部门主管数据源
+/* var managerListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/admin/account/getmanageruserlist'
+    },
+    autoLoad: true
+}); */
+
+// 公司领导数据源
+/* var leaderListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/admin/account/getleaderuserlist'
+    },
+    autoLoad: true
+}); */
+
+// 申请人数据源（可以给自己或下属请假）
+var applyUserListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/admin/account/getrelateduserlist'
+    },
+    autoLoad: true
+});
+
+// 必填提示
+var required = '<span style="color:red;font-weight:bold" data-qtip="Required">*</span>';
+</script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/user/views/scripts/attendance/js/review.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/user/views/scripts/attendance/js/overtime.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/user/views/scripts/attendance/js/vacation.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/hra/views/scripts/attendance/js/import.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/hra/views/scripts/attendance/js/attendance.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/hra/views/scripts/attendance/js/statistics.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/hra/views/scripts/attendance/js/vacationstorage.js"></script>
+<script type="text/javascript">
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+
+    Ext.apply(Ext.QuickTips.getQuickTip(), {showDelay: 100, dismissDelay: 30000});
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+    
+    var viewport = Ext.create('Ext.Viewport', {
+        layout: 'border',
+        border: 0,
+        margins: '0 0 0 0',
+        items: [{
+            region: 'center',
+            border: 0,
+            deferredRender: false,
+            layout: 'fit',
+            items: [{
+                xtype: 'tabpanel',
+                id: 'tab_user_attendance',
+                layout: 'fit',
+                border: 0,
+                margin: '2 0 0 0',
+                plain: true,
+                tabBar: {
+                	height: 24,
+                	defaults: {
+                		height: 22
+                    }
+                },
+                activeTab: active_tab,
+                items: [attendanceGrid, statisticsGrid, vacationGrid, overtimeGrid, vstorageGrid],
+                listeners: {
+                	tabchange: function( tab, newCard, oldCard, eOpts ){
+                	    if(newCard.title == '请假记录' && vacationStore.count() == 0){
+                	    	vacationStore.loadPage(1);
+                    	}else if(newCard.title == '加班记录' && overtimeStore.count() == 0){
+                    		overtimeStore.loadPage(1);
+                    	}
+                    }
+                }
+            }]
+        }]
+    });
+
+    if(active_tab == 2){
+    	vacationStore.loadPage(1);
+    }else if(active_tab == 3){
+    	overtimeStore.loadPage(1);
+    }
+
+    Ext.getCmp('vacationHraAddBtn').hide();
+    Ext.getCmp('overtimeHraAddBtn').hide();
+    Ext.getCmp('vacationNewApplyBtn').show();
+    Ext.getCmp('overtimeNewApplyBtn').show();
+});
+</script>
+</head>
+<body>
+</body>
+</html>

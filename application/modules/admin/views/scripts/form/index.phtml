@@ -1,0 +1,1613 @@
+<html>
+    <head>
+        <?php echo SYS_HEAD; ?>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/common.js"></script>
+        <script type="text/javascript">
+            Ext.require([
+                'Ext.data.*',
+                'Ext.grid.*',
+                'Ext.tree.*',
+                '*'
+            ]);
+
+            Ext.onReady(function() {
+                Ext.QuickTips.init();
+
+                Ext.grid.PageRowNumberer = Ext.extend(Ext.grid.RowNumberer, {
+                    renderer: function(value, cellmeta, record, rowIndex, columnIndex, store) {
+                        return (store.currentPage - 1) * store.pageSize + rowIndex + 1;
+                    }
+                });
+                Ext.define('model', {
+                    extend: 'Ext.data.Model',
+                    fields: ['id', 'name']
+                });
+                Ext.define('column', {
+                    extend: 'Ext.data.Model',
+                    fields: ['id', 'name']
+                });
+                Ext.define('enum', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [{
+                            name: "id"
+                        }, {
+                            name: "option_sort"
+                        }, {
+                            name: "state"
+                        }, {
+                            name: "option_key"
+                        }, {
+                            name: "option_value"
+                        }, {
+                            name: "description"
+                        }, {
+                            name: "enumlist_id"
+                        }, {
+                            name: "enumlist_name"
+                        }, {
+                            name: "list_id"
+                        }]
+                });
+                Ext.define('enumlist', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [{
+                            name: "id"
+                        }, {
+                            name: "name"
+                        }, {
+                            name: "state"
+                        }, {
+                            name: "description"
+                        }, {
+                            name: "remark"
+                        }]
+                });
+
+                Ext.define('model', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [{
+                            name: "id"
+                        }, {
+                            name: "parentId"
+                        }, {
+                            name: "name"
+                        }, {
+                            name: "description"
+                        }, {
+                            name: "remark"
+                        }, {
+                            name: "create_time",
+                            type: 'date',
+                            dateFormat: 'timestamp'
+                        }, {
+                            name: "update_time",
+                            type: 'date',
+                            dateFormat: 'timestamp'
+                        }, {
+                            name: "creater"
+                        }, {
+                            name: "updater"
+                        }, {
+                            name: "state"
+                        }]
+                });
+
+                Ext.define('form', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [{
+                            name: "id"
+                        }, {
+                            name: "name"
+                        }, {
+                            name: "type"
+                        }, {
+                            name: "type_name"
+                        }, {
+                            name: "length"
+                        }, {
+                            name: "state"
+                        }, {
+                            name: "nullable"
+                        }, {
+                            name: "multi"
+                        }, {
+                            name: "model_id"
+                        }, {
+                            name: "model_name"
+                        }, {
+                            name: "description"
+                        }, {
+                            name: "remark"
+                        }, {
+                            name: "create_time",
+                            type: 'date',
+                            dateFormat: 'timestamp'
+                        }, {
+                            name: "update_time",
+                            type: 'date',
+                            dateFormat: 'timestamp'
+                        }, {
+                            name: "creater"
+                        }, {
+                            name: "updater"
+                        }, {
+                            name: "enumlistid"
+                        }, {
+                            name: "enumlistname"
+                        }, {
+                            name: "default_value"
+                        }, {
+                            name: "option_key"
+                        }, {
+                            name: "option_value"
+                        }, {
+                            name: "form_sort"
+                        }]
+                });
+
+                // 当前页子节点
+                var leaf = "";
+                // 下拉框列表id
+                var list_id = "";
+
+                var treeStore = Ext.create('Ext.data.TreeStore', {
+                    model: 'model',
+                    proxy: {
+                        type: 'ajax',
+                        reader: 'json',
+                        url: '<?php echo HOME_PATH; ?>/public/admin/form/getmodel/option/tree'
+                    },
+                    root: {
+                        name: 'Root',
+                        id: 'root',
+                        expanded: true
+                    },
+                    lazyFill: true
+                });
+
+                var formStore = Ext.create('Ext.data.Store', {
+                    model: 'form',
+                    proxy: {
+                        type: 'ajax',
+                        reader: 'json',
+                        url: '<?php echo HOME_PATH; ?>/public/admin/form/getforms'
+                    },
+                    autoLoad: false
+                });
+
+                var modelStore = Ext.create('Ext.data.Store', {
+                    model: 'model',
+                    proxy: {
+                        type: 'ajax',
+                        reader: 'json',
+                        url: '<?php echo HOME_PATH; ?>/public/admin/form/getmodel'
+                    },
+                    autoLoad: false
+                });
+
+                var columnStore = Ext.create('Ext.data.Store', {
+                    model: 'column',
+                    proxy: {
+                        type: 'ajax',
+                        reader: 'json',
+                        url: '<?php echo HOME_PATH; ?>/public/admin/form/getcolumn'
+                    },
+                    autoLoad: true
+                });
+
+                var rowEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+                    clicksToEdit: 1
+                });
+
+                var enumlistStore = Ext.create('Ext.data.Store', {
+                    model: 'enumlist',
+                    proxy: {
+                        type: 'ajax',
+                        reader: 'json',
+                        url: '<?php echo HOME_PATH; ?>/public/admin/form/getenumlist'
+                    },
+                    autoLoad: true
+                });
+                var enumlistselStore = Ext.create('Ext.data.Store', {
+                    model: 'enumlist',
+                    proxy: {
+                        type: 'ajax',
+                        reader: 'json',
+                        url: '<?php echo HOME_PATH; ?>/public/admin/form/getenumlistsel'
+                    },
+                    autoLoad: false
+                });
+                var enumStore = Ext.create('Ext.data.Store', {
+                    model: 'enum',
+                    proxy: {
+                        type: 'ajax',
+                        reader: 'json',
+                        url: '<?php echo HOME_PATH; ?>/public/admin/form/getenum'
+                    },
+                    autoLoad: false
+                });
+
+                var enumRowEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+                    clicksToEdit: 1
+                });
+
+                var enumlistRowEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+                    clicksToEdit: 1
+                });
+
+                var required = '<span style="color:red;font-weight:bold" data-qtip="Required">*</span>';
+
+                //定义右击菜单
+                var rightClickMenu = Ext.create('Ext.menu.Menu', {
+                    items: [{
+                            id: 'add',
+                            text: '增加节点'
+                        }, {
+                            id: 'edit',
+                            text: '修改节点'
+                        }, {
+                            id: 'del',
+                            text: '删除节点'
+                        }],
+                    listeners: {'click': menuClick}
+                });
+
+                //保存点击的节点
+                var clickNode;
+
+                //节点菜单事件
+                function menuClick(menu, item, e, eOpts) {
+                    var nodeId = clickNode.get('id');
+                    var tmpNode = treeStore.getNodeById(nodeId);
+
+
+                    if (item.id == 'add' || item.id == 'edit') {
+                        Ext.MessageBox.prompt('', '输入节点名:', function(btn, name) {
+                            if (name == null || name == '') {
+                                return false;
+                            }
+                            // 如果编辑的时候名字没改变，不能提交
+                            if (item.id == 'edit' && name == clickNode.get('name')) {
+                            	Ext.MessageBox.alert('提示', "没有更改");
+                                return false;
+                            }
+                            if(btn != 'ok') return false;
+                            // 远程添加节点
+                            Ext.Msg.wait('提交中，请稍后...', '提示');
+                            Ext.Ajax.request({
+                                url: '<?php echo HOME_PATH; ?>/public/admin/form/addmodel',
+                                params: {parentid: tmpNode.getId(), nodeId: nodeId, name: name, method: item.id},
+                                method: 'POST',
+                                success: function(response, options) {
+                                    var data = Ext.JSON.decode(response.responseText);
+
+                                    if (data.result) {
+                                        if (item.id == 'add') {
+                                            id = data.info;
+                                            if (tmpNode.isLeaf()) { //如果是叶节点，需要改变leaf属性，再添加节点
+                                                treeStore.load();
+                                                //往该节点添加子节点
+                                                tmpNode.appendChild({
+                                                    id: id,
+                                                    name: name,
+                                                    leaf: true
+                                                });
+                                            } else { //如果不是叶节点，直接添加
+                                                tmpNode.appendChild({
+                                                    id: id,
+                                                    name: name,
+                                                    leaf: true
+                                                });
+                                            }
+                                            formStore.load({params: {model_id: 0}});
+                                            Ext.getCmp('addBtn').setDisabled(true);
+                                        } else {
+                                            clickNode.set('name', name);
+                                        }
+
+                                        Ext.Msg.hide();
+                                    } else {
+                                        Ext.MessageBox.alert('错误', data.info);
+                                    }
+                                },
+                                failure: function(response) {
+                                    Ext.MessageBox.alert('错误', '添加失败');
+                                }
+                            });
+                        });
+                    } else if (item.id == 'del') {
+                        if (tmpNode.isLeaf()) {
+                            var info = "此操作将同时删除已存在的表单记录，且不能恢复。确认要删除？";
+                        } else {
+                            var info = "此操作将同时删除子节点及其已存在的表单记录，且不能恢复。确认要删除？";
+                        }
+                        Ext.MessageBox.confirm('确认', info, function(button, text) {
+                            if (button == 'yes') {
+                                var parentNode = clickNode.parentNode;
+                                var tmpNode = treeStore.getNodeById(parentNode.getId());
+                                Ext.Msg.wait('提交中，请稍后...', '提示');
+                                Ext.Ajax.request({
+                                    url: '<?php echo HOME_PATH; ?>/public/admin/form/delmodel',
+                                    params: {id: nodeId, parentid: parentNode.getId()},
+                                    method: 'POST',
+                                    success: function(response, options) {
+                                        var data = Ext.JSON.decode(response.responseText);
+
+                                        if (data.result) {
+                                            clickNode.remove();
+
+                                            formStore.load({params: {model_id: 0}});
+                                            Ext.getCmp('addBtn').setDisabled(true);
+                                            Ext.Msg.hide();
+                                        } else {
+                                            Ext.MessageBox.alert('错误', data.info);
+                                        }
+                                    },
+                                    failure: function(response) {
+                                        Ext.MessageBox.alert('错误', '删除失败');
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+
+                var treePanel = Ext.create('Ext.tree.Panel', {
+                    title: '模块列表',
+                    border:0,
+                    useArrows: true,
+                    rootVisible: true,
+                    region: 'west',
+                    split: true,
+                    width: 200,
+                    store: treeStore,
+                    columns: [{
+                            xtype: 'treecolumn',
+                            flex: 2.5,
+                            sortable: true,
+                            dataIndex: 'name'
+                        }],
+                    listeners: {
+                        'itemclick': function(treeview, record, item, index, e, opts) {
+                            treeview.toggleOnDblClick = false;
+                            if (record.get('leaf')) {
+                                leaf = record.get('id');
+                                formStore.load({params: {model_id: leaf}});
+                                Ext.getCmp('addBtn').setDisabled(false);
+                            } else {
+                                Ext.getCmp('addBtn').setDisabled(true);
+                            }
+                        },
+                        'cellcontextmenu': function(obj, td, cellIndex, record, tr, rowIndex, e, eOpts) {
+                            record.leaf = false;
+                            clickNode = record;
+                            e.preventDefault();
+                            rightClickMenu.showAt(e.getXY());
+                        }
+                    }
+                });
+
+                // 下拉框管理
+                var enumlistGrid = Ext.create('Ext.grid.Panel', {
+                    store: enumlistStore,
+                    border:0,
+                    region: 'center',
+                    split: true,
+                    border: true,
+                    selType: 'checkboxmodel',
+                    columnLines: true,
+                    plugins: enumlistRowEditing,
+                    viewConfig: {
+                        getRowClass: function(record) {
+                            if ("下拉框名称" == record.get('name')) {
+                                // 新建枚举背景色为红色
+                                return 'light-red-row';
+                            }
+                            if (!record.get('state')) {
+                                // 当分类启用状态为false时，设置背景色
+                                return 'gray-row';
+                            }
+                        }
+                    },
+                    tbar: [{
+                            xtype: 'textfield',
+                            id: 'search_name',
+                            width: 120,
+                            emptyText: '名称...'
+                        }, {
+                            xtype: 'textfield',
+                            id: 'search_description',
+                            width: 120,
+                            emptyText: '描述...'
+                        }, {
+                            text: '查询',
+                            iconCls: 'icon-search',
+                            handler: function() {
+                                var search_name = Ext.getCmp('search_name').getValue();
+                                var search_description = Ext.getCmp('search_description').getValue();
+
+                                enumlistStore.load({
+                                    params: {
+                                        search_name: search_name,
+                                        search_description: search_description
+                                    }
+                                });
+                            }
+                        }, {
+                            text: '添加',
+                            scope: this,
+                            handler: function() {
+                                enumlistRowEditing.cancelEdit();
+
+                                var r = Ext.create('enumlist', {
+                                    name: '下拉框名称',
+                                    state: true
+                                });
+
+                                enumlistStore.insert(0, r);
+
+                                enumlistRowEditing.startEdit(0, 2);
+                            }
+                        }, {
+                            text: '删除',
+                            scope: this,
+                            handler: function() {
+                                var selection = enumlistGrid.getView().getSelectionModel().getSelection();
+
+                                if (selection.length > 0) {
+                                    enumlistStore.remove(selection);
+                                    enumStore.removeAll();
+                                    Ext.getCmp('addenumBtn').setDisabled(true);
+                                    Ext.getCmp('saveenumBtn').setDisabled(true);
+                                } else {
+                                    Ext.MessageBox.alert('错误', '没有选择删除对象！');
+                                }
+                            }
+                        }, {
+                            text: '保存',
+                            scope: this,
+                            handler: function() {
+                                var updateRecords = enumlistStore.getUpdatedRecords();
+                                var insertRecords = enumlistStore.getNewRecords();
+                                var deleteRecords = enumlistStore.getRemovedRecords();
+
+                                // 判断是否有修改数据
+                                if (updateRecords.length + insertRecords.length + deleteRecords.length > 0) {
+                                    var changeRows = {
+                                        updated: [],
+                                        inserted: [],
+                                        deleted: []
+                                    }
+
+                                    // 判断是否有为空的情况
+                                    var valueCheck = true;
+
+                                    for (var i = 0; i < updateRecords.length; i++) {
+                                        var data = updateRecords[i].data;
+
+                                        if (data['name'] == '' || data['name'] == '下拉框名称') {
+                                            valueCheck = false;
+                                            break;
+                                        }
+                                        changeRows.updated.push(data)
+                                    }
+
+                                    for (var i = 0; i < insertRecords.length; i++) {
+                                        var data = insertRecords[i].data;
+
+                                        if (data['name'] == '' || data['name'] == '下拉框名称') {
+                                            valueCheck = false;
+                                            break;
+                                        }
+                                        changeRows.inserted.push(data)
+                                    }
+
+                                    for (var i = 0; i < deleteRecords.length; i++) {
+                                        changeRows.deleted.push(deleteRecords[i].data)
+                                    }
+
+                                    // 格式正确则提交修改数据
+                                    if (valueCheck) {
+                                        var json = Ext.JSON.encode(changeRows);
+                                        Ext.Msg.wait('提交中，请稍后...', '提示');
+                                        Ext.Ajax.request({
+                                            url: '<?php echo HOME_PATH; ?>/public/admin/form/editenumlist',
+                                            params: {json: json},
+                                            method: 'POST',
+                                            success: function(response, options) {
+                                                var data = Ext.JSON.decode(response.responseText);
+
+                                                if (data.success) {
+                                                    Ext.MessageBox.alert('提示', data.info);
+                                                    enumlistStore.reload();
+                                                } else {
+                                                    Ext.MessageBox.alert('错误', data.info);
+                                                }
+                                            },
+                                            failure: function(form, action) {
+                                                Ext.MessageBox.alert('错误', action.result.info);
+                                            }
+                                        });
+                                    } else {
+                                        Ext.MessageBox.alert('提示', '名称不能为空或“下拉框名称”！');
+                                    }
+                                } else {
+                                    Ext.MessageBox.alert('提示', '没有修改任何数据！');
+                                }
+                            }
+                        }, {
+                            text: '<font color="blue">选择</font>',
+                            formBind: true,
+                            hidden: true,
+                            disabled: true,
+                            id: 'selenumBtn',
+                            handler: function() {
+                                var selection = enumlistGrid.getView().getSelectionModel().getSelection();
+
+                                if (selection.length > 0) {
+                                    Ext.getCmp('enumlistid').setValue(selection[0].get('id'));
+                                    Ext.getCmp('enumlistname').setValue(selection[0].get('name'));
+                                    Ext.getCmp('default_enum').setValue("");
+                                    winEnumlist.hide();
+                                } else {
+                                    Ext.MessageBox.alert('错误', '没有选择对象！');
+                                }
+
+                            }
+                        }],
+                    columns: [{
+                            xtype: 'rownumberer'
+                        }, {
+                            text: 'ID',
+                            flex: .5,
+                            hidden: true,
+                            dataIndex: 'id'
+                        }, {
+                            text: '名称',
+                            flex: 1,
+                            sortable: true,
+                            dataIndex: 'name',
+                            editor: 'textfield'
+                        }, {
+                            xtype: 'checkcolumn',
+                            text: '启用状态',
+                            flex: 0.7,
+                            hidden: true,
+                            dataIndex: 'state',
+                            stopSelection: false
+                        }, {
+                            text: '描述',
+                            flex: 1.5,
+                            dataIndex: 'description',
+                            editor: 'textfield'
+                        }, {
+                            text: '备注',
+                            flex: 2,
+                            dataIndex: 'remark',
+                            editor: 'textfield'
+                        }],
+                    listeners: {
+                        scope: this,
+                        selectionchange: function(model, records) {
+                            var rec = records[0];
+                            if (rec) {
+                                list_id = rec.get('id');
+                                enumStore.load({
+                                    params: {'enumlist': list_id}
+                                });
+                                Ext.getCmp('addenumBtn').setDisabled(list_id === undefined);
+                                Ext.getCmp('saveenumBtn').setDisabled(list_id === undefined);
+                                Ext.getCmp('selenumBtn').setDisabled(list_id === undefined);
+
+                            } else {
+                                enumStore.removeAll();
+                                Ext.getCmp('addenumBtn').setDisabled(true);
+                                Ext.getCmp('saveenumBtn').setDisabled(true);
+                                Ext.getCmp('selenumBtn').setDisabled(true);
+                            }
+                        }
+                    }
+                });
+
+                // 下拉框具体条目
+                var enumlistGrid1 = Ext.create('Ext.grid.Panel', {
+                    store: enumStore,
+                    border:0,
+                    region: 'east',
+                    width: 400,
+                    selType: 'rowmodel',
+                    border: true,
+                    columnLines: true,
+                    plugins: enumRowEditing,
+                    viewConfig: {
+                        plugins: {
+                            ptype: 'gridviewdragdrop',
+                            dragText: '拖动来改变顺序'
+                        },
+                        listeners: {
+                            drop: function(node, data, dropRec, dropPosition) {
+                                var store = this.getStore();
+                                for (i = 0; i < store.getCount(); i++)
+                                {
+                                    store.getAt(i).set('index', i + 1);//model类的set,写入编号
+                                    store.getAt(i).set('option_sort', i + 1);
+                                }
+                            }
+                        },
+                        stripeRows: false, // 取消偶数行背景色
+                        getRowClass: function(record) {
+                            if ("value" == record.get('option_value')) {
+                                // 新建枚举背景色为红色
+                                return 'light-red-row';
+                            }
+                            if (!record.get('state')) {
+                                // 当分类启用状态为false时，设置背景色
+                                return 'gray-row';
+                            }
+                        }
+                    },
+                    columns: [Ext.create('Ext.grid.PageRowNumberer', {
+                            header: '顺序',
+                            flex: .3
+                        }), {
+                            text: 'ID',
+                            flex: 0.3,
+                            hidden: true,
+                            dataIndex: 'id'
+                        }, {
+                            text: 'sort',
+                            flex: 0.5,
+                            sortable: false,
+                            hidden: true,
+                            dataIndex: 'option_sort',
+                            editor: 'textfield'
+                        }, {
+                            text: '值',
+                            flex: 1,
+                            sortable: false,
+                            dataIndex: 'option_value',
+                            editor: 'textfield',
+                            listener: {
+                                focus: function() {
+                                    this.selectText();
+                                }
+                            }
+                        }, {
+                            xtype: 'checkcolumn',
+                            text: '启用状态',
+                            flex: 0.6,
+                            dataIndex: 'state',
+                            stopSelection: false
+                        }, {
+                            text: '描述',
+                            flex: 1,
+                            dataIndex: 'description',
+                            editor: 'textfield'
+                        }],
+                    tbar: [{
+                            text: '添加',
+                            scope: this,
+                            id: 'addenumBtn',
+                            disabled: true,
+                            handler: function() {
+                                enumRowEditing.cancelEdit();
+
+                                var r = Ext.create('enum', {
+                                    option_sort: enumStore.count() + 1,
+                                    state: true,
+                                    option_value: 'value'
+                                });
+
+                                var c = enumStore.count();
+                                enumStore.insert(c, r);
+                                // 设置新增行的顺序
+                                enumStore.getAt(c).set('option_sort', c);
+
+                                enumRowEditing.startEdit(c, 1);
+                            }
+                        }, {
+                            text: '删除',
+                            scope: this,
+                            handler: function() {
+                                var selection = enumlistGrid1.getView().getSelectionModel().getSelection();
+
+                                if (selection.length > 0) {
+                                    enumStore.remove(selection);
+                                } else {
+                                    Ext.MessageBox.alert('错误', '没有选择删除对象！');
+                                }
+                            }
+                        }, {
+                            text: '保存修改',
+                            scope: this,
+                            id: 'saveenumBtn',
+                            handler: function() {
+                                var updateRecords = enumStore.getUpdatedRecords();
+                                var insertRecords = enumStore.getNewRecords();
+                                var deleteRecords = enumStore.getRemovedRecords();
+
+                                // 判断是否有修改数据
+                                if (updateRecords.length + insertRecords.length + deleteRecords.length > 0) {
+                                    var changeRows = {
+                                        updated: [],
+                                        inserted: [],
+                                        deleted: []
+                                    }
+
+                                    // 判断文件简号是否有为空的情况
+                                    var valueCheck = true;
+
+                                    for (var i = 0; i < updateRecords.length; i++) {
+                                        var data = updateRecords[i].data;
+
+                                        if (data['option_value'] == '' || data['option_value'] == 'value') {
+                                            valueCheck = false;
+                                            break;
+                                        }
+                                        data['list_id'] = list_id;
+                                        changeRows.updated.push(data)
+                                    }
+
+                                    for (var i = 0; i < insertRecords.length; i++) {
+                                        var data = insertRecords[i].data;
+
+                                        if (data['option_value'] == '' || data['option_value'] == 'value') {
+                                            valueCheck = false;
+                                            break;
+                                        }
+                                        data['list_id'] = list_id;
+                                        changeRows.inserted.push(data)
+                                    }
+
+                                    for (var i = 0; i < deleteRecords.length; i++) {
+                                        changeRows.deleted.push(deleteRecords[i].data)
+                                    }
+
+                                    // 格式正确则提交修改数据
+                                    if (valueCheck) {
+                                        var json = Ext.JSON.encode(changeRows);
+                                        Ext.Msg.wait('提交中，请稍后...', '提示');
+                                        Ext.Ajax.request({
+                                            url: '<?php echo HOME_PATH; ?>/public/admin/form/editenum',
+                                            params: {json: json},
+                                            method: 'POST',
+                                            success: function(response, options) {
+                                                var data = Ext.JSON.decode(response.responseText);
+
+                                                if (data.success) {
+                                                    Ext.MessageBox.alert('提示', data.info);
+                                                    enumStore.reload();
+                                                } else {
+                                                    Ext.MessageBox.alert('错误', data.info);
+                                                }
+                                            },
+                                            failure: function(form, action) {
+                                                Ext.MessageBox.alert('错误', action.result.info);
+                                            }
+                                        });
+                                    } else {
+                                        Ext.MessageBox.alert('提示', 'key不能为空或“key”！');
+                                    }
+                                } else {
+                                    Ext.MessageBox.alert('提示', '没有修改任何数据！');
+                                }
+                            }
+                        }]
+                });
+
+                var winEnumlist = new Ext.Window({
+                    title: '下拉框管理',
+                    border:0,
+                    height: 400,
+                    width: 1000,
+                    modal: true,
+                    layout: 'border',
+                    plain: true,
+                    closeAction: 'hide',
+                    items: [enumlistGrid, enumlistGrid1],
+                    tools: [{
+                            type: 'refresh',
+                            tooltip: '刷新表格数据',
+                            scope: this,
+                            handler: function() {
+                                enumlistStore.reload();
+                            }
+                        }]
+                });
+
+                var enable = function(field) {
+                    if (field != undefined) {
+                        field.setVisible(true);
+                        field.setDisabled(false);
+                    }
+                }
+                var disable = function(field) {
+                    if (field != undefined) {
+                        field.setVisible(false);
+                        field.setDisabled(true);
+                    }
+                }
+
+                // 新增自定义字段表单
+                var addPanel = new Ext.form.Panel({
+                    width: 600,
+                    border:0,
+                    bodyPadding: 5,
+                    autoScroll: true,
+                    layout: 'form',
+                    waitMsgTarget: true,
+                    fieldDefaults: {
+                        labelAlign: 'right',
+                        labelWidth: 85,
+                        msgTarget: 'side'
+                    },
+                    defaultType: 'textfield',
+                    items: [{
+                            hidden: true,
+                            id: 'id',
+                            name: 'id'
+                        }, {
+                            fieldLabel: '所属模块',
+                            readOnly: true,
+                            id: 'model_name',
+                            name: 'model_name'
+                        }, {
+                            fieldLabel: '所属模块ID',
+                            readOnly: true,
+                            hidden: true,
+                            id: 'model_id',
+                            name: 'model_id'
+                        }, {
+                            fieldLabel: '字段名称',
+                            afterLabelTextTpl: required,
+                            allowBlank: false,
+                            name: 'name',
+                            id: 'name'
+                        }, {
+                            fieldLabel: '启用状态',
+                            xtype: 'checkbox',
+                            checked: true,
+                            name: 'state'
+                        }, {
+                            xtype: 'combobox',
+                            fieldLabel: '字段类型',
+                            afterLabelTextTpl: required,
+                            id: 'type',
+                            name: 'type',
+                            allowBlank: false,
+                            typeAhead: true,
+                            editable: false,
+                            triggerAction: 'all',
+                            displayField: 'name',
+                            valueField: 'id',
+                            queryModel: 'local',
+                            store: columnStore,
+                            emptyText: '选择字段类型',
+                            listeners: {
+                                'select': function(obj) {
+                                    switch (this.value) {
+                                        case 'enum':
+                                            // 下拉框
+                                            // 下拉框名称可见
+                                            enable(Ext.getCmp('enumlistname'));
+                                            // 长度不可见
+                                            disable(Ext.getCmp('length'));
+                                            // 默认值
+                                            enable(Ext.getCmp('default_enum'));
+                                            // 是否多选
+                                            enable(Ext.getCmp('multi'));
+                                            // 加载默认值选项
+
+                                            disable(Ext.getCmp('default_int'));
+                                            disable(Ext.getCmp('default_double'));
+                                            disable(Ext.getCmp('default_varchar'));
+                                            disable(Ext.getCmp('default_textarea'));
+
+                                            break;
+
+                                        case 'date':
+                                        case 'datetime':
+                                            // 时间
+                                            // 下拉框名称不可见
+                                            disable(Ext.getCmp('enumlistname'));
+                                            // 长度不可见
+                                            disable(Ext.getCmp('length'));
+                                            // 默认值
+                                            disable(Ext.getCmp('default_enum'));
+                                            disable(Ext.getCmp('multi'));
+                                            disable(Ext.getCmp('default_int'));
+                                            disable(Ext.getCmp('default_double'));
+                                            disable(Ext.getCmp('default_varchar'));
+                                            disable(Ext.getCmp('default_textarea'));
+
+                                            break;
+                                        case 'int':
+                                            // 数值（整数）
+                                            // 下拉框名称不可见
+                                            disable(Ext.getCmp('enumlistname'));
+                                            // 长度不可见
+                                            disable(Ext.getCmp('length'));
+                                            // 默认值
+                                            enable(Ext.getCmp('default_int'));
+
+                                            disable(Ext.getCmp('default_enum'));
+                                            disable(Ext.getCmp('multi'));
+                                            disable(Ext.getCmp('default_double'));
+                                            disable(Ext.getCmp('default_varchar'));
+                                            disable(Ext.getCmp('default_textarea'));
+
+                                            break;
+                                        case 'double':
+                                            // 数值（小数）
+                                            // 下拉框名称不可见
+                                            disable(Ext.getCmp('enumlistname'));
+                                            // 长度不可见
+                                            disable(Ext.getCmp('length'));
+                                            // 默认值
+                                            enable(Ext.getCmp('default_double'));
+
+                                            disable(Ext.getCmp('default_enum'));
+                                            disable(Ext.getCmp('multi'));
+                                            disable(Ext.getCmp('default_int'));
+                                            disable(Ext.getCmp('default_varchar'));
+                                            disable(Ext.getCmp('default_textarea'));
+
+                                            break;
+                                        case 'varchar':
+                                            // 字符
+                                            // 下拉框名称不可见
+                                            disable(Ext.getCmp('enumlistname'));
+                                            // 长度可见
+                                            enable(Ext.getCmp('length'));
+                                            // 默认值
+                                            enable(Ext.getCmp('default_varchar'));
+
+                                            disable(Ext.getCmp('default_enum'));
+                                            disable(Ext.getCmp('multi'));
+                                            disable(Ext.getCmp('default_int'));
+                                            disable(Ext.getCmp('default_double'));
+                                            disable(Ext.getCmp('default_textarea'));
+
+                                            break;
+                                        case 'textarea':
+                                            // 字符
+                                            // 下拉框名称不可见
+                                            disable(Ext.getCmp('enumlistname'));
+                                            // 长度可见
+                                            enable(Ext.getCmp('length'));
+                                            // 默认值
+                                            enable(Ext.getCmp('default_textarea'));
+
+                                            disable(Ext.getCmp('default_enum'));
+                                            disable(Ext.getCmp('multi'));
+                                            disable(Ext.getCmp('default_int'));
+                                            disable(Ext.getCmp('default_double'));
+                                            disable(Ext.getCmp('default_varchar'));
+
+                                            break;
+                                    }
+                                }
+                            }
+                        }, {
+                            xtype: 'triggerfield',
+                            fieldLabel: '下拉框名称',
+                            afterLabelTextTpl: required,
+                            id: 'enumlistname',
+                            name: 'enumlistname',
+                            editable: false,
+                            disabled: true,
+                            hidden: true,
+                            allowBlank: false,
+                            triggerCls: 'x-form-search-trigger',
+                            onTriggerClick: function() {
+                                winEnumlist.show();
+                                Ext.getCmp('selenumBtn').setVisible(true);
+                            }
+                        }, {
+                            xtype: 'textfield',
+                            fieldLabel: '下拉框ID',
+                            afterLabelTextTpl: required,
+                            id: 'enumlistid',
+                            name: 'enumlistid',
+                            hidden: true
+                        }, {
+                            fieldLabel: '是否多选',
+                            xtype: 'checkbox',
+                            checked: false,
+                            hidden: true,
+                            id: 'multi',
+                            name: 'multi',
+                            listeners: {
+                                'change': function(obj) {
+                                    var form = this.up('form');
+                                    if (form.getForm().findField('default_enum')) {
+                                        form.remove('default_enum');
+                                    }
+                                    var box = Ext.create('Ext.form.field.ComboBox', {
+                                        fieldLabel: '默认值',
+                                        multiSelect: obj.value,
+                                        id: 'default_enum',
+                                        name: 'default_value',
+                                        typeAhead: true,
+                                        editable: false,
+                                        triggerAction: 'all',
+                                        displayField: 'option_value',
+                                        valueField: 'id',
+                                        store: enumStore,
+                                        emptyText: '选择默认值'
+                                    });
+
+                                    var items = form.items;
+                                    for (var i = 0; i < items.length; i++) {
+                                        if (items.getAt(i).id == this.id) {
+                                            form.insert(i + 1, box);
+                                            break;
+                                        }
+                                    }
+
+                                }
+                            }
+                        }, {
+                            xtype: 'combobox',
+                            fieldLabel: '默认值',
+                            id: 'default_enum',
+                            name: 'default_value',
+                            disabled: true,
+                            hidden: true,
+                            typeAhead: true,
+                            editable: false,
+                            triggerAction: 'all',
+                            displayField: 'option_value',
+                            valueField: 'id',
+                            store: enumStore,
+                            queryMode: 'local',
+                            emptyText: '选择默认值',
+                            listeners: {
+                                change: function(t, o) {
+                                    var raw = this.rawValue.split(',');
+                                    if (raw.length <= 1)
+                                        return;
+                                    var vs = new Array();
+                                    this.getStore().each(function(r) {
+                                        var key = r.data.option_key
+                                        var value = r.data.option_value;
+                                        for (var i = 0; i < raw.length; i++) {
+                                            if (raw[i] == key) {
+                                                vs.push(value);
+                                            }
+                                        }
+                                    });
+                                    this.setRawValue(vs.join(','));
+                                }
+                            }
+                            }, {
+                            fieldLabel: '默认值',
+                                    xtype: 'numberfield',
+                                    disabled: true,
+                                    hidden: true,
+                                    id: 'default_int',
+                                    name: 'default_value',
+                                    allowDecimals: false
+                        }, {
+                            fieldLabel: '默认值',
+                            xtype: 'numberfield',
+                            disabled: true,
+                            hidden: true,
+                            id: 'default_double',
+                            name: 'default_value'
+                        }, {
+                            fieldLabel: '默认值',
+                            xtype: 'textfield',
+                            disabled: true,
+                            hidden: true,
+                            id: 'default_varchar',
+                            name: 'default_value'
+                        }, {
+                            fieldLabel: '默认值',
+                            xtype: 'textfield',
+                            disabled: true,
+                            hidden: true,
+                            id: 'default_textarea',
+                            name: 'default_value'
+                        }, {
+                            fieldLabel: '长度',
+                            xtype: 'numberfield',
+                            hidden: true,
+                            id: 'length',
+                            name: 'length'
+                        }, {
+                            fieldLabel: '允许空值',
+                            xtype: 'checkbox',
+                            checked: true,
+                            name: 'nullable'
+                        }, {
+                            fieldLabel: '描述',
+                            name: 'description'
+                        }, {
+                            fieldLabel: '备注',
+                            name: 'remark'
+                        }
+                    ]
+                });
+
+
+                var win = new Ext.Window({
+                    xtype: "window",
+                    border:0,
+                    title: '自定义字段',
+                    autoHeight: true,
+                    width: 600,
+                    modal: true,
+                    layout: 'fit',
+                    closeAction: 'hide',
+                    items: [addPanel],
+                    buttons: [{
+                            text: '提交',
+                            formBind: true,
+                            handler: function() {
+                                var form = addPanel.getForm();
+                                if (form.isValid()) {
+                                    var defaultValues = form.findField('default_enum').getValue();
+                                    if (defaultValues && defaultValues.constructor == Array)
+                                        defaultValues = defaultValues.join(',');
+                                    if (!defaultValues)
+                                        defaultValues = '';
+                                    form.submit({
+                                        clientValidation: true,
+                                        url: '<?php echo HOME_PATH; ?>/public/admin/form/save',
+                                        submitEmptyText: false,
+                                        waitMsg: '提交中，请稍后...',
+                                        params: {defaultValues: defaultValues},
+                                        method: 'POST',
+                                        success: function(form, action) {
+                                            if (action.result.success) {
+                                                Ext.MessageBox.alert('提示', action.result.info);
+                                                if (action.result.saveOrNot) {
+                                                    formStore.reload();
+                                                    // 取消选择，不然再点编辑的时候有些数据不会刷新
+                                                    formPanel.getView().getSelectionModel().clearSelections();
+                                                    form.reset();
+                                                    win.hide();
+                                                }
+                                            } else {
+                                                Ext.MessageBox.alert('错误', action.result.info);
+                                            }
+                                        },
+                                        failure: function(form, action) {
+                                            Ext.MessageBox.alert('错误', action.result.info);
+                                        }
+                                    });
+                                }
+                            }
+                        }, {
+                            text: '取消',
+                            handler: function() {
+                                addPanel.getForm().reset();
+                                win.hide();
+                            }
+                        }]
+                });
+
+                var formPanel = Ext.create('Ext.grid.Panel', {
+                    title: '项目列表',
+                    border:0,
+                    store: formStore,
+                    width: 1800,
+                    selType: 'checkboxmodel',
+                    columnLines: true,
+                    sortableColumns: false, // 禁止排序
+                    tools: [{
+                            type: 'refresh',
+                            tooltip: '刷新表格数据',
+                            scope: this,
+                            handler: function() {
+                                formStore.reload();
+                            }
+                        }],
+                    viewConfig: {
+                        stripeRows: false, // 取消偶数行背景色
+                        plugins: {
+                            ptype: 'gridviewdragdrop',
+                            dragText: '拖动来改变顺序'
+                        },
+                        listeners: {
+                            drop: function(node, data, dropRec, dropPosition) {
+                                var store = this.getStore();
+                                for (i = 0; i < store.getCount(); i++)
+                                {
+                                    store.getAt(i).set('index', i + 1);//model类的set,写入编号
+                                    store.getAt(i).set('form_sort', i + 1);
+                                }
+                            }
+                        },
+                        getRowClass: function(record) {
+                            if (!record.get('state')) {
+                                // 当分类启用状态为false时，设置背景色
+                                return 'gray-row';
+                            }
+                        }
+                    },
+                    tbar: [{
+                            text: '增加记录',
+                            scope: this,
+                            id: 'addBtn',
+                            disabled: true,
+                            handler: function() {
+                    	        Ext.Msg.wait('加载中，请稍后...', '提示');
+                                Ext.Ajax.request({
+                                    url: '<?php echo HOME_PATH; ?>/public/admin/form/getleafval',
+                                    params: {leaf: leaf},
+                                    method: 'POST',
+                                    success: function(response, options) {
+                                        var data = Ext.JSON.decode(response.responseText);
+
+                                        if (data.success) {
+                                            Ext.getCmp('model_id').setValue(data.id);
+                                            Ext.getCmp('model_name').setValue(data.name);
+                                            Ext.Msg.hide();
+                                            win.show();
+                                        } else {
+                                            Ext.MessageBox.alert('错误', '获取模块信息失败，请重试');
+                                        }
+                                    },
+                                    failure: function(form, action) {
+                                        Ext.MessageBox.alert('错误', action.result.info);
+                                    }
+                                });
+
+                            }
+                        }, {
+                            text: '编辑',
+                            scope: this,
+                            id: 'editBtn',
+                            handler: function() {
+                                var selection = formPanel.getView().getSelectionModel().getSelection();
+                                if (selection.length <= 0) {
+                                    Ext.MessageBox.alert('请注意', '请您选择要编辑的记录！');
+                                } else if (selection.length >= 2) {
+                                    Ext.MessageBox.alert('请注意', '不能同时编辑多个数据！');
+                                } else {
+                                    var grid = selection[0];
+                                    var default_int = default_double = default_varchar = default_textarea = grid.data.default_value;
+                                    addPanel.getForm().reset();
+                                    switch (grid.data.type) {
+                                        case 'enum':
+                                            // 下拉框
+                                            // 下拉框名称可见
+                                            enable(Ext.getCmp('enumlistname'));
+                                            // 长度不可见
+                                            disable(Ext.getCmp('length'));
+                                            // 默认值
+                                            enable(Ext.getCmp('default_enum'));
+                                            enable(Ext.getCmp('multi'));
+                                            // 加载默认值选项
+                                            enumStore.load({
+                                                params: {enumlist: grid.data.enumlistid},
+                                                callback: function(records, operation, success) {
+                                                    addPanel.getForm().findField('default_enum').setValue(grid.data.default_value);
+                                                    addPanel.getForm().findField('default_enum').setRawValue(grid.data.option_value);
+                                                }
+                                            });
+
+                                            disable(Ext.getCmp('default_int'));
+                                            disable(Ext.getCmp('default_double'));
+                                            disable(Ext.getCmp('default_varchar'));
+                                            disable(Ext.getCmp('default_textarea'));
+
+                                            break;
+
+                                        case 'date':
+                                        case 'datetime':
+                                            // 时间
+                                            // 下拉框名称不可见
+                                            disable(Ext.getCmp('enumlistname'));
+                                            // 长度不可见
+                                            disable(Ext.getCmp('length'));
+                                            // 默认值
+                                            disable(Ext.getCmp('default_enum'));
+                                            disable(Ext.getCmp('multi'));
+                                            disable(Ext.getCmp('default_int'));
+                                            disable(Ext.getCmp('default_double'));
+                                            disable(Ext.getCmp('default_varchar'));
+                                            disable(Ext.getCmp('default_textarea'));
+
+                                            break;
+                                        case 'int':
+                                            // 数值（整数）
+                                            // 下拉框名称不可见
+                                            disable(Ext.getCmp('enumlistname'));
+                                            // 长度不可见
+                                            disable(Ext.getCmp('length'));
+                                            // 默认值
+                                            enable(Ext.getCmp('default_int'));
+                                            Ext.getCmp('default_int').setValue(default_int);
+
+                                            disable(Ext.getCmp('default_enum'));
+                                            disable(Ext.getCmp('multi'));
+                                            disable(Ext.getCmp('default_double'));
+                                            disable(Ext.getCmp('default_varchar'));
+                                            disable(Ext.getCmp('default_textarea'));
+
+                                            break;
+                                        case 'double':
+                                            // 数值（小数）
+                                            // 下拉框名称不可见
+                                            disable(Ext.getCmp('enumlistname'));
+                                            // 长度不可见
+                                            disable(Ext.getCmp('length'));
+                                            // 默认值
+                                            enable(Ext.getCmp('default_double'));
+                                            Ext.getCmp('default_double').setValue(default_double);
+
+                                            disable(Ext.getCmp('default_enum'));
+                                            disable(Ext.getCmp('multi'));
+                                            disable(Ext.getCmp('default_int'));
+                                            disable(Ext.getCmp('default_varchar'));
+                                            disable(Ext.getCmp('default_textarea'));
+
+                                            break;
+                                        case 'varchar':
+                                            // 字符
+                                            // 下拉框名称不可见
+                                            disable(Ext.getCmp('enumlistname'));
+                                            // 长度可见
+                                            enable(Ext.getCmp('length'));
+                                            // 默认值
+                                            enable(Ext.getCmp('default_varchar'));
+                                            Ext.getCmp('default_varchar').setValue(default_varchar);
+
+                                            disable(Ext.getCmp('default_enum'));
+                                            disable(Ext.getCmp('multi'));
+                                            disable(Ext.getCmp('default_int'));
+                                            disable(Ext.getCmp('default_double'));
+                                            disable(Ext.getCmp('default_textarea'));
+
+                                            break;
+                                        case 'textarea':
+                                            // 字符（多行）
+                                            // 下拉框名称不可见
+                                            disable(Ext.getCmp('enumlistname'));
+                                            // 长度可见
+                                            enable(Ext.getCmp('length'));
+                                            // 默认值
+                                            enable(Ext.getCmp('default_textarea'));
+                                            Ext.getCmp('default_textarea').setValue(default_textarea);
+
+                                            disable(Ext.getCmp('default_enum'));
+                                            disable(Ext.getCmp('multi'));
+                                            disable(Ext.getCmp('default_int'));
+                                            disable(Ext.getCmp('default_double'));
+                                            disable(Ext.getCmp('default_varchar'));
+
+                                            break;
+                                    }
+                                    addPanel.getForm().loadRecord(grid);
+
+                                    win.show();
+                                }
+                            }
+                        }, {
+                            text: '删除记录',
+                            scope: this,
+                            handler: function() {
+                                var selection = formPanel.getView().getSelectionModel().getSelection();
+
+                                if (selection.length > 0) {
+                                    Ext.MessageBox.confirm('确认', '删除之后表单中的<span style="color:red">数据将会被删除，且不能恢复</span>，确认要删除？', function(button, text) {
+                                        if (button == 'yes') {
+                                            formStore.remove(selection);
+                                            var deleteRecords = formStore.getRemovedRecords();
+                                            var changeRows = {
+                                                deleted: []
+                                            }
+                                            for (var i = 0; i < deleteRecords.length; i++) {
+                                                changeRows.deleted.push(deleteRecords[i].data)
+                                            }
+                                            var json = Ext.JSON.encode(changeRows);
+                                            Ext.Msg.wait('提交中，请稍后...', '提示');
+                                            Ext.Ajax.request({
+                                                url: '<?php echo HOME_PATH; ?>/public/admin/form/remove',
+                                                params: {json: json},
+                                                method: 'POST',
+                                                success: function(response, options) {
+                                                    var data = Ext.JSON.decode(response.responseText);
+
+                                                    if (data.success) {
+                                                        Ext.MessageBox.alert('提示', data.info);
+                                                        formStore.reload();
+                                                    } else {
+                                                        Ext.MessageBox.alert('错误', data.info);
+                                                    }
+                                                },
+                                                failure: function(form, action) {
+                                                    Ext.MessageBox.alert('错误', action.result.info);
+                                                }
+                                            });
+                                        }
+                                    });
+
+                                } else {
+                                    Ext.MessageBox.alert('错误', '没有选择删除对象！');
+                                }
+                            }
+                        }, {
+                            text: '保存排序',
+                            scope: this,
+                            handler: function() {
+                                var updatedRecords = formStore.getUpdatedRecords();
+                                if (updatedRecords.length > 0) {
+                                    var changeRows = {
+                                        updated: []
+                                    }
+                                    for (var i = 0; i < updatedRecords.length; i++) {
+                                        changeRows.updated.push(updatedRecords[i].data)
+                                    }
+                                    var json = Ext.JSON.encode(changeRows);
+                                    Ext.Msg.wait('提交中，请稍后...', '提示');
+                                    Ext.Ajax.request({
+                                        url: '<?php echo HOME_PATH; ?>/public/admin/form/updatesort',
+                                        params: {json: json},
+                                        method: 'POST',
+                                        success: function(response, options) {
+                                            var data = Ext.JSON.decode(response.responseText);
+
+                                            if (data.success) {
+                                                Ext.MessageBox.alert('提示', data.info);
+                                                formStore.reload();
+                                            } else {
+                                                Ext.MessageBox.alert('错误', data.info);
+                                            }
+                                        },
+                                        failure: function(form, action) {
+                                            Ext.MessageBox.alert('错误', action.result.info);
+                                        }
+                                    });
+                                } else {
+                                    Ext.MessageBox.alert('提示', '没有改变顺序！');
+                                }
+
+                            }
+                        }, {
+                            text: '下拉框管理',
+                            scope: this,
+                            id: 'enumlistBtn',
+                            handler: function() {
+                                winEnumlist.show();
+                                enumlistGrid.getView().getSelectionModel().clearSelections();
+                                enumlistGrid.getView().refresh();
+                                enumStore.removeAll();
+                                Ext.getCmp('addenumBtn').setDisabled(true);
+                                Ext.getCmp('saveenumBtn').setDisabled(true);
+                                Ext.getCmp('selenumBtn').setVisible(false);
+                            }
+                        }],
+                    plugins: rowEditing,
+                    columns: [Ext.create('Ext.grid.PageRowNumberer', {
+                            header: '顺序',
+                            width: 50
+                        }), {
+                            text: 'ID',
+                            hidden: true,
+                            dataIndex: 'id'
+                        }, {
+                            text: 'sort',
+                            width: 30,
+                            sortable: false,
+                            hidden: true,
+                            dataIndex: 'form_sort',
+                            editor: 'textfield'
+                        }, {
+                            text: '所属模块',
+                            width: 80,
+                            sortable: true,
+                            dataIndex: 'model_name'
+                        }, {
+                            text: '字段名称',
+                            width: 120,
+                            sortable: true,
+                            dataIndex: 'name'
+                        }, {
+                            xtype: 'checkcolumn',
+                            text: '启用状态',
+                            width: 70,
+                            dataIndex: 'state',
+                            stopSelection: false
+                        }, {
+                            text: '字段类型',
+                            width: 120,
+                            sortable: true,
+                            dataIndex: 'type_name'
+                        }, {
+                            text: '下拉框名称',
+                            width: 120,
+                            sortable: true,
+                            dataIndex: 'enumlistname'
+                        }, {
+                            text: '默认值',
+                            width: 120,
+                            sortable: true,
+                            dataIndex: 'default_value',
+                            renderer: function(value, p, record) {
+                                if (record.data.type == 'enum' && record.data.option_key) {
+                                    return record.data.option_value;
+                                } else if (record.data.type == 'enum') {
+                                    return "";
+                                } else {
+                                    return value;
+                                }
+                            }
+                        }, {
+                            text: '字段长度',
+                            width: 80,
+                            sortable: true,
+                            dataIndex: 'length',
+                            renderer: function(value, p, record) {
+                                if (value == 0) {
+                                    return "未定义";
+                                }
+                                return value;
+                            }
+                        }, {
+                            xtype: 'checkcolumn',
+                            text: '可空',
+                            width: 60,
+                            stopSelection: false,
+                            dataIndex: 'nullable'
+                        }, {
+                            text: '描述',
+                            width: 180,
+                            dataIndex: 'description',
+                            editor: 'textfield',
+                            renderer: showTitle
+                        }, {
+                            text: '备注',
+                            width: 180,
+                            dataIndex: 'remark',
+                            editor: 'textfield',
+                            renderer: showTitle
+                        }, {
+                            text: '创建人',
+                            width: 80,
+                            hidden: true,
+                            dataIndex: 'creater'
+                        }, {
+                            text: '创建时间',
+                            width: 120,
+                            hidden: true,
+                            dataIndex: 'create_time',
+                            renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+                        }, {
+                            text: '更新人',
+                            width: 80,
+                            hidden: true,
+                            dataIndex: 'updater'
+                        }, {
+                            text: '更新时间',
+                            width: 80,
+                            hidden: true,
+                            dataIndex: 'update_time',
+                            renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+                        }]
+                });
+
+                Ext.create('Ext.container.Viewport', {
+                    layout: 'border',
+                    border:0,
+                    items: [treePanel, {
+                            region: 'center',
+                            border:0,
+                            layout: 'fit',
+                            plain: true,
+                            items: [formPanel]
+                        }]
+                });
+            });
+        </script>
+    </head>
+    <body>
+    </body>
+</html>

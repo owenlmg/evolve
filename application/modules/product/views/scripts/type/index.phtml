@@ -1,0 +1,574 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/public/js/common.js"></script>
+<script type="text/javascript">
+Ext.require([
+    'Ext.*'
+]);
+
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+
+    Ext.define('type', {
+        extend: 'Ext.data.Model',
+        idProperty: 'id',
+        fields: [{name: "id"},
+            {name: "code"},
+            {name: "parent_id"},
+            {name: "name"},
+            {name: "description"},
+            {name: "remark"},
+            {name: "sn_length"},
+            {name: "active"},
+            {name: "auto"},
+            {name: "bom"},
+            {name: "new_flow_id"},
+            {name: "upd_flow_id"},
+            {name: "del_flow_id"},
+            {name: "example"},
+            {name: "datafile_flg"},
+            {name: "tsr_flg"},
+            {name: "checkreport_flg"},
+            {name: "creater"},
+            {name: "create_time", type: 'date', dateFormat: 'timestamp'},
+            {name: "updater"},
+            {name: "update_time", type: 'date', dateFormat: 'timestamp'}
+        ]
+    });
+    Ext.define('flow', {
+        extend: 'Ext.data.Model',
+        fields: ['id', 'text']
+    });
+
+    var flowStore = Ext.create('Ext.data.Store', {
+        model: 'flow',
+        proxy: {
+            type: 'ajax',
+            reader: 'json',
+            url: '<?php echo HOME_PATH; ?>/public/admin/flow/getFlowForCombo'
+        },
+        autoLoad: false
+    });
+
+    var treeStore = Ext.create('Ext.data.TreeStore', {
+        model: 'type',
+        proxy: {
+            type: 'ajax',
+            reader: 'json',
+            url: '<?php echo HOME_PATH; ?>/public/product/type/getlist/option/data'
+        },
+        lazyFill: true
+    });
+    flowStore.load();
+
+    neddStore = Ext.create('Ext.data.Store', {
+        fields: ['text', 'val'],
+        data: [
+            {"text": "不需要", "val": 0},
+            {"text": "需要（不强制）", "val": 1},
+            {"text": "需要（强制）", "val": 2}
+        ]
+    });
+
+    var codeMethodStore = Ext.create('Ext.data.Store', {
+        model: 'flow',
+        data: [
+            {'id': 1, 'text': '按流水号自动编码'},
+            {'id': 2, 'text': '按产品型号编码'},
+            {'id': 3, 'text': '申请人填写'},
+            {'id': 4, 'text': '审核人填写'}
+        ]
+    });
+
+    var flowRender = function (val){
+        if(val > 0){
+            var idx = 0;
+
+            if(isNaN(val)){
+                // Not Number
+                idx = flowStore.find('text', val);
+            }else{
+                // Number
+                idx = flowStore.find('id', val);
+            }
+
+            if(idx >= 0){
+                var rec = flowStore.getAt(idx);
+                return rec.get('text');
+            }
+
+            return val;
+        }else{
+            return '无';
+        }
+    };
+
+    var treePanel = Ext.create('Ext.tree.Panel', {
+        //loadMask: true,
+        useArrows: true,
+        rootVisible: false,
+        border:0,
+        layout: 'fit',
+        plugins: [
+            Ext.create('Ext.grid.plugin.CellEditing', {
+                clicksToEdit: 2
+            })
+        ],
+        store: treeStore,
+        xtype: 'cell-editing',
+        animate: false,
+        viewConfig: {
+            plugins: {
+                ptype: 'treeviewdragdrop',
+                containerScroll: true
+            },
+            getRowClass: function(record) {
+                if(!record.get('active')){
+                    // 当启用状态为false时，设置背景色
+                    return 'gray-row';
+                }else if(record.get('name') == '新类别'){
+                    // 当新增部门未取名时，设置背景色
+                    return 'light-red-row';
+                }
+            }
+        },
+        tbar: [{
+            text: '全部展开',
+            handler: function(){
+	        	if(this.text == '全部展开') {
+	        		treePanel.expandAll();
+	        		this.setText('全部折叠');
+	        	} else {
+	        		treePanel.collapseAll();
+	        		this.setText('全部展开');
+	        	}
+            }
+        }, {
+            text: '添加类别',
+            scope: this,
+            handler: function(){
+                var selModel = treePanel.getSelectionModel();
+
+                if(selModel.hasSelection()){
+                    var selDataModel = selModel.getLastSelected();
+                    var selNode = treeStore.getNodeById(selDataModel.internalId);
+
+                    if(selNode != undefined && selNode.data['id'] != undefined){
+                        // 当新增子节点时，如父节点原先没有子节点，则需要更新父节点Leaf属性
+                        if(selNode.isLeaf()){
+                            selNode.data['leaf'] = false;
+                        }
+
+                        // 新增节点
+                        selNode.appendChild({
+                            name: '新类别',
+                            auto: 1,
+                            sn_length: 4,
+                            active: true,
+                            leaf: true,
+                            parent_id: selNode.data['id']
+                        });
+
+                        // 新增节点自动展开
+                        selNode.expand();
+                    }else{
+                        Ext.MessageBox.alert('提示', '请先保存新增上级类别信息！');
+                    }
+                }else{
+                    var node = treeStore.getRootNode();
+                    node.appendChild({
+                        name: '新类别',
+                        auto: 1,
+                        sn_length: 4,
+                        active: true,
+                        leaf: true,
+                        parent_id: 0
+                    });
+                }
+            }
+        }, {
+            text: '删除类别',
+            scope: this,
+            handler: function(){
+                var selModel = treePanel.getSelectionModel();
+
+                if(selModel.hasSelection()){
+                    var selDataModel = selModel.getLastSelected();
+                    var selNode = treeStore.getNodeById(selDataModel.internalId);
+
+                    // 获取父节点
+                    var parentNode = selNode.parentNode;
+
+                    // 当父节点仅有一个子节点，修改父节点Leaf属性
+                    if(parentNode.childNodes.length == 1){
+                        parentNode.data['leaf'] = true;
+                    }
+
+                    // 移除当前节点
+                    selNode.remove();
+                }else{
+                    Ext.MessageBox.alert('提示', '没有选择删除对象！');
+                }
+            }
+        }, {
+            text: '保存修改',
+            scope: this,
+            handler: function(){
+                var updateRecords = treeStore.getUpdatedRecords();
+                var insertRecords = treeStore.getNewRecords();
+                var deleteRecords = treeStore.getRemovedRecords();
+
+                // 判断是否有修改数据
+                if(updateRecords.length + insertRecords.length + deleteRecords.length > 0){
+                    var changeRows = {
+                            updated:    [],
+                            inserted:   [],
+                            deleted:    []
+                    }
+
+                    // 判断类别名称是否有为空的情况
+                    var valueCheck = true;
+                    var msg = "";
+
+                    for(var i = 0; i < updateRecords.length; i++){
+                        var data = updateRecords[i].data;
+                        if(data['code'] == '') {
+                            valueCheck = false;
+                            msg = "“代码”不能为空";
+                            break;
+                        }
+                        if(data['name'] == '' || data['name'] == '新类别'){
+                            valueCheck = false;
+                            msg = "类别名称不能为空或“新类别”";
+                            break;
+                        }
+
+                        changeRows.updated.push(data)
+                    }
+
+                    for(var i = 0; i < insertRecords.length; i++){
+                        var data = insertRecords[i].data;
+
+                        if(data['code'] == '') {
+                            valueCheck = false;
+                            msg = "“代码”不能为空";
+                            break;
+                        }
+                        if(data['name'] == '' || data['name'] == '新类别'){
+                            valueCheck = false;
+                            msg = "类别名称不能为空或“新类别”";
+                            break;
+                        }
+
+                        changeRows.inserted.push(data)
+                    }
+
+                    for(var i = 0; i < deleteRecords.length; i++){
+                        changeRows.deleted.push(deleteRecords[i].data)
+                    }
+
+                    // 格式正确则提交修改数据
+                    if(valueCheck){
+                        Ext.MessageBox.confirm('确认', '确定保存修改内容？', function(button, text){
+                            if(button == 'yes'){
+                                var json = Ext.JSON.encode(changeRows);
+
+                                Ext.Msg.wait('提交中，请稍后...', '提示');
+                                Ext.Ajax.request({
+                                    url: '<?php echo HOME_PATH; ?>/public/product/type/edit',
+                                    params: {json: json},
+                                    method: 'POST',
+                                    success: function(response, options) {
+                                        var data = Ext.JSON.decode(response.responseText);
+
+                                        if(data.success){
+                                            Ext.MessageBox.alert('提示', data.info);
+                                            treeStore.reload();
+                                        }else{
+                                            Ext.MessageBox.alert('错误', data.info);
+                                        }
+                                    },
+                                    failure: function(form, action){
+                                        Ext.MessageBox.alert('错误', action.result.info);
+                                    }
+                                });
+                            }
+                        });
+                    }else{
+                        Ext.MessageBox.alert('提示', msg);
+                    }
+                }else{
+                    Ext.MessageBox.alert('提示', '没有修改任何数据！');
+                }
+            }
+        }, {
+            text: '导出',
+            iconCls: 'icon-export',
+            handler: function() {
+                Ext.Msg.wait('加载中，请稍后...', '提示');
+                Ext.Ajax.request({
+                    url: '<?php echo HOME_PATH; ?>/public/product/type/exportcsv',
+                    method: 'GET',
+                    success: function(response, options) {
+                        var url = '<?php echo HOME_PATH; ?>/public/dcc/download/downcsv/path/' + response.responseText;
+                        Ext.Msg.hide();
+                        window.open(url);
+                    }
+                });
+            }
+        }, {
+            text: '刷新',
+            scope: this,
+            handler: function(){treeStore.reload();flowStore.reload();}
+        }],
+        columns: [{
+            text: 'ID',
+            width: 40,
+            hidden: true,
+            dataIndex: 'id'
+        }, {
+            xtype: 'treecolumn',
+            text: '代码',
+            width: 120,
+            sortable: true,
+            dataIndex: 'code',
+            editor: {
+                xtype: 'textfield',
+                allowBlank: false
+            }
+        },{
+            text: '名称',
+            width: 140,
+            dataIndex: 'name',
+            editor: 'textfield',
+            renderer: showTitle
+        },{
+            xtype: 'checkcolumn',
+            text: '启用状态',
+            width: 80,
+            dataIndex: 'active',
+            stopSelection: false
+        },{
+            text: '编码方式',
+            width: 120,
+            dataIndex: 'auto',
+            editor: new Ext.form.field.ComboBox({
+                editable: false,
+                displayField: 'text',
+                valueField: 'id',
+                triggerAction: 'all',
+                lazyRender: true,
+                store: codeMethodStore,
+                queryMode: 'local'
+            }),
+            renderer: function(val) {
+                if(val > 0){
+                    var idx = 0;
+                    if(isNaN(val)){
+                        // Not Number
+                        idx = codeMethodStore.find('text', val);
+                    }else{
+                        // Number
+                        idx = codeMethodStore.find('id', val);
+                    }
+
+                    if(idx >= 0){
+                        var rec = codeMethodStore.getAt(idx);
+                        return rec.get('text');
+                    }
+
+                    return val;
+                }else{
+                    return '无';
+                }
+            }
+        },{
+            xtype: 'checkcolumn',
+            text: '是否BOM',
+            width: 80,
+            dataIndex: 'bom',
+            stopSelection: false
+        },{
+            text: '流水号长度',
+            width: 90,
+            dataIndex: 'sn_length',
+            renderer: function(val, p, record) {
+                if((record.data.auto == 1 || record.data.auto == 2) && record.data.leaf) {
+                    return val;
+                }
+                return '-';
+            },
+            editor: {
+                xtype: 'numberfield',
+                allowBlank: false,
+                maxValue: 11,
+                minValue: 0,
+                allowDecimals:false,
+                decimalPrecision:0
+            }
+        },{
+            text: '归档审批流程',
+            width: 100,
+            dataIndex: 'new_flow_id',
+            editor: new Ext.form.field.ComboBox({
+                editable: false,
+                displayField: 'text',
+                valueField: 'id',
+                triggerAction: 'all',
+                lazyRender: true,
+                store: flowStore,
+                queryMode: 'local'
+            }),
+            renderer: flowRender
+        },{
+            text: '变更审批流程',
+            width: 100,
+            dataIndex: 'upd_flow_id',
+            editor: new Ext.form.field.ComboBox({
+                editable: false,
+                displayField: 'text',
+                valueField: 'id',
+                triggerAction: 'all',
+                lazyRender: true,
+                store: flowStore,
+                queryMode: 'local'
+            }),
+            renderer: flowRender
+        },{
+            text: '转化审批流程',
+            width: 100,
+            dataIndex: 'del_flow_id',
+            editor: new Ext.form.field.ComboBox({
+                editable: false,
+                displayField: 'text',
+                valueField: 'id',
+                triggerAction: 'all',
+                lazyRender: true,
+                store: flowStore,
+                queryMode: 'local'
+            }),
+            renderer: flowRender
+        },{
+            text: '描述',
+            width: 200,
+            dataIndex: 'description',
+            editor: 'textfield',
+            renderer: showTitle
+        },{
+            text: '描述规则(举例)',
+            width: 200,
+            dataIndex: 'example',
+            editor: 'textfield',
+            renderer: showTitle
+        },{
+            text: '数据手册',
+            width: 120,
+            dataIndex: 'datafile_flg',
+            editor: new Ext.form.field.ComboBox({
+                typeAhead: true,
+                editable: false,
+                triggerAction: 'all',
+                displayField: 'text',
+                valueField: 'val',
+                store: neddStore
+            }),
+            renderer: function(val){
+                if(val == 1){
+                    return '需要（不强制）';
+                }else if(val == 2){
+                    return '需要（强制）';
+                } else {
+                	return '不需要';
+                }
+            }
+        },{
+            text: 'TSR',
+            width: 120,
+            dataIndex: 'tsr_flg',
+            editor: new Ext.form.field.ComboBox({
+                typeAhead: true,
+                editable: false,
+                triggerAction: 'all',
+                displayField: 'text',
+                valueField: 'val',
+                store: neddStore
+            }),
+            renderer: function(val){
+                if(val == 1){
+                    return '需要（不强制）';
+                }else if(val == 2){
+                    return '需要（强制）';
+                } else {
+                	return '不需要';
+                }
+            }
+        },{
+            text: '样品验证报告',
+            width: 120,
+            dataIndex: 'checkreport_flg',
+            editor: new Ext.form.field.ComboBox({
+                typeAhead: true,
+                editable: false,
+                triggerAction: 'all',
+                displayField: 'text',
+                valueField: 'val',
+                store: neddStore
+            }),
+            renderer: function(val){
+                if(val == 1){
+                    return '需要（不强制）';
+                }else if(val == 2){
+                    return '需要（强制）';
+                } else {
+                	return '不需要';
+                }
+            }
+        }, {
+            text: '备注',
+            width: 120,
+            dataIndex: 'remark',
+            editor: 'textfield',
+            renderer: showTitle
+        }, {
+            text: '添加人',
+            width: 80,
+            dataIndex: 'creater'
+        }, {
+            text: '添加日期',
+            width: 120,
+            dataIndex: 'create_time',
+            renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+        }],
+        listeners: {
+            'itemclick': function(treeview, record, item, index, e, opts){
+                treeview.toggleOnDblClick = false;
+                if(!record.get('leaf')){
+                    var selModel = treePanel.getSelectionModel();
+                    var selDataModel = selModel.getLastSelected();
+                    var selNode = treeStore.getNodeById(selDataModel.internalId);
+
+                    selNode.expand();
+                }
+            }
+        }
+    });
+
+    Ext.create('Ext.container.Viewport', {
+        layout: 'border',
+        border:0,
+        rtl: true,
+        items: [{
+            region: 'center',
+            border:0,
+            layout: 'fit',
+            plain: true,
+            items:[treePanel]
+        }]
+    });
+});
+</script>
+</head>
+<body>
+</body>
+</html>

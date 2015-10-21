@@ -1,0 +1,428 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+Ext.require([
+    'Ext.*'
+]);
+
+//选项数据模型
+Ext.define('Selection', {
+    extend: 'Ext.data.Model',
+    fields: [{name: 'id', type: 'int'}, {name: 'name'}, {name: 'text'}, {name: 'rate'}, {name: 'description'}]
+});
+
+//部门
+var deptStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/hra/dept/getdept/option/list'
+    },
+    autoLoad: true
+});
+
+var typeListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/erp/purchse_req/gettype/option/list'
+    },
+    autoLoad: true
+});
+
+// 查询结果数据模型
+Ext.define('Search', {
+    extend: 'Ext.data.Model',
+    fields: [{name: "item_id"},
+             {name: "item_active"},
+             {name: "item_code"},
+             {name: "item_name"},
+             {name: "item_description"},
+             {name: "item_qty"},
+             {name: "item_unit"},
+             {name: "item_date_req"},
+             {name: "item_supplier"},
+             {name: "item_dept_id",type:"int"},
+             {name: "item_remark"},
+             {name: "item_project_info"},
+             {name: "item_model"},
+             {name: "req_id"},
+             {name: "req_active"},
+             {name: "req_state"},
+             {name: "req_number"},
+             {name: "req_dept_id",type:"int"},
+             {name: "req_review_info"},
+             {name: "req_reason"},
+             {name: "req_remark"},
+             {name: "req_type_name"},
+             {name: "req_order_qty"},
+             {name: "order_item_request_date"},
+             {name: "order_item_active"},
+             {name: "order_id"},
+             {name: "order_active"},
+             {name: "order_state"},
+             {name: "order_number"},
+             {name: "order_request_date"},
+             {name: "order_description"},
+             {name: "order_remark"},
+             {name: "create_time",type: 'date',dateFormat: 'timestamp'},
+             {name: "creater"}]
+});
+
+// 数据源
+var searchStore = Ext.create('Ext.data.ArrayStore', {
+    model: 'Search',
+    pageSize: 50,
+    proxy: {
+        type: 'ajax',
+        reader: {
+            type: 'json',
+            root: 'rows',
+            totalProperty: 'total'
+        },
+        url: homePath+'/public/erp/purchse_statistics_search/getsearch'
+    },
+    listeners: {
+    	beforeload: loadSearch
+    }
+});
+
+function loadSearch(){
+	var key = Ext.getCmp('search_key').getValue();
+	var active = Ext.JSON.encode(Ext.getCmp('search_active').getValue());
+	var type = Ext.JSON.encode(Ext.getCmp('search_type').getValue());
+	var dept = Ext.JSON.encode(Ext.getCmp('search_dept').getValue());
+	var date_from = Ext.Date.format(Ext.getCmp('search_date_from').getValue(), 'Y-m-d');
+    var date_to = Ext.Date.format(Ext.getCmp('search_date_to').getValue(), 'Y-m-d');
+    
+	Ext.apply(searchStore.proxy.extraParams, {
+		key: key,
+		active: active,
+		date_from: date_from,
+		date_to: date_to,
+		type: type,
+		dept: dept
+    });
+};
+
+var deptRender = function (val){
+	if(val > 0){
+		index = deptStore.findExact('id',val); 
+        if (index != -1){
+            rs = deptStore.getAt(index).data; 
+            return rs.name; 
+        }
+        return val;
+	}else{
+		return '无';
+	}
+};
+
+var activeRender = function(value, metaData, record, colIndex, store, view) {
+	if(value == 1){
+	    return '<img src="'+homePath+'/public/images/icons/ok.png"></img>';
+	}else{
+	    return '<img src="'+homePath+'/public/images/icons/cross.gif"></img>';
+	}
+};
+
+var longTextRender = function(val, cellmeta, record){
+	cellmeta.tdAttr = 'data-qtip="' + val + '"';
+	return val;
+};
+
+// 查询列表
+var searchGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
+	extend: 'Ext.grid.Panel',
+    xtype: 'locking-grid',
+    border: 0,
+	store: searchStore,
+	border: 0,
+    columnLines: true,
+    tbar: [{
+    	xtype: 'combobox',
+        id: 'search_active',
+        value: 1,
+        editable: false,
+        displayField: 'text',
+        valueField: 'val',
+        width: 70,
+        store: Ext.create('Ext.data.Store', {
+            fields: ['text', 'val'],
+            data: [
+                {"text": "启用", "val": 1},
+                {"text": "取消", "val": 0}
+            ]
+        }),
+        listeners: {
+            change: function(){
+            	searchStore.loadPage(1);
+            }
+        }
+    }, {
+        xtype: 'combobox',
+        id: 'search_dept',
+        emptyText: '申请部门...',
+        displayField: 'name',
+        valueField: 'id',
+        width: 100,
+        store: deptStore,
+        queryMode: 'local',
+        multiSelect: true
+    }, {
+        xtype: 'combobox',
+        id: 'search_type',
+        emptyText: '采购类别...',
+        displayField: 'name',
+        valueField: 'id',
+        width: 100,
+        store: typeListStore,
+        queryMode: 'local',
+        multiSelect: true
+    }, {
+        xtype: 'datefield',
+        format: 'Y-m-d',
+        width: 100,
+        id: 'search_date_from',
+        emptyText: '申请日期从...'
+    }, {
+        xtype: 'datefield',
+        format: 'Y-m-d',
+        width: 100,
+        id: 'search_date_to',
+        emptyText: '申请日期至...'
+    }, {
+        xtype: 'textfield',
+        id: 'search_key',
+        emptyText: '关键字...',
+        width: 100,
+        listeners: {
+        	specialKey :function(field,e){
+                if (e.getKey() == Ext.EventObject.ENTER){
+                	searchStore.loadPage(1);
+                }
+            }
+        }
+    }, {
+        xtype: 'splitbutton',
+        text: '查询',
+        iconCls: 'icon-search',
+        handler: function(){
+            searchStore.loadPage(1);
+        },
+        menu: [{
+            text: '导出',
+            iconCls: 'icon-export',
+            handler: function(){
+            	//window.open(homePath+'/public/admin/account/exportcsv');
+            }
+        }]
+    }],
+    viewConfig: {
+        stripeRows: false,// 取消偶数行背景色
+        getRowClass: function(record) {
+            if(record.get('active') == 0){
+                return 'gray-row';
+            }
+        }
+    },
+    columns: [{
+        xtype: 'rownumberer'
+    }, {
+        text: '采购申请 - 申请单',
+        defaults: {width: 50, align: 'center'},
+        columns: [{
+        	text: 'ID',
+            dataIndex: 'req_id',
+            locked: true
+        }, {
+        	text: '启用',
+        	renderer: activeRender,
+            dataIndex: 'req_active',
+            locked: true
+        }, {
+        	text: '状态',
+            dataIndex: 'req_state',
+            locked: true
+        }, {
+        	text: '申请单号',
+            dataIndex: 'req_number',
+            width: 100,
+            locked: true
+        }, {
+        	text: '类别',
+            dataIndex: 'req_type_name',
+            width: 100
+        }, {
+        	text: '申请部门',
+            dataIndex: 'req_dept_id',
+            renderer: deptRender,
+            width: 100
+        }, {
+        	text: '审核日志',
+            dataIndex: 'req_review_info',
+            hidden: true,
+            renderer: longTextRender,
+            width: 120
+        }, {
+        	text: '事由',
+            dataIndex: 'req_reason',
+            renderer: longTextRender,
+            width: 120
+        }, {
+        	text: '备注',
+            dataIndex: 'req_remark',
+            renderer: longTextRender,
+            width: 120
+        }]
+    }, {
+        text: '采购申请 - 订单项',
+        defaults: {width: 50, align: 'center'},
+        columns: [{
+        	text: 'ID',
+            dataIndex: 'item_id'
+        }, {
+        	text: '启用',
+        	renderer: activeRender,
+            dataIndex: 'item_active'
+        }, {
+        	text: '物料号',
+            dataIndex: 'item_code',
+            width: 100
+        }, {
+        	text: '名称',
+            dataIndex: 'item_name',
+            width: 100
+        }, {
+        	text: '描述',
+            dataIndex: 'item_description',
+            renderer: longTextRender,
+            width: 120
+        }, {
+        	text: '数量',
+            dataIndex: 'item_qty'
+        }, {
+        	text: '单位',
+            dataIndex: 'item_unit'
+        }, {
+        	text: '需求日期',
+            dataIndex: 'item_date_req',
+            width: 100
+        }, {
+        	text: '供应商',
+            dataIndex: 'item_supplier',
+            width: 120
+        }, {
+        	text: '需求部门',
+            dataIndex: 'item_dept_id',
+            renderer: deptRender,
+            width: 100
+        }, {
+        	text: '备注',
+            dataIndex: 'item_remark',
+            renderer: longTextRender,
+            width: 120
+        }, {
+        	text: '项目信息',
+            dataIndex: 'item_project_info',
+            renderer: longTextRender,
+            width: 120
+        }, {
+        	text: '型号',
+            dataIndex: 'item_model',
+            width: 120
+        }]
+    }, {
+        text: '采购订单 - 订单',
+        defaults: {width: 50, align: 'center'},
+        columns: [{
+            text: 'ID',
+            dataIndex: 'order_id'
+        }, {
+            text: '启用',
+        	renderer: activeRender,
+            dataIndex: 'order_active'
+        }, {
+            text: '状态',
+            dataIndex: 'order_state'
+        }, {
+            text: '订单号',
+            dataIndex: 'order_number',
+            width: 120
+        }, {
+            text: '交货日期',
+            dataIndex: 'order_request_date',
+            width: 100
+        }, {
+            text: '描述',
+            dataIndex: 'order_description',
+            renderer: longTextRender,
+            width: 120
+        }, {
+            text: '备注',
+            dataIndex: 'order_remark',
+            renderer: longTextRender,
+            width: 120
+        }]
+    }, {
+        text: '采购订单 - 订单项',
+        defaults: {width: 50, align: 'center'},
+        columns: [{
+        	text: '数量',
+            dataIndex: 'req_order_qty',
+            width: 80
+        }, {
+        	text: '交货日期',
+            dataIndex: 'order_item_request_date',
+            width: 100
+        }, {
+        	text: '启用',
+        	renderer: activeRender,
+            dataIndex: 'order_item_active'
+        }]
+    }, {
+        text: '创建人',
+        hidden: true,
+        dataIndex: 'creater',
+        align: 'center',
+        width: 80
+    }, {
+        text: '创建时间',
+        hidden: true,
+        dataIndex: 'create_time',
+        align: 'center',
+        renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+        width: 140
+    }],
+    bbar: Ext.create('Ext.PagingToolbar', {
+    	border: 0,
+        store: searchStore,
+        displayInfo: true,
+        displayMsg: '显示 {0} - {1} 共 {2}',
+        emptyMsg: "没有数据"
+    })
+});
+
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+    
+    Ext.create('Ext.Viewport', {
+        layout: 'border',
+        items: [{
+            region: 'center',
+            border: 0,
+            layout: 'fit',
+            items: [searchGrid]
+        }]
+    });
+});
+</script>
+</head>
+<body>
+</body>
+</html>

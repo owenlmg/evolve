@@ -1,0 +1,554 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+Ext.require([
+    'Ext.*'
+]);
+
+//选项数据模型
+Ext.define('Selection', {
+    extend: 'Ext.data.Model',
+    fields: [{name: 'id', type: 'int'}, {name: 'name'}, {name: 'text'}]
+});
+
+//部门
+var deptStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/hra/dept/getdept/option/list'
+    },
+    autoLoad: true
+});
+
+var typeListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/erp/purchse_req/gettype/option/list'
+    },
+    autoLoad: true
+});
+
+// 查询结果数据模型
+Ext.define('Req', {
+    extend: 'Ext.data.Model',
+    fields: [{name: "req_number"},
+             {name: "req_state"},
+             {name: "req_dept"},
+             {name: "req_dept_id",type:"int"},
+             {name: "req_type"},
+             {name: "req_type_id",type:"int"},
+             {name: "req_release_time"},
+             {name: "req_reason"},
+             {name: "req_remark"},
+             {name: "req_creater"},
+             {name: "req_applier"},
+             {name: "req_create_time"},
+             {name: "req_updater"},
+             {name: "req_update_time"},
+             {name: "id"},
+             {name: "active"},
+             {name: "name"},
+             {name: "description"},
+             {name: "qty"},
+             {name: "qty_order"},
+             {name: "qty_left"},
+             {name: "unit"},
+             {name: "price"},
+             {name: "line_total"},
+             {name: "date_req"},
+             {name: "supplier"},
+             {name: "dept"},
+             {name: "order_item_ids"},
+             {name: "order_number"},
+             {name: "order_info"},
+             {name: "receive_qty"},
+             {name: "receive_info"},
+             {name: "dept_id",type:"int"},
+             {name: "project_info"},
+             {name: "code"},
+             {name: "model"},
+             {name: "remark"},
+             {name: "delivery_date"},
+             {name: "delivery_date_remark"},
+             {name: "delivery_reply_log"},
+             {name: "order_req_num"},
+             {name: "customer_address"},
+             {name: "in_stock_qty"},
+             {name: "in_stock_info"},
+             {name: "customer_aggrement"}]
+});
+
+// 数据源
+var reqStore = Ext.create('Ext.data.ArrayStore', {
+    model: 'Req',
+    pageSize: 100,
+    groupField: 'req_number',
+    proxy: {
+        type: 'ajax',
+        reader: {
+            type: 'json',
+            root: 'rows',
+            totalProperty: 'total'
+        },
+        url: homePath+'/public/erp/purchse_statistics_req/getreq'
+    },
+    listeners: {
+    	beforeload: loadReq
+    }
+});
+
+var groupingFeature = Ext.create('Ext.grid.feature.Grouping',{
+	groupHeaderTpl: '[{[values.rows[0].data.req_state]}] {name}：{rows.length} 项 [申请部门：{[values.rows[0].data.req_dept]}] [采购类别：{[values.rows[0].data.req_type]}] [制单人：{[values.rows[0].data.req_creater]}]',
+    hideGroupedHeader: true,
+    //startCollapsed: true,
+    id: 'reqListGrouping'
+});
+
+function loadReq(){
+	var key = Ext.getCmp('search_key').getValue();
+	var state = Ext.getCmp('search_state').getValue();
+	var applier = Ext.getCmp('search_applier').getValue();
+	var complete = Ext.JSON.encode(Ext.getCmp('search_complete').getValue());
+	var type = Ext.JSON.encode(Ext.getCmp('search_type').getValue());
+	var dept = Ext.JSON.encode(Ext.getCmp('search_dept').getValue());
+	var date_from = Ext.Date.format(Ext.getCmp('search_date_from').getValue(), 'Y-m-d');
+    var date_to = Ext.Date.format(Ext.getCmp('search_date_to').getValue(), 'Y-m-d');
+    
+	Ext.apply(reqStore.proxy.extraParams, {
+		key: key,
+		state: state,
+		applier: applier,
+		complete: complete,
+		date_from: date_from,
+		date_to: date_to,
+		type: type,
+		dept: dept
+    });
+};
+
+var activeRender = function(value, meta, record, colIndex, store, view) {
+	meta.style = 'padding:0;';
+	if(value == 1){
+	    return '<img src="'+homePath+'/public/images/icons/ok.png"></img>';
+	}else{
+	    return '<img src="'+homePath+'/public/images/icons/cross.gif"></img>';
+	}
+};
+
+var longTextRender = function(val, cellmeta, record){
+	cellmeta.tdAttr = 'data-qtip="' + val + '"';
+	return val;
+};
+
+// 查询列表
+var reqGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
+	extend: 'Ext.grid.Panel',
+    xtype: 'locking-grid',
+    border: 0,
+	store: reqStore,
+    columnLines: true,
+    features: [groupingFeature],
+    tbar: [{
+    	xtype: 'combobox',
+        id: 'search_state',
+        emptyText: '申请状态...',
+        displayField: 'text',
+        valueField: 'val',
+        width: 100,
+        store: Ext.create('Ext.data.Store', {
+            fields: ['text', 'val'],
+            data: [
+                {"text": "批准", "val": 2},
+                {"text": "审核中", "val": 1},
+                {"text": "拒绝", "val": 0},
+                {"text": "取消", "val": 3}
+            ]
+        }),
+        listeners: {
+            change: function(){
+            	reqStore.loadPage(1);
+            }
+        }
+    }, {
+    	xtype: 'combobox',
+    	hidden: true,
+        id: 'search_complete',
+        value: 1,
+        displayField: 'text',
+        valueField: 'val',
+        width: 70,
+        store: Ext.create('Ext.data.Store', {
+            fields: ['text', 'val'],
+            data: [
+                {"text": "未清", "val": 0},
+                {"text": "已清", "val": 1}
+            ]
+        }),
+        listeners: {
+            change: function(){
+            	reqStore.loadPage(1);
+            }
+        }
+    }, {
+        xtype: 'combobox',
+        id: 'search_dept',
+        emptyText: '申请部门...',
+        displayField: 'name',
+        valueField: 'id',
+        width: 100,
+        store: deptStore,
+        queryMode: 'local',
+        multiSelect: true
+    }, {
+        xtype: 'combobox',
+        id: 'search_type',
+        emptyText: '采购类别...',
+        displayField: 'name',
+        valueField: 'id',
+        width: 100,
+        store: typeListStore,
+        queryMode: 'local',
+        multiSelect: true
+    }, {
+        xtype: 'datefield',
+        format: 'Y-m-d',
+        width: 100,
+        id: 'search_date_from',
+        emptyText: '申请日期从...'
+    }, {
+        xtype: 'datefield',
+        format: 'Y-m-d',
+        width: 100,
+        id: 'search_date_to',
+        emptyText: '申请日期至...'
+    }, {
+        xtype: 'textfield',
+        id: 'search_applier',
+        emptyText: '申请人...',
+        width: 100,
+        listeners: {
+        	specialKey :function(field,e){
+                if (e.getKey() == Ext.EventObject.ENTER){
+                	reqStore.loadPage(1);
+                }
+            }
+        }
+    }, {
+        xtype: 'textfield',
+        id: 'search_key',
+        emptyText: '关键字...',
+        width: 100,
+        listeners: {
+        	specialKey :function(field,e){
+                if (e.getKey() == Ext.EventObject.ENTER){
+                	reqStore.loadPage(1);
+                }
+            }
+        }
+    }, {
+        xtype: 'splitbutton',
+        text: '查询',
+        iconCls: 'icon-search',
+        handler: function(){
+            reqStore.loadPage(1);
+        },
+        menu: [{
+            text: '导出',
+            //disabled: true,
+            iconCls: 'icon-export',
+            handler: function(){
+            	var key = Ext.getCmp('search_key').getValue();
+            	var state = Ext.getCmp('search_state').getValue();
+            	var applier = Ext.getCmp('search_applier').getValue();
+            	var complete = Ext.JSON.encode(Ext.getCmp('search_complete').getValue());
+            	var type = Ext.JSON.encode(Ext.getCmp('search_type').getValue());
+            	var dept = Ext.JSON.encode(Ext.getCmp('search_dept').getValue());
+            	var date_from = Ext.Date.format(Ext.getCmp('search_date_from').getValue(), 'Y-m-d');
+                var date_to = Ext.Date.format(Ext.getCmp('search_date_to').getValue(), 'Y-m-d');
+                
+            	window.open(homePath+'/public/erp/purchse_statistics_req/getreq/option/csv/key/' + key + '/state/' + state + '/applier/' + applier + '/complete/' + complete + '/type/' + type + '/dept/' + dept + '/date_from/' + date_from + '/date_to/' + date_to);
+            }
+        }]
+    }],
+    viewConfig: {
+        stripeRows: false,// 取消偶数行背景色
+        getRowClass: function(record) {
+            if(record.get('active') == 0 || record.get('req_state') == '拒绝'){
+                return 'light-red-row';
+            }else if(record.get('qty_left' == 0)){
+                return 'gray-row';
+            }
+        }
+    },
+    columns: [{
+        xtype: 'rownumberer'
+    }, {
+        text: '启用',
+        locked: true,
+        dataIndex: 'active',
+        align: 'center',
+        renderer: activeRender,
+        width: 50
+    }, {
+        text: '申请单号',
+        locked: true,
+        dataIndex: 'req_number',
+        align: 'center',
+        width: 100
+    }, {
+        text: '类别',
+        locked: true,
+        dataIndex: 'req_type',
+        align: 'center',
+        width: 100
+    }, {
+        text: '申请部门',
+        locked: true,
+        dataIndex: 'req_dept',
+        width: 110
+    }, {
+        text: '需求部门',
+        locked: true,
+        dataIndex: 'dept',
+        width: 110
+    }, {
+        text: '物料号',
+        locked: true,
+        dataIndex: 'code',
+        align: 'center',
+        width: 140
+    }, {
+        text: '描述',
+        locked: true,
+        dataIndex: 'description',
+        renderer: longTextRender,
+        width: 200
+    }, {
+        text: '型号',
+        locked: true,
+        dataIndex: 'model',
+        width: 160
+    }, {
+        text: '申请数量',
+        dataIndex: 'qty',
+        align: 'center',
+        renderer: function(val, meta, record){
+        	meta.style = 'background-color: #DFFFDF';
+        	
+        	return val;
+        },
+        width: 80
+    }, {
+        text: '下单数量',
+        dataIndex: 'qty_order',
+        align: 'center',
+        renderer: function(val, meta, record){
+        	meta.style = 'background-color: #FFFFDF';
+        	
+        	return val;
+        },
+        width: 80
+    }, {
+        text: '采购订单',
+        dataIndex: 'order_info',
+        renderer: function(val, meta, record){
+        	meta.tdAttr = 'data-qtip="' + val.replace(/,/g, '<br>') + '"';
+        	meta.style = 'background-color: #FFFFDF;overflow:auto;padding: 2px 2px;text-overflow: ellipsis;white-space: nowrap;white-space:normal;line-height:16px;';
+        	
+        	return val.replace(/,/g, '<br>');
+        },
+        width: 300
+    }, {
+        text: '到货数量',
+        dataIndex: 'receive_qty',
+        renderer: function(val, meta, record){
+        	meta.style = 'background-color: #FFFFDF';
+        	
+        	return val;
+        },
+        width: 80
+    }, {
+        text: '到货信息',
+        dataIndex: 'receive_info',
+        renderer: function(val, meta, record){
+        	meta.tdAttr = 'data-qtip="' + val.replace(/,/g, '<br>') + '"';
+        	meta.style = 'background-color: #FFFFDF;overflow:auto;padding: 2px 2px;text-overflow: ellipsis;white-space: nowrap;white-space:normal;line-height:16px;';
+        	
+        	return val.replace(/,/g, '<br>');
+        },
+        width: 300
+    }, {
+        text: '入库数量',
+        dataIndex: 'in_stock_qty',
+        renderer: function(val, meta, record){
+        	meta.style = 'background-color: #DFFFDF';
+        	
+        	return val;
+        },
+        width: 80
+    }, {
+        text: '入库信息',
+        dataIndex: 'in_stock_info',
+        renderer: function(val, meta, record){
+        	meta.tdAttr = 'data-qtip="' + val.replace(/,/g, '<br>') + '"';
+        	meta.style = 'background-color: #DFFFDF;overflow:auto;padding: 2px 2px;text-overflow: ellipsis;white-space: nowrap;white-space:normal;line-height:16px;';
+        	
+        	return val.replace(/,/g, '<br>');
+        },
+        width: 300
+    }, {
+        text: '未下单数量',
+        dataIndex: 'qty_left',
+        align: 'center',
+        renderer: function(val, meta, record){
+        	meta.style = 'background-color: #F0F0F0';
+        	
+        	return val;
+        },
+        width: 80
+    }, {
+        text: '需求日期',
+        dataIndex: 'date_req',
+        align: 'center',
+        renderer: function(val, meta, record){
+        	meta.style = 'background-color: #DFFFDF';
+        	
+        	return val;
+        },
+        width: 80
+    }, {
+        text: '预计交期',
+        dataIndex: 'delivery_date',
+        align: 'center',
+        renderer: function(val, meta, record){
+        	meta.style = 'background-color: #FFECEC;color: #0000FF; font-weight: bold';
+        	
+        	return Ext.util.Format.date(val, 'Y-m-d');
+        },
+        width: 100
+    }, {
+        text: '交期备注',
+        dataIndex: 'delivery_date_remark',
+        renderer: function(val, meta, record){
+        	meta.style = 'background-color: #FFECEC;color: #0000FF;';
+        	
+        	return val;
+        },
+        width: 180
+    }, {
+        text: '交期回复日志',
+        dataIndex: 'delivery_reply_log',
+        renderer: function(val, meta, record){
+        	meta.style = 'background-color: #FFECEC;color: #0000FF;overflow:auto;padding: 2px 2px;text-overflow: ellipsis;white-space: nowrap;white-space:normal;line-height:16px;';
+        	
+        	return val.replace(/,/g, '<br>');//.replace(/[/g, '<b>').replace(/]/g, '</b>')
+        },
+        width: 300
+    }, {
+        text: '名称',
+        dataIndex: 'name',
+        width: 160
+    }, {
+        text: '订货产品出库申请号',
+        dataIndex: 'order_req_num',
+        width: 160
+    }, {
+        text: '客户收件人地址简码',
+        dataIndex: 'customer_address',
+        width: 160
+    }, {
+        text: '客户合同号',
+        dataIndex: 'customer_aggrement',
+        width: 120
+    }, {
+        text: '备注',
+        dataIndex: 'remark',
+        renderer: longTextRender,
+        width: 100
+    }, {
+        text: '制单人',
+        dataIndex: 'req_creater',
+        renderer: longTextRender,
+        width: 100
+    }, {
+        text: '申请人',
+        dataIndex: 'req_applier',
+        renderer: longTextRender,
+        width: 100
+    }, {
+        text: '申请事由',
+        dataIndex: 'req_reason',
+        renderer: longTextRender,
+        width: 160
+    }, {
+        text: '项目信息',
+        dataIndex: 'project_info',
+        renderer: longTextRender,
+        width: 160
+    }, {
+        text: '申请备注',
+        dataIndex: 'req_remark',
+        renderer: longTextRender,
+        width: 120
+    }, {
+        text: '申请时间',
+        dataIndex: 'req_create_time',
+        align: 'center',
+        width: 140
+    }, {
+        text: '批准时间',
+        dataIndex: 'req_release_time',
+        align: 'center',
+        width: 140
+    }],
+    bbar: Ext.create('Ext.PagingToolbar', {
+    	border: 0,
+        store: reqStore,
+        displayInfo: true,
+        displayMsg: '显示 {0} - {1} 共 {2}',
+        emptyMsg: "没有数据",
+        items: [{
+            xtype: 'numberfield',
+            id: 'page_size_set',
+            value: 100,
+            width: 150,
+            hideTrigger: true,
+            labelAlign: 'right',
+            fieldLabel: '每页显示',
+            listeners: {
+                specialKey :function(field,e){
+                      if (e.getKey() == Ext.EventObject.ENTER){
+                    	  reqStore.pageSize = Ext.getCmp('page_size_set').getValue();
+                    	  reqStore.loadPage(1);
+                      }
+                 }
+            }
+      }]
+    })
+});
+
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+    
+    Ext.create('Ext.Viewport', {
+        layout: 'border',
+        items: [{
+            region: 'center',
+            border: 0,
+            layout: 'fit',
+            items: [reqGrid]
+        }]
+    });
+});
+</script>
+</head>
+<body>
+</body>
+</html>

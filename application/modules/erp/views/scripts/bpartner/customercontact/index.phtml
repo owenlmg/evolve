@@ -1,0 +1,377 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+var customerAdmin = <?php echo $this->customerAdmin;?>;
+var adminBtnDisabled = !customerAdmin;
+
+Ext.require([
+    'Ext.*'
+]);
+
+// 选项
+Ext.define('Selection', {
+    extend: 'Ext.data.Model',
+    fields: [{name: 'id', type: 'int'},
+             {name: 'name'}]
+});
+
+// 数据模型
+Ext.define('Contact', {
+    extend: 'Ext.data.Model',
+    fields: [{name: "id"},
+             {name: "customer_id", type: "int"},
+             {name: "customer_active"},
+             {name: "customer_code"},
+             {name: "customer_name"},
+             {name: "active"},
+             {name: "default"},
+             {name: "name"},
+             {name: "post"},
+             {name: "tel"},
+             {name: "fax"},
+             {name: "email"},
+             {name: "remark"},
+             {name: "country"},
+             {name: "area"},
+             {name: "address"},
+             {name: "zip_code"},
+             {name: "area_code"},
+             {name: "area_city"},
+             {name: "person_liable"}]
+});
+
+var column_customer_name = Ext.create('Ext.grid.column.Column', {
+    text: '客户名称',
+    dataIndex: 'customer_name',
+    width: 200
+});
+
+var column_post = Ext.create('Ext.grid.column.Column', {
+	text: '职位',
+    dataIndex: 'post',
+    width: 60
+});
+
+var column_fax = Ext.create('Ext.grid.column.Column', {
+	text: '传真',
+    dataIndex: 'fax',
+    width: 120
+});
+
+var column_email = Ext.create('Ext.grid.column.Column', {
+	text: '邮箱',
+    dataIndex: 'email',
+    width: 150
+});
+
+var column_remark = Ext.create('Ext.grid.column.Column', {
+	text: '备注',
+    dataIndex: 'remark',
+    width: 200
+});
+
+var column_country = Ext.create('Ext.grid.column.Column', {
+	text: '国家',
+    dataIndex: 'country',
+    width: 60
+});
+
+var column_area = Ext.create('Ext.grid.column.Column', {
+	text: '省/州/县',
+    dataIndex: 'area',
+    width: 80
+});
+
+var column_area_city = Ext.create('Ext.grid.column.Column', {
+	text: '城市',
+    dataIndex: 'area_city',
+    width: 80
+});
+
+var column_zip_code = Ext.create('Ext.grid.column.Column', {
+	text: '邮编',
+    dataIndex: 'zip_code',
+    width: 80
+});
+
+var column_person_liable = Ext.create('Ext.grid.column.Column', {
+	text: '责任人',
+    dataIndex: 'person_liable',
+    width: 100
+});
+
+// 数据源
+var contactStore = Ext.create('Ext.data.Store', {
+    model: 'Contact',
+    pageSize: 100,
+    proxy: {
+        type: 'ajax',
+        reader: {
+            type: 'json',
+            root: 'rows',
+            totalProperty: 'total'
+        },
+        url: homePath+'/public/erp/bpartner_customercontact/getcontact'
+    },
+    listeners: {
+    	beforeload: loadData
+    }
+});
+
+// 客户列表
+var customerStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/erp/bpartner/getpartner/option/list/type/1'
+    },
+    autoLoad: true
+});
+
+var required = '<span style="color:red;font-weight:bold" data-qtip="Required">*</span>';
+
+function loadData(){
+	var key = Ext.getCmp('search_key').getValue();
+
+	Ext.apply(contactStore.proxy.extraParams, {
+		key: key
+    });
+}
+</script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/bpartner/customercontact/js/add.js"></script>
+<script type="text/javascript">
+// 联系人列表
+var contactGrid = Ext.create('Ext.grid.Panel', {
+    id: 'contactGrid',
+	store: contactStore,
+	border: 0,
+    columnLines: true,
+    tbar: [{
+        xtype: 'textfield',
+        id: 'search_key',
+        emptyText: '关键字...',
+        listeners: {
+        	specialKey :function(field,e){
+                if (e.getKey() == Ext.EventObject.ENTER){
+                	contactStore.loadPage(1);
+                }
+            }
+        }
+    }, {
+        xtype: 'splitbutton',
+        text: '查询',
+        iconCls: 'icon-search',
+        handler: function(){
+        	contactStore.loadPage(1);
+        },
+        menu: [{
+            text: '导出',
+            iconCls: 'icon-export',
+            handler: function(){
+                var key = Ext.getCmp('search_key').getValue();
+                window.open(homePath+'/public/erp/bpartner_customercontact/getcontact/option/csv/key/'+key);
+            }
+        }]
+    }, {
+        text: '添加',
+        disabled: adminBtnDisabled,
+        iconCls: 'icon-add',
+        handler: function(){
+        	contactWin.show();
+
+        	var form = contactForm.getForm();
+        	form.reset();
+        	form.findField('operate').setValue('new');
+        	form.findField('active').setValue(true);
+        }
+    }, {
+        text: '复制',
+        id: 'contactCopyBtn',
+        disabled: true,
+        iconCls: 'icon-copy',
+        handler: function(){
+			contactWin.show();
+        	
+        	var form = contactForm.getForm();
+        	form.reset();
+        	form.findField('operate').setValue('new');
+        	
+        	var selection = Ext.getCmp('contactGrid').getView().getSelectionModel().getSelection();
+        	var record = selection[0];
+        	
+        	form.loadRecord(record);
+
+        	form.findField('area_code').setValue('');
+        	form.findField('id').setValue('');
+        }
+    }, {
+    	text: '编辑',
+        id: 'contactEditBtn',
+    	disabled: true,
+        iconCls: 'icon-edit',
+        handler: function(){
+        	contactWin.show();
+        	
+        	var form = contactForm.getForm();
+        	form.reset();
+        	form.findField('operate').setValue('edit');
+        	
+        	var selection = Ext.getCmp('contactGrid').getView().getSelectionModel().getSelection();
+        	var record = selection[0];
+        	
+        	form.loadRecord(record);
+        }
+    }, {
+        text: '删除',
+        id: 'contactDeleteBtn',
+        disabled: true,
+        iconCls: 'icon-delete',
+        handler: function(){
+			var selection = Ext.getCmp('contactGrid').getView().getSelectionModel().getSelection();
+        	var record = selection[0];
+            
+        	Ext.MessageBox.confirm('确认', '确定取消当前联系人？', function(button, text){
+                if(button == 'yes'){
+                	Ext.Msg.wait('提交中，请稍后...', '提示');
+                    Ext.Ajax.request({
+                        url: homePath+'/public/erp/bpartner_customercontact/editcontact',
+                        params: {operate: 'delete', id: record.get('id')},
+                        method: 'POST',
+                        success: function(response, options) {
+                            var data = Ext.JSON.decode(response.responseText);
+            
+                            if(data.success){
+                                Ext.MessageBox.alert('提示', data.info);
+                                contactStore.loadPage(1);
+                            }else{
+                                Ext.MessageBox.alert('错误', data.info);
+                            }
+                        },
+                        failure: function(response){
+                            Ext.MessageBox.alert('错误', '提交失败');
+                        }
+                    });
+                }
+        	});
+        }
+    }, '->', {
+        text: '刷新',
+        iconCls: 'icon-refresh',
+        handler: function(){
+        	contactStore.reload();
+        }
+    }],
+    viewConfig: {
+        stripeRows: false,// 取消偶数行背景色
+        getRowClass: function(record) {
+            if(!record.get('customer_active')){
+                // 离职员工背景色为灰色
+                return 'gray-row';
+            }
+        }
+    },
+    columns: [{
+        xtype: 'rownumberer'
+    }, {
+        text: 'ID',
+        align: 'center',
+        hidden: true,
+        dataIndex: 'id'
+    }, {
+        text: '客户代码',
+        dataIndex: 'customer_code',
+        align: 'center',
+        width: 80
+    }, {
+        text: '客户地址简码',
+        dataIndex: 'area_code',
+        width: 120
+    }, {
+        text: '收件人',
+        dataIndex: 'name',
+        width: 100
+    }, {
+        text: '联系电话',
+        dataIndex: 'tel',
+        width: 120
+    }, {
+        text: '发货地址',
+        dataIndex: 'address',
+        width: 400
+    }],
+    listeners: {
+    	selectionchange: function( sel, selected, eOpts ){
+        	if(selected.length > 0 && customerAdmin){
+        		Ext.getCmp('contactCopyBtn').enable();
+        		Ext.getCmp('contactEditBtn').enable();
+        		Ext.getCmp('contactDeleteBtn').enable();
+        	}else{
+        		Ext.getCmp('contactCopyBtn').disable();
+        		Ext.getCmp('contactEditBtn').disable();
+        		Ext.getCmp('contactDeleteBtn').disable();
+        	}
+        }
+    },
+    bbar: Ext.create('Ext.PagingToolbar', {
+    	border: 0,
+        store: contactStore,
+        displayInfo: true,
+        displayMsg: '显示 {0} - {1} 共 {2}',
+        emptyMsg: "没有数据",
+        items: [{
+            xtype: 'numberfield',
+            id: 'page_size_set',
+            value: 100,
+            width: 150,
+            hideTrigger: true,
+            labelAlign: 'right',
+            fieldLabel: '每页显示',
+            listeners: {
+            	specialKey :function(field,e){
+                      if (e.getKey() == Ext.EventObject.ENTER){
+                    	  contactStore.pageSize = Ext.getCmp('page_size_set').getValue();
+                    	  contactStore.loadPage(1);
+	                      }
+	                 }
+	            }
+	      }]
+    })
+});
+
+Ext.onReady(function() {
+
+	Ext.QuickTips.init();
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+    
+    Ext.create('Ext.Viewport', {
+        layout: 'border',
+        border: 0,
+        items: [{
+            region: 'center',
+            layout: 'fit',
+            border: 0,
+            items: [contactGrid]
+        }]
+    });
+contactGrid.getView().headerCt.insert(7, column_customer_name);
+    if(customerAdmin){
+    	
+    	contactGrid.getView().headerCt.insert(8, column_post);
+    	contactGrid.getView().headerCt.insert(9, column_fax);
+    	contactGrid.getView().headerCt.insert(10, column_email);
+    	contactGrid.getView().headerCt.insert(11, column_country);
+    	contactGrid.getView().headerCt.insert(12, column_area);
+    	contactGrid.getView().headerCt.insert(13, column_area_city);
+    	contactGrid.getView().headerCt.insert(14, column_zip_code);
+    	contactGrid.getView().headerCt.insert(15, column_person_liable);
+    	contactGrid.getView().headerCt.insert(16, column_remark);
+    }
+});
+</script>
+</head>
+<body>
+</body>
+</html>

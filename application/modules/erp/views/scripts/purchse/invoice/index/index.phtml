@@ -1,0 +1,809 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+var user_id = <?php echo $this->user_id?>;
+var invoiceAdmin = <?php echo $this->invoiceAdmin;?>;
+
+Ext.require([
+    'Ext.*'
+]);
+
+Ext.define('Selection', {
+    extend: 'Ext.data.Model',
+    fields: [{name: 'id', type: 'int'},
+             {name: 'currency_id', type: 'int'},
+             {name: 'currency'},
+             {name: 'mpq', type: 'int'},
+             {name: 'moq', type: 'int'},
+             {name: 'code'},
+             {name: 'name'},
+             {name: 'symbol'},
+             {name: 'text'},
+             {name: 'rate'},
+             {name: 'description'}]
+});
+
+// 币种
+var currencyStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+      type: 'ajax',
+      reader: 'json',
+      url: homePath+'/public/erp/setting_currency/getcurrency/option/list'
+    },
+    autoLoad: true
+});
+
+// 供应商列表
+var supplierStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/erp/bpartner/getpartner/option/list'
+    },
+    autoLoad: true
+});
+
+// 供应商联系人列表
+var supplierContactStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/erp/bpartner/getcontact/option/list'
+    }
+});
+
+// 供应商渲染
+var supplierRender = function(val){
+    if(val > 0){
+        index = supplierStore.findExact('id',val);
+        if (index != -1){
+            rs = supplierStore.getAt(index).data;
+            return rs.name;
+        }
+        return val;
+    }else{
+        return '无';
+    }
+}
+
+// 物料代码
+var codeStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+       type: 'ajax',
+       reader: 'json',
+       url: homePath+'/public/erp/warehouse_pricelist/getcodeList/option/list'
+    },
+    autoLoad: true
+});
+
+// 数据模型
+Ext.define('Invoice', {
+    extend: 'Ext.data.Model',
+    fields: [{name: "id"},
+             {name: "active"},
+             {name: "state"},
+             {name: "buyer_id", type: "int"},
+             {name: "review_state"},
+             {name: "current_step"},
+             {name: "last_step"},
+             {name: "next_step"},
+             {name: "to_finish"},
+             {name: "can_review"},
+             {name: "is_reviewer"},
+             {name: "reviewer"},
+             {name: "number"},
+             {name: "total"},
+             {name: "total_tax"},
+             {name: "total_no_tax"},
+             {name: "payed"},
+             {name: "pay_left"},
+             {name: "supplier_id",type: "int"},
+             {name: "currency"},
+             {name: "invoice_date",type: 'date',dateFormat: 'Y-m-d'},
+             {name: "description"},
+             {name: "remark"},
+             {name: "attach_name"},
+             {name: "attach_path"},
+             {name: "review_info"},
+             {name: "review_info_tip"},
+             {name: "release_time",type:'date',dateFormat: 'timestamp'},
+             {name: "create_time",type:'date',dateFormat: 'timestamp'},
+             {name: "update_time",type:'date',dateFormat: 'timestamp'},
+             {name: "create_user"},
+             {name: "update_user"},
+             {name: "creater"},
+             {name: "updater"}]
+});
+
+// 数据源
+var invoiceStore = Ext.create('Ext.data.Store', {
+    model: 'Invoice',
+    pageSize: 50,
+    proxy: {
+        type: 'ajax',
+        reader: {
+            type: 'json',
+            root: 'rows',
+            totalProperty: 'total'
+        },
+        url: homePath+'/public/erp/purchse_invoice_index/getinvoice'
+    },
+    listeners: {
+        beforeload: loadInvoice
+    }
+});
+
+function loadInvoice(){
+    var key = Ext.getCmp('search_key').getValue();
+    var active = Ext.JSON.encode(Ext.getCmp('search_active').getValue());
+    var state = Ext.JSON.encode(Ext.getCmp('search_state').getValue());
+    var date_from = Ext.Date.format(Ext.getCmp('search_date_from').getValue(), 'Y-m-d');
+    var date_to = Ext.Date.format(Ext.getCmp('search_date_to').getValue(), 'Y-m-d');
+    
+    Ext.apply(invoiceStore.proxy.extraParams, {
+        key: key,
+        active: active,
+        state: state,
+        date_from: date_from,
+        date_to: date_to
+    });
+};
+
+var required = '<span style="color:red;font-weight:bold" data-qtip="Required">*</span>';
+
+var reviewInfoWin = Ext.create('Ext.window.Window', {
+    title: '审核日志',
+    border: 0,
+    width: 400,
+    modal: true,
+    constrain: true,
+    id: 'reviewInfoWin',
+    layout: 'fit',
+    maximizable: true,
+    resizable: true,
+    closeAction: 'hide',
+    resizable: true,
+    padding: 10,
+    items: [{
+        xtype: 'displayfield',
+        id: 'reviewInfoView'
+    }]
+});
+
+// 获取货币符号
+function setMoney(val, currency){
+    var symbol = '';
+    
+    currencyStore.each(function(rec) {
+        if (rec.get('name') == currency) {
+            symbol = rec.get('symbol');
+        }
+    });
+    
+    return Ext.util.Format.currency(val, symbol, 4);
+}
+
+// 获取货币符号
+function setTotalMoney(val, currency){
+    var symbol = '';
+    
+    currencyStore.each(function(rec) {
+        if (rec.get('name') == currency) {
+            symbol = rec.get('symbol');
+        }
+    });
+    
+    return Ext.util.Format.currency(val, symbol, 2);
+}
+
+// 查看审核日志
+function viewReviewInfo(info)
+{
+    reviewInfoWin.show();
+    var reg = new RegExp(">","gi");
+    Ext.getCmp('reviewInfoView').setValue(info.replace(reg, '<br>'));
+}
+
+function reviewInvoice(){
+    Ext.getCmp('reviewInvoiceWin').show();
+
+    var form = Ext.getCmp('invoice_form').getForm();
+    
+    Ext.getCmp('review_id').setValue(form.findField('id').getValue());
+    Ext.getCmp('review_current_step').setValue(form.findField('current_step').getValue());
+    Ext.getCmp('review_last_step').setValue(form.findField('last_step').getValue());
+    Ext.getCmp('review_to_finish').setValue(form.findField('to_finish').getValue());
+    Ext.getCmp('review_next_step').setValue(form.findField('next_step').getValue());
+}
+</script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/library/LodopFuncs.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/purchse/invoice/index/js/review.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/purchse/invoice/index/js/order_list.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/purchse/invoice/index/js/invoice.js"></script>
+<script type="text/javascript">
+// 显示查看窗口
+function openInvoiceWin(idx){
+	invoiceWin.show();
+	invoiceForm.getForm().reset();
+    var record = invoiceStore.getAt(idx);
+    invoiceForm.getForm().loadRecord(record);
+    Ext.getCmp('invoiceSaveBtn').disable();
+    Ext.getCmp('itemsSelectBtn').disable();
+    Ext.getCmp('itemsDeleteBtn').disable();
+    Ext.getCmp('print_preview').enable();
+    Ext.getCmp('operate').setValue('');
+
+    itemsStore.load({
+        params: {
+        	invoice_id: record.get('id')
+        }
+    });
+
+    if(record.get('can_review') == 1){
+        Ext.getCmp('invoiceReviewBtn').enable();
+    }else{
+        Ext.getCmp('invoiceReviewBtn').disable();
+    }
+}
+
+var attachWin = Ext.create('Ext.window.Window', {
+    title: '发票附件',
+    modal: true,
+    constrain: true,
+    closeAction: 'hide',
+    layout: 'fit',
+    items: [Ext.create('Ext.form.Panel', {
+        id: 'attachForm',
+        border: 0,
+        url: homePath+'/public/erp/purchse_invoice_index/editattach',
+        bodyPadding: '2 2 0',
+        fieldDefaults: {
+            msgTarget: 'side',
+            labelAlign: 'right',
+            labelWidth: 60,
+            anchor: '100%'
+        },
+        items: [{
+            xtype: 'hiddenfield',
+            name: 'invoice_id'
+        }, {
+            xtype: 'filefield',
+            name: 'attach_file',
+            allowBlank: false,
+            fieldLabel: '附件',
+            buttonText: '选择文件'
+        }]
+    })],
+    buttons: [{
+        text: '提交',
+        handler: function() {
+            var form = Ext.getCmp('attachForm').getForm();
+
+            if(form.isValid()){
+                form.submit({
+                    waitMsg: '提交中，请稍后...',
+                    success: function(form, action) {
+                        var data = action.result;
+
+                        if(data.success){
+                            form.reset();
+                            attachWin.hide();
+                            invoiceStore.loadPage(1);
+                        }else{
+                            Ext.MessageBox.alert('错误', data.info);
+                        }
+                    },
+                    failure: function(response){
+                        Ext.MessageBox.alert('错误', '保存提交失败');
+                    }
+                });
+            }
+        }
+    }, {
+        text: '取消',
+        handler: function() {
+            Ext.getCmp('attachForm').getForm().reset();
+            attachWin.hide();
+        }
+    }]
+});
+
+var payWin = Ext.create('Ext.window.Window', {
+    title: '付款',
+    width: 300,
+    modal: true,
+    autoHeight: true,
+    constrain: true,
+    closeAction: 'hide',
+    items: [Ext.create('Ext.form.Panel', {
+        id: 'payForm',
+        border: 0,
+        url: homePath+'/public/erp/purchse_invoice_index/pay',
+        bodyPadding: 10,
+        defaults: {
+            anchor: '100%',
+            labelWidth: 50,
+            layout: {
+                type: 'hbox',
+                defaultMargins: {top: 0, right: 5, bottom: 0, left: 0}
+            }
+        },
+        items: [{
+            xtype: 'fieldcontainer',
+            fieldLabel: '金额',
+            combineErrors: true,
+            msgTarget: 'under',
+            defaults: {
+                hideLabel: true
+            },
+            items: [
+                {xtype: 'numberfield', name: 'pay', value: 0, width: 80, allowBlank: false},
+                {xtype: 'displayfield', name: 'payed', margins: '0 5 0 0'},
+                {xtype: 'displayfield', value: ' / '},
+                {xtype: 'displayfield', name: 'total'}
+            ]
+        }]
+        /* items: [{
+            xtype: 'hiddenfield',
+            name: 'invoice_id'
+        }, {
+            xtype: 'numberfield',
+            name: 'pay',
+            minValue: 0,
+            allowBlank: false,
+            fieldLabel: '金额'
+        }, {
+            xtype: 'displayfield',
+            name: 'payed'
+        }, {
+            xtype: 'displayfield',
+            name: ' / '
+        }, {
+            xtype: 'displayfield',
+            name: 'total'
+        }] */
+    })],
+    buttons: [{
+        text: '提交',
+        disabled: true,
+        handler: function() {
+            var form = Ext.getCmp('payForm').getForm();
+
+            if(form.isValid()){
+                form.submit({
+                    waitMsg: '提交中，请稍后...',
+                    success: function(form, action) {
+                        var data = action.result;
+
+                        if(data.success){
+                            form.reset();
+                            payWin.hide();
+                            invoiceStore.loadPage(1);
+                        }else{
+                            Ext.MessageBox.alert('错误', data.info);
+                        }
+                    },
+                    failure: function(response){
+                        Ext.MessageBox.alert('错误', '保存提交失败');
+                    }
+                });
+            }
+        }
+    }, {
+        text: '取消',
+        handler: function() {
+            Ext.getCmp('payForm').getForm().reset();
+            payWin.hide();
+        }
+    }]
+});
+
+// 发票列表
+var invoiceGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
+    extend: 'Ext.grid.Panel',
+    xtype: 'locking-grid',
+    border: 0,
+    store: invoiceStore,
+    id: 'invoiceGrid',
+    columnLines: true,
+    tbar: [{
+        xtype: 'combobox',
+        id: 'search_active',
+        value: 1,
+        editable: false,
+        displayField: 'text',
+        valueField: 'val',
+        width: 70,
+        store: Ext.create('Ext.data.Store', {
+            fields: ['text', 'val'],
+            data: [
+                {"text": "启用", "val": 1},
+                {"text": "取消", "val": 0}
+            ]
+        }),
+        listeners: {
+            change: function(){
+            	invoiceStore.loadPage(1);
+            }
+        }
+    }, {
+        xtype: 'datefield',
+        format: 'Y-m-d',
+        width: 100,
+        id: 'search_date_from',
+        emptyText: '创建从...'
+    }, {
+        xtype: 'datefield',
+        format: 'Y-m-d',
+        width: 100,
+        id: 'search_date_to',
+        emptyText: '创建至...'
+    }, {
+        xtype: 'combobox',
+        id: 'search_state',
+        value: 0,
+        editable: false,
+        displayField: 'text',
+        valueField: 'val',
+        width: 70,
+        store: Ext.create('Ext.data.Store', {
+            fields: ['text', 'val'],
+            data: [
+                {"text": "审核中", "val": 0},
+                {"text": "拒绝", "val": 1},
+                {"text": "已发布", "val": 2}
+            ]
+        }),
+        listeners: {
+            change: function(){
+            	invoiceStore.loadPage(1);
+            }
+        }
+    }, {
+        xtype: 'textfield',
+        id: 'search_key',
+        emptyText: '关键字...',
+        width: 100,
+        listeners: {
+            specialKey :function(field,e){
+                if (e.getKey() == Ext.EventObject.ENTER){
+                	invoiceStore.loadPage(1);
+                }
+            }
+        }
+    }, {
+        xtype: 'splitbutton',
+        text: '查询',
+        iconCls: 'icon-search',
+        handler: function(){
+        	invoiceStore.loadPage(1);
+        },
+        menu: [{
+            text: '导出',
+            iconCls: 'icon-export',
+            handler: function(){
+                //window.open(homePath+'/public/admin/account/exportcsv');
+            }
+        }]
+    }, {
+        xtype: 'splitbutton',
+        text: '新建发票',
+        iconCls: 'icon-doc',
+        handler: function(){
+        	invoiceForm.getForm().reset();
+            Ext.getCmp('invoiceReviewBtn').disable();
+            Ext.getCmp('invoiceSaveBtn').enable();
+            Ext.getCmp('print_preview').disable();
+            Ext.getCmp('itemsSelectBtn').disable();
+            Ext.getCmp('itemsDeleteBtn').enable();
+            Ext.getCmp('invoiceSaveBtn').setText('提交');
+            itemsStore.loadData([],false);
+            Ext.getCmp('operate').setValue('new');
+            invoiceWin.show();
+        },
+        menu: [{
+            text: '修改',
+            tooltip: '针对被拒绝发票',
+            iconCls: 'icon-edit',
+            handler: function(){
+                var selection = Ext.getCmp('invoiceGrid').getView().getSelectionModel().getSelection();
+
+                if(selection.length == 0){
+                    Ext.MessageBox.alert('错误', '没有选择修改对象！');
+                }else if(selection[0].get('active') == 0){
+                    Ext.MessageBox.alert('错误', '当前发票已取消，不能修改！');
+                }else if(selection[0].get('state') != 1){
+                    Ext.MessageBox.alert('错误', '只允许编辑被拒绝的申请！');
+                }else if(invoiceAdmin != 1 && selection[0].get('create_user') != user_id){
+                    Ext.MessageBox.alert('错误', '没有权限修改当前发票！');
+                }else{
+                	invoiceForm.getForm().reset();
+                    var record = selection[0];
+                    invoiceForm.getForm().loadRecord(record);
+                    Ext.getCmp('invoiceSaveBtn').enable();
+                    Ext.getCmp('itemsSelectBtn').enable();
+                    Ext.getCmp('itemsDeleteBtn').enable();
+                    Ext.getCmp('invoiceReviewBtn').disable();
+                    Ext.getCmp('invoiceSaveBtn').setText('保存');
+                    Ext.getCmp('operate').setValue('edit');
+                    invoiceWin.show();
+                    
+                    itemsStore.load({
+                        params: {
+                        	invoice_id: record.get('id')
+                        }
+                    });
+                }
+            }
+        }]
+    }, {
+        text: '审核',
+        tooltip: '审核前请选择需要审核的发票',
+        disabled: true,
+        id: 'reviewBtn',
+        iconCls: 'icon-accept',
+        handler: function(){
+            var selection = Ext.getCmp('invoiceGrid').getView().getSelectionModel().getSelection();
+
+            if(selection.length == 0){
+                Ext.MessageBox.alert('错误', '没有选择审核对象！');
+            }else if(!selection[0].get('active')){
+                Ext.MessageBox.alert('错误', '当前发票已取消，不允许审核！');
+            }else if(selection[0].get('state') != 0){
+                Ext.MessageBox.alert('错误', '当前发票不允许审核！');
+            }else{
+                var record = selection[0];
+                invoiceForm.getForm().reset();
+                invoiceForm.getForm().loadRecord(record);
+                reviewForm.getForm().reset();
+                Ext.getCmp('invoiceSaveBtn').disable();
+                Ext.getCmp('itemsSelectBtn').disable();
+                Ext.getCmp('itemsDeleteBtn').disable();
+                Ext.getCmp('invoiceReviewBtn').enable();
+                Ext.getCmp('operate').setValue('');
+                invoiceWin.show();
+                invoiceWin.restore();
+                Ext.getCmp('print_preview').enable();
+                
+                itemsStore.load({
+                    params: {
+                    	invoice_id: record.get('id')
+                    }
+                });
+            }
+        }
+    }, {
+        text: '附件',
+        id: 'attachBtn',
+        tooltip: '选择发票上传附件',
+        disabled: true,
+        iconCls: 'icon-attach',
+        handler: function(){
+            attachWin.show();
+
+            Ext.getCmp('attachForm').getForm().findField('invoice_id').setValue(Ext.getCmp('invoiceGrid').getView().getSelectionModel().getSelection()[0].get('id'));
+        }
+    }, {
+        text: '付款',
+        id: 'payBtn',
+        disabled: true,
+        iconCls: 'icon-money-out',
+        handler: function(){
+            payWin.show();
+            //Ext.getCmp('payForm').getForm().findField('invoice_id').setValue(Ext.getCmp('invoiceGrid').getView().getSelectionModel().getSelection()[0].get('id'));
+            //Ext.getCmp('payForm').getForm().findField('pay').setValue(Ext.getCmp('invoiceGrid').getView().getSelectionModel().getSelection()[0].get('pay_left'));
+            //Ext.getCmp('payForm').getForm().findField('payed').setValue(Ext.getCmp('invoiceGrid').getView().getSelectionModel().getSelection()[0].get('payed'));
+            //Ext.getCmp('payForm').getForm().findField('total').setValue(Ext.getCmp('invoiceGrid').getView().getSelectionModel().getSelection()[0].get('total'));
+        }
+    }, '->', {
+        text: '刷新',
+        iconCls: 'icon-refresh',
+        handler: function(){
+        	invoiceStore.reload();
+        }
+    }],
+    viewConfig: {
+        stripeRows: false,// 取消偶数行背景色
+        getRowClass: function(record) {
+            if(record.get('active') == 0){
+                return 'gray-row';
+            }
+        }
+    },
+    columns: [{
+        xtype: 'rownumberer'
+    }, {
+        text: 'ID',
+        align: 'center',
+        hidden: true,
+        locked: true,
+        dataIndex: 'id'
+    }, {
+        text: '发票号',
+        align: 'center',
+        dataIndex: 'number',
+        locked: true,
+        width: 120
+    }, {
+        text: '供应商',
+        dataIndex: 'supplier_id',
+        renderer: supplierRender,
+        width: 200
+    }, {
+        text: '不含税金额',
+        dataIndex: 'total_no_tax',
+        renderer: function(value, meta, rec){
+            meta.style = 'background-color: #FFFCEC';
+            
+            var currency = rec.get('currency');
+            
+            if(currency != 'CNY'){
+                return setTotalMoney(rec.get('forein_total_no_tax'), currency);
+            }else{
+                return setTotalMoney(value, currency);
+            }
+        },
+        width: 100
+    }, {
+        text: '含税金额',
+        dataIndex: 'total',
+        renderer: function(value, meta, rec){
+            meta.style = 'font-weight: bold;background-color: #F0FFF0';
+
+            var currency = rec.get('currency');
+            
+            if(currency != 'CNY'){
+                return setTotalMoney(rec.get('forein_total'), currency);
+            }else{
+                return setTotalMoney(value, currency);
+            }
+        },
+        width: 100
+    }, {
+        text: '状态',
+        align: 'center',
+        dataIndex: 'state',
+        renderer: function(val, meta, record){
+            if(!record.get('active')){
+                meta.style = 'background-color: #DEDEDE';
+            }else if(val == 0){
+                meta.style = 'background-color: #ffe2e2';
+                return record.get('reviewer') + '：未审核';
+            }else if(val == 1){
+                meta.style = 'background-color: #FF4500';
+                return '拒绝';
+            }else{
+                meta.style = 'background-color: #DFFFDF';
+                return '已审核';
+            }
+        },
+        width: 160
+    }, {
+        text: '审核阶段',
+        dataIndex: 'review_state',
+        renderer: function(val, cellmeta, record){
+            return '<span style="cursor:pointer;" onclick="viewReviewInfo(\''+record.get('review_info')+'\');">'+val+'</span>';
+        },
+        width: 260
+    }, {
+        text: '采购员',
+        dataIndex: 'creater',
+        align: 'center',
+        width: 80
+    }, {
+        text: '申请时间',
+        dataIndex: 'create_time',
+        align: 'center',
+        renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+        width: 140
+    }, {
+        text: '附件',
+        dataIndex: 'attach_name',
+        renderer: function(val, cellmeta, record, rowIndex){
+            if(val != '' && val != null){
+                cellmeta.tdAttr = 'data-qtip="' + val + '"';
+                return '<a target="_blank" href="../' + record.get('attach_path') + '">' + val + '</a>';
+            }
+        },
+        width: 200
+    }, {
+        text: '描述',
+        dataIndex: 'description',
+        width: 200
+    }, {
+        text: '备注',
+        dataIndex: 'remark',
+        width: 300
+    }, {
+        text: '发布时间',
+        dataIndex: 'release_time',
+        align: 'center',
+        renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+        width: 140
+    }, {
+        text: '审核日志',
+        dataIndex: 'review_info',
+        renderer: function(val, cellmeta, record){
+            cellmeta.tdAttr = 'data-qtip="' + record.get('review_info_tip') + '"';
+            return '<span style="cursor:pointer;" onclick="viewReviewInfo(\''+val+'\');">'+val+'</span>';
+        },
+        width: 300
+    }, {
+        text: '更新人',
+        hidden: true,
+        dataIndex: 'updater',
+        align: 'center',
+        width: 80
+    }, {
+        text: '更新时间',
+        hidden: true,
+        dataIndex: 'update_time',
+        align: 'center',
+        renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+        width: 140
+    }],
+    listeners: {
+        selectionchange: function( sel, selected, eOpts ){
+            if(selected.length > 0){
+                if(selected[0].get('can_review') == 1){
+                    Ext.getCmp('reviewBtn').enable();
+                }else{
+                    Ext.getCmp('reviewBtn').disable();
+                }
+
+                Ext.getCmp('attachBtn').enable();
+
+                if(selected[0].get('state') == 2){
+                	Ext.getCmp('payBtn').enable();
+                }else{
+                	Ext.getCmp('payBtn').disable();
+                }
+            }else{
+                Ext.getCmp('attachBtn').disable();
+            }
+        },
+        itemdblclick: function( grid, record, item, index, e, eOpts ) {
+            if(invoiceAdmin == 1 || record.get('can_review') == 1 || record.get('is_reviewer') == 1 ||　record.get('create_user') == user_id){
+                openInvoiceWin(index);
+            }else{
+                Ext.MessageBox.alert('错误', '没有权限查看当前发票！');
+            }
+        }
+    },
+    bbar: Ext.create('Ext.PagingToolbar', {
+        border: 0,
+        store: invoiceStore,
+        displayInfo: true,
+        displayMsg: '显示 {0} - {1} 共 {2}',
+        emptyMsg: "没有数据"
+    })
+});
+
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+    
+    Ext.create('Ext.Viewport', {
+        layout: 'border',
+        border: 0,
+        items: [{
+            region: 'center',
+            layout: 'fit',
+            border: 0,
+            items: [invoiceGrid]
+        }]
+    });
+
+    invoiceStore.loadPage(1);
+});
+</script>
+</head>
+<body>
+</body>
+</html>

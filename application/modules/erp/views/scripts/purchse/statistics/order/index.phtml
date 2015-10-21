@@ -1,0 +1,652 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+var user_id = <?php echo $this->user_id?>;
+var canReply = <?php echo $this->canReply;?>;
+Ext.require([
+    'Ext.*'
+]);
+
+//选项数据模型
+Ext.define('Selection', {
+    extend: 'Ext.data.Model',
+    fields: [{name: 'id', type: 'int'},
+             {name: 'currency_id', type: 'int'},
+             {name: 'currency'},
+             {name: 'code'},
+             {name: 'name'},
+             {name: 'symbol'},
+             {name: 'text'},
+             {name: 'rate'},
+             {name: 'description'}]
+});
+
+//部门
+var deptStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/hra/dept/getdept/option/list'
+    },
+    autoLoad: true
+});
+
+var typeListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/erp/purchse_req/gettype/option/list'
+    },
+    autoLoad: true
+});
+
+var buyerListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/erp/purchse_order/getbuyer/option/list'
+    },
+    autoLoad: true
+});
+
+var currencyStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+       type: 'ajax',
+       reader: 'json',
+       url: homePath+'/public/erp/setting_currency/getcurrency/option/list'
+    },
+    autoLoad: true
+});
+
+function setMoney(val, currency){
+	var symbol = '';
+	
+    currencyStore.each(function(rec) {
+	    if (rec.get('name') == currency) {
+	    	symbol = rec.get('symbol');
+	    }
+	});
+    
+    return Ext.util.Format.currency(val, symbol, 2);
+}
+
+var priceColumn = Ext.create('Ext.grid.column.Column', {
+	text: '价格',
+    dataIndex: 'price',
+    renderer: function(value, meta, rec){
+        return setMoney(value, rec.get('order_currency'));
+    },
+    width: 80
+});
+
+var priceTaxColumn = Ext.create('Ext.grid.column.Column', {
+	text: '含税',
+	align: 'center',
+    dataIndex: 'order_price_tax',
+    renderer: function(val, meta, rec){
+    	meta.style = 'padding:0;';
+        if(val == 1){
+        	return '<img src="'+homePath+'/public/images/icons/ok.png"></img>';
+        }
+    },
+    width: 40
+});
+
+var cellEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+    clicksToEdit: 1,
+    listeners: {
+    	beforeedit: function(editor, e){
+			if(!canReply){
+				return false;
+			}
+    	},
+    	edit: function(editor, e){
+			if(e.value == null || (e.field == 'delivery_date_remark' && (e.value == e.originalValue || e.value == '')) || (e.field == 'delivery_date' && Ext.util.Format.date(e.value, 'Y-m-d') == Ext.util.Format.date(e.originalValue, 'Y-m-d'))){
+				e.record.set(e.field, e.originalValue);
+				e.cancel = true;
+			}else{
+				var record = e.record;
+			    var date = Ext.util.Format.date(record.get('delivery_date'), 'Y-m-d');
+			    var remark = record.get('delivery_date_remark');
+				
+				Ext.Msg.wait('处理中，请稍后...', '提示');
+			    Ext.Ajax.request({
+			        url: homePath + '/public/erp/purchse_statistics_order/replydeliverydate',
+			        params: {id: e.record.get('id'), date: date, remark: remark},
+			        method: 'POST',
+			        success: function(response, options) {
+			        	var data = Ext.JSON.decode(response.responseText);
+						Ext.Msg.hide();
+						
+			            if(!data.success){
+			            	e.record.set(e.field, e.originalValue);
+			            	Ext.MessageBox.alert('错误', data.info);
+			            }
+			        },
+			        failure: function(response){
+			            Ext.MessageBox.alert('错误', '交期回复提交失败');
+			        }
+			    });
+			}
+    	}
+    }
+});
+
+// 查询结果数据模型
+Ext.define('Order', {
+    extend: 'Ext.data.Model',
+    fields: [{name: "order_number"},
+             {name: "order_state"},
+             {name: "order_type_name"},
+             {name: "order_type_id",type:"int"},
+             {name: "order_release_time"},
+             {name: "order_currency"},
+             {name: "order_price_tax"},
+             {name: "order_supplier_id"},
+             {name: "order_supplier"},
+             {name: "order_supplier_code"},
+             {name: "order_supplier_name"},
+             {name: "order_supplier_contact"},
+             {name: "order_date"},
+             {name: "order_buyer_id"},
+             {name: "order_buyer_name"},
+             {name: "order_creater"},
+             {name: "order_create_time"},
+             {name: "order_updater"},
+             {name: "order_update_time"},
+             {name: "id"},
+             {name: "active"},
+             {name: "code"},
+             {name: "name"},
+             {name: "description"},
+             {name: "qty"},
+             {name: "qty_receive"},
+             {name: "qty_left"},
+             {name: "qty_req"},
+             {name: "order_req_num"},
+             {name: "customer_address"},
+             {name: "customer_aggrement"},
+             {name: "unit"},
+             {name: "price"},
+             {name: "total"},
+             {name: "request_date"},
+             {name: "delivery_date"},
+             {name: "delivery_date_remark"},
+             {name: "delivery_reply_log"},
+             {name: "remark"},
+             {name: "dept_id",type:"int"},
+             {name: "project_info"},
+             {name: "req_number"},
+             {name: "req_info"},
+             {name: "receive_info"},
+             {name: "supplier_code"},
+             {name: "supplier_codename"},
+             {name: "supplier_description"},
+             {name: "in_stock_qty"},
+             {name: "in_stock_info"},
+             {name: "warehouse_code"}]
+});
+
+// 数据源
+var orderStore = Ext.create('Ext.data.ArrayStore', {
+    model: 'Order',
+    pageSize: 100,
+    groupField: 'order_number',
+    proxy: {
+        type: 'ajax',
+        reader: {
+            type: 'json',
+            root: 'rows',
+            totalProperty: 'total'
+        },
+        url: homePath+'/public/erp/purchse_statistics_order/getorder'
+    },
+    listeners: {
+    	beforeload: loadOrder
+    }
+});
+
+// 部门渲染
+var deptRender = function (val){
+	if(val > 0){
+		index = deptListStore.findExact('id',val); 
+        if (index != -1){
+            rs = deptListStore.getAt(index).data; 
+            return rs.name; 
+        }
+        return val;
+	}else{
+		return '无';
+	}
+};
+
+var groupingFeature = Ext.create('Ext.grid.feature.Grouping',{
+	groupHeaderTpl: '[{[values.rows[0].data.order_state]}] {name}：{rows.length} 项 [采购员：{[values.rows[0].data.order_buyer_name]}] [采购类别：{[values.rows[0].data.order_type_name]}]',
+    hideGroupedHeader: true,
+    //startCollapsed: true,
+    id: 'reqListGrouping'
+});
+
+function loadOrder(){
+	var key = Ext.getCmp('search_key').getValue();
+	var state = Ext.getCmp('search_state').getValue();
+	var type = Ext.JSON.encode(Ext.getCmp('search_type').getValue());
+	var dept = Ext.JSON.encode(Ext.getCmp('search_dept').getValue());
+	var buyer = Ext.JSON.encode(Ext.getCmp('search_buyer').getValue());
+	var date_from = Ext.Date.format(Ext.getCmp('search_date_from').getValue(), 'Y-m-d');
+    var date_to = Ext.Date.format(Ext.getCmp('search_date_to').getValue(), 'Y-m-d');
+    
+	Ext.apply(orderStore.proxy.extraParams, {
+		key: key,
+		state: state,
+		buyer: buyer,
+		date_from: date_from,
+		date_to: date_to,
+		type: type,
+		dept: dept
+    });
+};
+
+var activeRender = function(value, meta, record, colIndex, store, view) {
+	meta.style = 'padding:0;';
+	if(value == 1){
+	    return '<img src="'+homePath+'/public/images/icons/ok.png"></img>';
+	}else{
+	    return '<img src="'+homePath+'/public/images/icons/cross.gif"></img>';
+	}
+};
+
+var longTextRender = function(val, cellmeta, record){
+	cellmeta.tdAttr = 'data-qtip="' + val + '"';
+	return val;
+};
+
+// 查询列表
+var orderGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
+	extend: 'Ext.grid.Panel',
+    xtype: 'locking-grid',
+    id: 'orderGrid',
+    border: 0,
+	store: orderStore,
+    columnLines: true,
+    features: [groupingFeature],
+    plugins: cellEditing,
+    tbar: [{
+    	xtype: 'combobox',
+        id: 'search_state',
+        emptyText: '订单状态...',
+        displayField: 'text',
+        valueField: 'val',
+        width: 100,
+        store: Ext.create('Ext.data.Store', {
+            fields: ['text', 'val'],
+            data: [
+                {"text": "批准", "val": 2},
+                {"text": "审核中", "val": 0},
+                {"text": "拒绝", "val": 1}
+            ]
+        }),
+        listeners: {
+            change: function(){
+            	orderStore.loadPage(1);
+            }
+        }
+    }, /* {
+    	xtype: 'combobox',
+        id: 'search_closed',
+        emptyText: '订单状态...',
+        displayField: 'text',
+        valueField: 'val',
+        width: 100,
+        store: Ext.create('Ext.data.Store', {
+            fields: ['text', 'val'],
+            data: [
+                {"text": "未关闭", "val": 0},
+                {"text": "已关闭", "val": 1}
+            ]
+        }),
+        listeners: {
+            change: function(){
+            	orderStore.loadPage(1);
+            }
+        }
+    },  */{
+        xtype: 'combobox',
+        id: 'search_dept',
+        emptyText: '需求部门...',
+        displayField: 'name',
+        valueField: 'id',
+        width: 100,
+        store: deptStore,
+        queryMode: 'local',
+        multiSelect: true
+    }, {
+        xtype: 'combobox',
+        id: 'search_type',
+        emptyText: '采购类别...',
+        displayField: 'name',
+        valueField: 'id',
+        width: 100,
+        store: typeListStore,
+        queryMode: 'local',
+        multiSelect: true
+    }, {
+        xtype: 'datefield',
+        format: 'Y-m-d',
+        width: 100,
+        id: 'search_date_from',
+        emptyText: '订单日期从...'
+    }, {
+        xtype: 'datefield',
+        format: 'Y-m-d',
+        width: 100,
+        id: 'search_date_to',
+        emptyText: '订单日期至...'
+    }, {
+        xtype: 'combobox',
+        id: 'search_buyer',
+        emptyText: '采购员...',
+        displayField: 'name',
+        valueField: 'id',
+        width: 100,
+        store: buyerListStore,
+        queryMode: 'local',
+        multiSelect: true
+    }, {
+        xtype: 'textfield',
+        id: 'search_key',
+        emptyText: '关键字...',
+        width: 100,
+        listeners: {
+        	specialKey :function(field,e){
+                if (e.getKey() == Ext.EventObject.ENTER){
+                	orderStore.loadPage(1);
+                }
+            }
+        }
+    }, {
+        xtype: 'splitbutton',
+        text: '查询',
+        iconCls: 'icon-search',
+        handler: function(){
+        	orderStore.loadPage(1);
+        },
+        menu: [{
+            text: '导出',
+            //disabled: true,
+            iconCls: 'icon-export',
+            handler: function(){
+            	var key = Ext.getCmp('search_key').getValue();
+            	var state = Ext.getCmp('search_state').getValue();
+            	var type = Ext.JSON.encode(Ext.getCmp('search_type').getValue());
+            	var dept = Ext.JSON.encode(Ext.getCmp('search_dept').getValue());
+            	var buyer = Ext.JSON.encode(Ext.getCmp('search_buyer').getValue());
+            	var date_from = Ext.Date.format(Ext.getCmp('search_date_from').getValue(), 'Y-m-d');
+                var date_to = Ext.Date.format(Ext.getCmp('search_date_to').getValue(), 'Y-m-d');
+                
+            	window.open(homePath+'/public/erp/purchse_statistics_order/getorder/option/csv/key/' + key + '/state/' + state + '/buyer/' + buyer + '/date_from/' + date_from + '/date_to/' + date_to + '/type/' + type + '/dept/' + dept);
+            }
+        }]
+    }],
+    viewConfig: {
+        stripeRows: false,// 取消偶数行背景色
+        getRowClass: function(record) {
+        	if(record.get('active') == 0 || record.get('order_state') == '拒绝'){
+                return 'light-red-row';
+            }else if(record.get('qty_left' == 0)){
+                return 'gray-row';
+            }
+        }
+    },
+    columns: [{
+        xtype: 'rownumberer'
+    }, {
+        text: '启用',
+        locked: true,
+        dataIndex: 'active',
+        align: 'center',
+        renderer: activeRender,
+        width: 50
+    }, {
+        text: '订单号',
+        locked: true,
+        dataIndex: 'order_number',
+        align: 'center',
+        width: 100
+    }, {
+        text: '类别',
+        locked: true,
+        dataIndex: 'order_type_name',
+        align: 'center',
+        width: 100
+    }, {
+        text: '供应商代码',
+        locked: true,
+        dataIndex: 'order_supplier_code',
+        align: 'center',
+        width: 80
+    }, {
+        text: '供应商名称',
+        locked: true,
+        dataIndex: 'order_supplier_name',
+        renderer: function(val, cellmeta, record, rowIndex){
+        	cellmeta.tdAttr = 'data-qtip="' + val + '"';
+        	return val;
+    	},
+        width: 120
+    }, {
+        text: '物料号',
+        locked: true,
+        dataIndex: 'code',
+        align: 'center',
+        width: 140
+    }, {
+        text: '名称',
+        locked: true,
+        dataIndex: 'name',
+        width: 120
+    }, {
+        text: '描述',
+        locked: true,
+        dataIndex: 'description',
+        renderer: longTextRender,
+        width: 200
+    }, {
+        text: '订单数量',
+        //locked: true,
+        dataIndex: 'qty',
+        align: 'center',
+        renderer: function(val, meta, record){
+        	meta.style = 'background-color: #DFFFDF';
+        	
+        	return val;
+        },
+        width: 80
+    }, {
+        text: '申请数量',
+        //locked: true,
+        dataIndex: 'qty_req',
+        align: 'center',
+        renderer: function(val, meta, rec){
+        	meta.tdAttr = 'data-qtip="' + rec.get('req_info').replace(/,/g, '<br>') + '"';
+        	meta.style = 'background-color: #DFFFDF;overflow:auto;padding: 2px 2px;text-overflow: ellipsis;white-space: nowrap;white-space:normal;line-height:16px;';
+        	
+        	return val;
+        },
+        width: 80
+    }, {
+        text: '到货数量',
+        dataIndex: 'qty_receive',
+        align: 'center',
+        renderer: function(val, meta, record){
+        	meta.style = 'background-color: #FFFFDF';
+        	
+        	return val;
+        },
+        width: 80
+    }, {
+        text: '到货信息',
+        dataIndex: 'receive_info',
+        renderer: function(val, meta, record){
+        	meta.tdAttr = 'data-qtip="' + val.replace(/,/g, '<br>') + '"';
+        	meta.style = 'background-color: #FFFFDF;overflow:auto;padding: 2px 2px;text-overflow: ellipsis;white-space: nowrap;white-space:normal;line-height:16px;';
+        	
+        	return val.replace(/,/g, '<br>');
+        },
+        width: 300
+    }, {
+        text: '入库数量',
+        dataIndex: 'in_stock_qty',
+        align: 'center',
+        renderer: function(val, meta, record){
+        	meta.style = 'background-color: #DFFFDF';
+        	
+        	return val;
+        },
+        width: 80
+    }, {
+        text: '入库信息',
+        dataIndex: 'in_stock_info',
+        renderer: function(val, meta, record){
+        	meta.tdAttr = 'data-qtip="' + val.replace(/,/g, '<br>') + '"';
+        	meta.style = 'background-color: #DFFFDF;overflow:auto;padding: 2px 2px;text-overflow: ellipsis;white-space: nowrap;white-space:normal;line-height:16px;';
+        	
+        	return val.replace(/,/g, '<br>');
+        },
+        width: 300
+    }, {
+        text: '未到货数量',
+        dataIndex: 'qty_left',
+        align: 'center',
+        renderer: function(val, meta, record){
+        	meta.style = 'background-color: #F0F0F0';
+        	
+        	return val;
+        },
+        width: 80
+    }, {
+        text: '需求交期',
+        dataIndex: 'request_date',
+        align: 'center',
+        renderer: function(val, meta, record){
+        	meta.style = 'color: #006000; font-weight: bold';
+        	
+        	return Ext.util.Format.date(val, 'Y-m-d');
+        },
+        width: 100
+    }, {
+        text: '预计交期',
+        dataIndex: 'delivery_date',
+        align: 'center',
+        renderer: function(val, meta, record){
+        	meta.style = 'background-color: #FFECEC;color: #0000FF; font-weight: bold';
+        	
+        	return Ext.util.Format.date(val, 'Y-m-d');
+        },
+        editor: {
+            xtype: 'datefield',
+            //editable: false,
+            format: 'Y-m-d'
+        },
+        width: 100
+    }, {
+        text: '交期备注',
+        dataIndex: 'delivery_date_remark',
+        renderer: function(val, meta, record){
+        	meta.style = 'background-color: #FFECEC;color: #0000FF;';
+        	
+        	return val;
+        },
+        editor: 'textfield',
+        width: 180
+    }, {
+        text: '交期回复日志',
+        dataIndex: 'delivery_reply_log',
+        renderer: function(val, meta, record){
+        	meta.style = 'background-color: #FFECEC;color: #0000FF;overflow:auto;padding: 2px 2px;text-overflow: ellipsis;white-space: nowrap;white-space:normal;line-height:16px;';
+        	
+        	return val.replace(/,/g, '<br>');//.replace(/[/g, '<b>').replace(/]/g, '</b>')
+        },
+        width: 300
+    }, {
+        text: '订货产品出库申请号',
+        dataIndex: 'order_req_num',
+        width: 130
+    }, {
+        text: '客户收件人地址简码',
+        dataIndex: 'customer_address',
+        width: 140
+    }, {
+        text: '客户合同号',
+        dataIndex: 'customer_aggrement',
+        width: 140
+    }, {
+        text: '申购单号',
+        dataIndex: 'req_info',
+        renderer: function(val, meta, rec){
+        	meta.tdAttr = 'data-qtip="' + val.replace(/,/g, '<br>') + '"';
+        	meta.style = 'background-color: #DFFFDF;overflow:auto;padding: 2px 2px;text-overflow: ellipsis;white-space: nowrap;white-space:normal;line-height:16px;';
+        	
+        	return val.replace(/,/g, '<br>');
+        },
+        width: 300
+    }, {
+        text: '需求部门',
+        dataIndex: 'dept_id',
+        renderer: deptRender,
+        width: 110
+    }, {
+        text: '备注',
+        dataIndex: 'remark',
+        renderer: longTextRender,
+        width: 100
+    }, {
+        text: '下单时间',
+        dataIndex: 'order_create_time',
+        align: 'center',
+        width: 140
+    }, {
+        text: '批准时间',
+        dataIndex: 'order_release_time',
+        align: 'center',
+        width: 140
+    }],
+    bbar: Ext.create('Ext.PagingToolbar', {
+    	border: 0,
+        store: orderStore,
+        displayInfo: true,
+        displayMsg: '显示 {0} - {1} 共 {2}',
+        emptyMsg: "没有数据"
+    })
+});
+
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+    
+    Ext.create('Ext.Viewport', {
+        layout: 'border',
+        items: [{
+            region: 'center',
+            border: 0,
+            layout: 'fit',
+            items: [orderGrid]
+        }]
+    });
+
+    if(canReply){
+    	Ext.getCmp('orderGrid').getView().headerCt.insert(7, priceColumn);
+    	Ext.getCmp('orderGrid').getView().headerCt.insert(8, priceTaxColumn);
+    }
+});
+</script>
+</head>
+<body>
+</body>
+</html>

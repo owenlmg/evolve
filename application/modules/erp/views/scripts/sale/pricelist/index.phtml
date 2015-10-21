@@ -1,0 +1,401 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+var user_id = <?php echo $this->user_id?>;
+var admin = <?php echo $this->admin;?>;
+
+Ext.require([
+    'Ext.*'
+]);
+
+Ext.define('Selection', {
+    extend: 'Ext.data.Model',
+    fields: [{name: 'id', type: 'int'},
+             {name: 'currency_id', type: 'int'},
+             {name: 'currency'},
+             {name: 'mpq', type: 'int'},
+             {name: 'moq', type: 'int'},
+             {name: 'code'},
+             {name: 'name'},
+             {name: 'symbol'},
+             {name: 'text'},
+             {name: 'rate'},
+             {name: 'description'},
+             {name: 'customer_code'},
+             {name: 'customer_description'}]
+});
+
+Ext.define('Ladder', {
+    extend: 'Ext.data.Model',
+    fields: [{name: "item_id"},
+             {name: "id"},
+             {name: "qty"},
+             {name: "price_start", type: 'float'},
+             {name: "price_final", type: 'float'},
+             {name: "remark"}]
+});
+
+var ladderStore = Ext.create('Ext.data.Store', {
+    model: 'Ladder'
+});
+
+// 客户列表
+var customerStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/erp/bpartner/getpartner/option/list/type/1'
+    },
+    autoLoad: true
+});
+
+// 币种
+var currencyStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+       type: 'ajax',
+       reader: 'json',
+       url: homePath+'/public/erp/setting_currency/getcurrency/option/list'
+    },
+    autoLoad: true
+});
+
+// 数据模型
+Ext.define('Pricelist', {
+    extend: 'Ext.data.Model',
+    fields: [{name: "id"},
+             {name: "price_date"},
+             {name: "price_number"},
+             {name: "price_currency"},
+             {name: "price_tax"},
+             {name: "price_tax_id"},
+             {name: "price_description"},
+             {name: "price_remark"},
+             {name: "price_release_time"},
+             {name: "price_creater"},
+             {name: "customer"},
+             {name: "type"},
+             {name: "code"},
+             {name: "name"},
+             {name: "description"},
+             {name: "customer_code"},
+             {name: "customer_description"},
+             {name: "price"},
+             {name: "price_start"},
+             {name: "price_final"},
+             {name: "active_date"},
+             {name: "unit"},
+             {name: "ladder"},
+             {name: "active"},
+             {name: "remark"}]
+});
+
+// 数据源
+var pricelistStore = Ext.create('Ext.data.Store', {
+    model: 'Pricelist',
+    pageSize: 50,
+    groupField: 'customer',
+    proxy: {
+        type: 'ajax',
+        reader: {
+            type: 'json',
+            root: 'rows',
+            totalProperty: 'total'
+        },
+        url: homePath+'/public/erp/sale_pricelist/data'
+    },
+    listeners: {
+        beforeload: function(store){
+        	var code = Ext.getCmp('search_code').getValue();
+        	var show_inactive = Ext.getCmp('search_show_inactive').getValue();
+        	var customer_id = Ext.getCmp('search_customer_id').getValue();
+            
+            Ext.apply(store.proxy.extraParams, {
+            	show_inactive: show_inactive,
+            	code: code,
+            	customer_id: customer_id
+            });
+        }
+    }
+});
+
+// 获取货币符号
+function setMoney(val){
+    var symbol = '';
+    var selection = pricelistGrid.getView().getSelectionModel().getSelection();
+    var rec = selection[0];
+    var currency = rec.get('price_currency');
+    
+    currencyStore.each(function(rec) {
+        if (rec.get('name') == currency) {
+            symbol = rec.get('symbol');
+        }
+    });
+    
+    return Ext.util.Format.currency(val, symbol, 4);
+}
+
+// 货币格式化
+function setTotalMoney(val, currency){
+    var symbol = '';
+    
+    currencyStore.each(function(rec) {
+        if (rec.get('name') == currency) {
+            symbol = rec.get('symbol');
+        }
+    });
+    
+    return Ext.util.Format.currency(val, symbol, 2);
+}
+</script>
+<!-- <script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/sale/price/js/review.js"></script> -->
+<script type="text/javascript">
+
+
+//阶梯价
+var ladderGrid = Ext.create('Ext.grid.Panel', {
+    id: 'ladderGrid',
+    layout: 'fit',
+    margin: '0 0 0 2',
+    flex: 1,
+    columnLines: true,
+    border: 0,
+    store: ladderStore,
+    columns: [{
+       xtype: 'rownumberer'
+    }, {
+       text: 'ID',
+       align: 'center',
+       hidden: true,
+       dataIndex: 'id',
+       width: 50
+    }, {
+       text: '数量',
+       dataIndex: 'qty',
+       align: 'center',
+       renderer: function(val, meta, record){
+           meta.style = 'background-color: #DFFFDF';
+           
+           return val;
+       },
+       flex: 1
+    }, {
+       text: '初始价格',
+       dataIndex: 'price_start',
+       /* renderer: function(value, meta, rec){
+           return setMoney(value);
+       }, */
+       flex: 1
+    }, {
+       text: '最终价格',
+       dataIndex: 'price_final',
+       /* renderer: function(value, meta, rec){
+           return setMoney(value);
+       }, */
+       flex: 1
+    }, {
+       text: '备注',
+       hidden: true,
+       dataIndex: 'remark',
+       flex: 1
+    }]
+});
+
+var groupingFeature = Ext.create('Ext.grid.feature.Grouping',{
+	groupHeaderTpl: '[{name}：{rows.length} 项 ]',
+    hideGroupedHeader: true
+});
+
+// 列表
+var pricelistGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
+    extend: 'Ext.grid.Panel',
+    xtype: 'locking-grid',
+    border: 0,
+    store: pricelistStore,
+    id: 'pricelistGrid',
+    features: [groupingFeature],
+    columnLines: true,
+    viewConfig: {
+        stripeRows: false,
+        getRowClass: function(record) {
+            if(record.get('active') == 0){
+                return 'gray-row';
+            }
+        }
+    },
+    columns: [{
+        xtype: 'rownumberer'
+    }, {
+        text: 'ID',
+        align: 'center',
+        hidden: true,
+        locked: true,
+        dataIndex: 'id'
+    }, {
+        text: '类别',
+        align: 'center',
+        dataIndex: 'type',
+        renderer: function(val, meta){
+            return val == 'catalog' ? '内部型号' : '物料代码';
+        },
+        locked: true,
+        width: 80
+    }, {
+        text: '物料号 / 内部型号',
+        dataIndex: 'code',
+        locked: true,
+        width: 120
+    }, {
+        text: '客户',
+        dataIndex: 'customer',
+        locked: true,
+        width: 120
+    }, {
+        text: '价格',
+        dataIndex: 'price',
+        locked: true,
+        width: 100
+    }, {
+        text: '生效日期',
+        dataIndex: 'active_date',
+        locked: true,
+        width: 100
+    }, {
+        text: '名称',
+        dataIndex: 'name',
+        width: 120
+    }, {
+        text: '描述',
+        dataIndex: 'description',
+        width: 200
+    }, {
+        text: '客户产品型号',
+        dataIndex: 'customer_code',
+        width: 120
+    }, {
+        text: '客户产品描述',
+        dataIndex: 'customer_description',
+        width: 200
+    }],
+    listeners: {
+        selectionchange: function( sel, selected, eOpts ){
+            if(selected.length > 0){
+            	var ladder = selected[0].get('ladder');
+            	
+            	if(ladder != '' && ladder != undefined){
+            		ladderStore.loadData(Ext.JSON.decode(ladder));
+            	}else{
+            		ladderStore.removeAll();
+            	}
+            }
+        }
+    },
+    bbar: Ext.create('Ext.PagingToolbar', {
+        border: 0,
+        store: pricelistStore,
+        displayInfo: true,
+        displayMsg: '显示 {0} - {1} 共 {2}',
+        emptyMsg: "没有数据"
+    })
+});
+
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+    
+    Ext.create('Ext.Viewport', {
+        layout: 'border',
+        border: 0,
+        items: [{
+            region: 'center',
+            layout: 'border',
+            border: 0,
+            tbar: [{
+            	xtype: 'combobox',
+                id: 'search_customer_id',
+                width: 280,
+                emptyText: '客户...',
+                displayField: 'name',
+                valueField: 'id',
+                store: customerStore,
+                selectOnFocus: true,
+            	autoSelect: false,
+                queryMode: 'local',
+                listeners: {
+            	    'beforequery':function(e){
+                        var combo = e.combo;  
+                        if(!e.forceAll){  
+                            var input = e.query;  
+                            var regExp = new RegExp(".*" + input + ".*");
+                            
+                            combo.store.filterBy(function(record,id){  
+                                var text = record.get(combo.displayField);  
+                                return (text.toUpperCase().indexOf(input.toUpperCase())!=-1);
+                            });
+                            combo.expand();  
+                            return false;
+                        }
+                    }
+                }
+            }, {
+                xtype: 'textfield',
+                id: 'search_code',
+                emptyText: '料号 / 内部型号...',
+                width: 150,
+                listeners: {
+                    specialKey :function(field,e){
+                        if (e.getKey() == Ext.EventObject.ENTER){
+                        	pricelistStore.loadPage(1);
+                        }
+                    }
+                }
+            }, {
+                text: '查询',
+                iconCls: 'icon-search',
+                handler: function(){
+                	pricelistStore.loadPage(1);
+                }
+            }, {
+                id: 'search_show_inactive',
+                xtype: 'checkbox',
+                fieldLabel: '显示已作废价格',
+                labelWidth: 120,
+                labelAlign: 'right',
+                listeners: {
+                    change: function( chk, newValue, oldValue, eOpts ){
+                    	pricelistStore.loadPage(1);
+                    }
+                }
+            }, '->', {
+                text: '刷新',
+                iconCls: 'icon-refresh',
+                handler: function(){
+                	pricelistStore.reload();
+                }
+            }],
+            items: [{
+                region: 'center',
+                border: 0,
+                layout: 'fit',
+                items: [pricelistGrid]
+            }, {
+            	region: 'east',
+            	width: 360,
+                layout: 'fit',
+                split: true,
+                border: 0,
+                items: [ladderGrid]
+            }]
+        }]
+    });
+
+    pricelistStore.loadPage(1);
+});
+</script>
+</head>
+<body>
+</body>
+</html>

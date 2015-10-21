@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<?php 
+$user_session = new Zend_Session_Namespace('user');
+if(!isset($user_session->user_info) || !Application_Model_User::checkPermissionByRoleName('公告管理员')){
+    exit("没有权限！");
+}
+?>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/public/js/editor.js"></script>
+<script language="javascript">
+Ext.require([
+    'Ext.*'
+]);
+
+Ext.Loader.setConfig({
+	enabled:true,
+	disableCaching:false,
+	paths:{
+		'Go':homePath+'/library/ext/plugins/Go'
+	}
+});
+
+Ext.define('Selection', {
+    extend: 'Ext.data.Model',
+    fields: ['id', 'name']
+});
+
+Ext.define('News', {
+    extend: 'Ext.data.Model',
+    fields: [{name: "id"}, 
+             {name: "active"}, 
+             {name: "public"}, 
+             {name: "deleted"}, 
+             {name: "type_id"}, 
+             {name: "title"}, 
+             {name: "subhead"}, 
+             {name: "summary"}, 
+             {name: "content"}, 
+             {name: "comment_cnt"}, 
+             {name: "create_time",type: 'date',dateFormat: 'timestamp'}, 
+             {name: "update_time",type: 'date',dateFormat: 'timestamp'}, 
+             {name: "creater"}, 
+             {name: "updater"}]
+});
+
+Ext.define('Type', {
+    extend: 'Ext.data.Model',
+    fields: [{name: "id"}, 
+             {name: "active"}, 
+             {name: "name"}, 
+             {name: "description"}, 
+             {name: "remark"}, 
+             {name: "public"}, 
+             {name: "create_time",type: 'date',dateFormat: 'timestamp'}, 
+             {name: "update_time",type: 'date',dateFormat: 'timestamp'}, 
+             {name: "creater"}, 
+             {name: "updater"}]
+});
+
+// 公告数据源
+var newsStore = Ext.create('Ext.data.Store', {
+    model: 'News',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/hra/news/getnews/option/data'
+    }
+});
+
+// 公告类别数据源
+var typeStore = Ext.create('Ext.data.Store', {
+    model: 'Type',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/hra/news/gettype/option/data'
+    }
+});
+
+// 公告类别列表数据源
+var typeListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/hra/news/gettype/option/list'
+    },
+    autoLoad: true
+});
+
+// 公告编辑插件
+var newsRowEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+    clicksToEdit: 1
+});
+
+// 公告类别编辑插件
+var typeRowEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+    clicksToEdit: 1
+});
+
+// 渲染类别选项
+var typeRender = function (val){
+    if(val > 0){
+        var idx = 0;
+        
+        if(isNaN(val)){
+            // Not Number
+            idx = typeListStore.find('name', val);
+        }else{
+            // Number
+            idx = typeListStore.find('id', val);
+        }
+    
+        if(idx >= 0){
+            var rec = typeListStore.getAt(idx);
+            return rec.get('name');
+        }
+        
+        return val;
+    }else{
+        return '';
+    }
+};
+
+//必填提示
+var required = '<span style="color:red;font-weight:bold" data-qtip="Required">*</span>';
+
+// 公告内容表单
+var newsContentForm = Ext.create('Ext.form.Panel', {
+    xtype: 'form',
+    border: 0,
+    id: 'newsContentForm',
+    layout: {
+        type: 'vbox',
+        align: 'stretch'
+    },
+    border: false,
+    bodyPadding: 5,
+    
+    url: homePath+'/public/hra/news/edit',
+    defaultType: 'textfield',
+
+    fieldDefaults: {
+        labelAlign: 'right',
+        labelWidth: 50,
+        labelStyle: 'font-weight:bold'
+    },
+
+    items: [{
+        xtype: 'fieldcontainer',
+        layout: 'hbox',
+
+        items: [{
+        	flex: 1.2,
+        	xtype:'combobox',
+            displayField: 'name',
+            valueField: 'id',
+            triggerAction: 'all',
+            lazyRender: true,
+            store: typeListStore,
+            queryMode: 'local',
+            name: 'type_id',
+            fieldLabel: '类别',
+            value: '1',
+            afterLabelTextTpl: required,
+            editable: false,
+            allowBlank: false
+        }, {
+        	flex: 3,
+            xtype: 'textfield',
+            fieldLabel: '标题',
+            name: 'title',
+            allowBlank: false,
+            afterLabelTextTpl: required,
+            allowBlank: false
+        }, {
+        	flex: 2,
+            xtype: 'textfield',
+            fieldLabel: '副标题',
+            name: 'subhead'
+        }, {
+            flex: 0.5,
+            fieldLabel: '状态',
+            checked: true,
+            name: 'active',
+            xtype: 'checkbox'
+        }, {
+            flex: 0.5,
+            fieldLabel: '公开',
+            name: 'public',
+            xtype: 'checkbox'
+        }]
+    }, {
+        fieldLabel: '摘要',
+        name: 'summary',
+        allowBlank: false
+    }, {
+    	fieldLabel: '内容',
+        xtype: 'ckeditor',
+        name: 'content',
+        id: 'content',
+        allowBlank: true,
+        CKConfig: {
+            height: 190,
+            //如果选择字体样式等的弹出窗口被当前window挡住，就设置这个为一个较大的值
+            baseFloatZIndex: 99999,
+            //图片和flash都上传到这里
+            filebrowserBrowseUrl : homePath+'/library/ckeditor/ckfinder/ckfinder.html',
+            filebrowserImageBrowseUrl : homePath+'/library/ckeditor/ckfinder/ckfinder.html?Type=Site',
+            filebrowserFlashBrowseUrl : homePath+'/library/ckeditor/ckfinder/ckfinder.html?Type=Site',
+            filebrowserUploadUrl : homePath+'/library/ckeditor/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Site',
+            filebrowserImageUploadUrl : homePath+'/library/ckeditor/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Site',
+            filebrowserFlashUploadUrl : homePath+'/library/ckeditor/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Site'
+        },
+        anchor: '100%'
+    }, {
+        xtype: 'hiddenfield',
+        name: 'id',
+        id: 'id'
+    }],
+
+    buttons: [{
+        text: '提交',
+        handler: function() {
+            var form = this.up('form').getForm();
+            
+            if (form.isValid()) {
+                form.submit({
+                	waitMsg: '提交中，请稍后...',
+                    success: function(form, action) {
+                       Ext.Msg.alert('Success', action.result.info);
+                       newsEditWin.hide();
+                       newsStore.reload();
+                    },
+                    failure: function(form, action) {
+                        Ext.Msg.alert('Failed', action.result.info);
+                    }
+                });
+            }
+        }
+    },{
+        text: '取消',
+        handler: function() {
+            this.up('window').hide();
+        }
+    }]
+});
+
+// 公告内容编辑窗口
+var newsEditWin = Ext.create('Ext.window.Window', {
+    title: '修改公告内容',
+    id: 'newContentWin',
+    height: 475,
+    width: 1000,
+    modal: true,
+    constrain: true,
+    resizable: false,
+    //maximizable: true,
+    layout: 'fit',
+    items: newsContentForm,
+    closeAction: 'hide'
+});
+
+// 显示公告内容编辑窗口
+function openEdit(idx){
+    newsEditWin.show();
+    //newsEditWin.maximize();
+    var record = newsStore.getAt(idx);
+    var title = record.get('title');
+    newsContentForm.getForm().loadRecord(record);
+    newsEditWin.setTitle('修改');
+}
+
+// 公告类别维护窗口
+var newsTypeWin = Ext.create('Ext.window.Window', {
+    title: '分类管理',
+    height: 300,
+    width: 800,
+    modal: true,
+    constrain: true,
+    layout: 'fit',
+    closeAction: 'hide',
+    tools: [{
+        type: 'refresh',
+        tooltip: 'Refresh',
+        scope: this,
+        handler: function(){typeStore.reload();}
+    }],
+    //items: [top.Ext.create('Ext.grid.Panel', {
+    items: [Ext.create('Ext.grid.Panel', {
+    	border: 0,
+        id: 'typeGrid',
+        columnLines: true,
+        store: typeStore,
+        selType: 'checkboxmodel',
+        tbar: [{
+            text: '添加分类',
+            iconCls: 'icon-add',
+            scope: this,
+            handler: function(){
+                typeRowEditing.cancelEdit();
+                
+                var r = Ext.create('Type', {
+                    active: true,
+                    public: false
+                });
+                
+                typeStore.insert(0, r);
+                typeRowEditing.startEdit(0, 0);
+            }
+        }, {
+            text: '删除分类',
+            iconCls: 'icon-delete',
+            scope: this,
+            handler: function(){
+                var selection = Ext.getCmp('typeGrid').getView().getSelectionModel().getSelection();
+
+                if(selection.length > 0){
+                    typeStore.remove(selection);
+                }else{
+                    Ext.MessageBox.alert('错误', '没有选择删除对象！');
+                }
+            }
+        }, {
+            text: '保存修改',
+            iconCls: 'icon-save',
+            scope: this,
+            handler: function(){
+                var updateRecords = typeStore.getUpdatedRecords();
+                var insertRecords = typeStore.getNewRecords();
+                var deleteRecords = typeStore.getRemovedRecords();
+
+                // 判断是否有修改数据
+                if(updateRecords.length + insertRecords.length + deleteRecords.length > 0){
+                    var changeRows = {
+                            updated:    [],
+                            inserted:   [],
+                            deleted:    []
+                    }
+
+                    // 判断职位信息是否完整
+                    var valueCheck = true;
+
+                    for(var i = 0; i < updateRecords.length; i++){
+                        var data = updateRecords[i].data;
+                        
+                        if(data['name'] == ''){
+                            valueCheck = false;
+                            break;
+                        }
+                        
+                        changeRows.updated.push(data)
+                    }
+                    
+                    for(var i = 0; i < insertRecords.length; i++){
+                        var data = insertRecords[i].data;
+                        
+                        if(data['name'] == ''){
+                            valueCheck = false;
+                            break;
+                        }
+                        
+                        changeRows.inserted.push(data)
+                    }
+                    
+                    for(var i = 0; i < deleteRecords.length; i++){
+                        changeRows.deleted.push(deleteRecords[i].data)
+                    }
+
+                    // 格式正确则提交修改数据
+                    if(valueCheck){
+                        Ext.MessageBox.confirm('确认', '确定保存修改内容？', function(button, text){
+                            if(button == 'yes'){
+                                var json = Ext.JSON.encode(changeRows);
+                                
+                                Ext.Msg.wait('提交中，请稍后...', '提示');
+                                Ext.Ajax.request({
+                                    url: homePath+'/public/hra/news/edittype',
+                                    params: {json: json},
+                                    method: 'POST',
+                                    success: function(response, options) {
+                                        var data = Ext.JSON.decode(response.responseText);
+
+                                        if(data.success){
+                                            Ext.MessageBox.alert('提示', data.info);
+                                            typeStore.reload();
+                                            typeListStore.reload();
+                                        }else{
+                                            Ext.MessageBox.alert('错误', data.info);
+                                        }
+                                    },
+                                    failure: function(response){
+                                        Ext.MessageBox.alert('错误', '保存提交失败');
+                                    }
+                                });
+                            }
+                        });
+                    }else{
+                        Ext.MessageBox.alert('错误', '信息不完整，请继续填写！');
+                    }
+                }else{
+                    Ext.MessageBox.alert('提示', '没有修改任何数据！');
+                }
+            }
+        }],
+        plugins: typeRowEditing,
+        columns: [{
+            xtype: 'rownumberer'
+        }, {
+            xtype: 'checkcolumn',
+            text: '状态',
+            dataIndex: 'active',
+            stopSelection: false,
+            flex: 0.5
+        }, {
+            xtype: 'checkcolumn',
+            text: '公开',
+            dataIndex: 'public',
+            stopSelection: false,
+            flex: 0.5
+        }, {
+            text: '名称',
+            dataIndex: 'name',
+            editor: 'textfield',
+            flex: 1
+        }, {
+            text: '描述',
+            dataIndex: 'description',
+            editor: 'textfield',
+            flex: 1.5
+        }, {
+            text: '备注',
+            dataIndex: 'remark',
+            editor: 'textfield',
+            flex: 1.5
+        }, {
+            text: '创建人',
+            hidden: true,
+            dataIndex: 'creater',
+            flex: 0.5
+        }, {
+            text: '创建时间',
+            hidden: true,
+            dataIndex: 'create_time',
+            renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+            flex: 1.2
+        }, {
+            text: '更新人',
+            hidden: true,
+            dataIndex: 'updater',
+            flex: 0.5
+        }, {
+            text: '更新时间',
+            hidden: true,
+            dataIndex: 'update_time',
+            renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+            flex: 1.2
+        }]
+    })]
+});
+
+// 公告列表
+var newsGrid = Ext.create('Ext.grid.Panel', {
+    store: newsStore,
+    border: 0,
+    selType: 'checkboxmodel',
+    columnLines: true,
+    tbar: [{
+        xtype: 'combobox',
+        id: 'search_type_id',
+        emptyText: '选择类别...',
+        displayField: 'name',
+        valueField: 'id',
+        width: 180,
+        store: typeListStore,
+        queryMode: 'local',
+        editable: false,
+        multiSelect: true
+    }, {
+        xtype: 'textfield',
+        id: 'search_key',
+        emptyText: '关键字...',
+        listeners: {
+        	specialKey :function(field,e){
+                if (e.getKey() == Ext.EventObject.ENTER){
+                	var key = Ext.getCmp('search_key').getValue();
+                    var date_from = Ext.Date.format(Ext.getCmp('search_date_from').getValue(), 'Y-m-d');
+                    var date_to = Ext.Date.format(Ext.getCmp('search_date_to').getValue(), 'Y-m-d');
+                    var type_id = Ext.JSON.encode(Ext.getCmp('search_type_id').getValue());
+                    
+                    newsStore.load({
+                        params: {
+                            key: key,
+                            date_from: date_from,
+                            date_to: date_to,
+                            type_id: type_id
+                        }
+                    });
+                }
+            }
+        }
+    }, {
+        xtype: 'datefield',
+        format: 'Y-m-d',
+        width: 120,
+        id: 'search_date_from',
+        emptyText: '发布日期从...'
+    }, {
+        xtype: 'datefield',
+        format: 'Y-m-d',
+        width: 120,
+        id: 'search_date_to',
+        emptyText: '发布日期至...'
+    }, {
+        xtype: 'splitbutton',
+        text: '查询',
+        iconCls: 'icon-search',
+        handler: function(){
+            var key = Ext.getCmp('search_key').getValue();
+            var date_from = Ext.Date.format(Ext.getCmp('search_date_from').getValue(), 'Y-m-d');
+            var date_to = Ext.Date.format(Ext.getCmp('search_date_to').getValue(), 'Y-m-d');
+            var type_id = Ext.JSON.encode(Ext.getCmp('search_type_id').getValue());
+            
+            newsStore.load({
+                params: {
+                    key: key,
+                    date_from: date_from,
+                    date_to: date_to,
+                    type_id: type_id
+                }
+            });
+        },
+        menu: [{
+        	text: '导出',
+            iconCls: 'icon-export',
+            handler: function(){
+            	window.open(homePath+'/public/hra/news/getnews/option/csv');
+            }
+        }]
+    }, {
+        text: '添加',
+        iconCls: 'icon-doc-add',
+        handler: function(){
+        	newsContentForm.getForm().reset();
+        	newsEditWin.setTitle('添加');
+        	newsEditWin.show();
+        }
+    }, {
+        text: '保存',
+        iconCls: 'icon-save',
+        handler: function(){
+            var updateRecords = newsStore.getUpdatedRecords();
+
+            // 判断是否有修改数据
+            if(updateRecords.length > 0){
+                var changeRows = {
+                        updated:    []
+                }
+
+                for(var i = 0; i < updateRecords.length; i++){
+                    changeRows.updated.push(updateRecords[i].data)
+                }
+                
+                Ext.MessageBox.confirm('确认', '确定保存修改内容？', function(button, text){
+                    if(button == 'yes'){
+                        var json = Ext.JSON.encode(changeRows);
+                        Ext.Msg.wait('提交中，请稍后...', '提示');
+                        Ext.Ajax.request({
+                            url: homePath+'/public/hra/news/update',
+                            params: {json: json},
+                            method: 'POST',
+                            success: function(response, options) {
+                                var data = Ext.JSON.decode(response.responseText);
+
+                                if(data.success){
+                                    Ext.MessageBox.alert('提示', data.info);
+                                    newsStore.reload();
+                                }else{
+                                    Ext.MessageBox.alert('错误', data.info);
+                                }
+                            }
+                        });
+                    }
+                });
+            }else{
+                Ext.MessageBox.alert('提示', '没有修改任何数据！');
+            }
+        }
+    }, {
+        text: '分类管理',
+        iconCls: 'icon-setting',
+        handler: function(){
+            typeStore.load();
+            
+            // top.Ext.create('Ext.window.Window', {
+            newsTypeWin.show();
+        }
+    }, '->', {
+        text: '刷新',
+        iconCls: 'icon-refresh',
+        handler: function(){
+        	newsStore.reload();
+        }
+    }],
+    plugins: newsRowEditing,
+    viewConfig: {
+        stripeRows: false,// 取消偶数行背景色
+        getRowClass: function(record) {
+        	if(record.get('deleted')){
+                // 未激活为深灰色
+                return 'dark-row';
+            }else if(!record.get('active')){
+                // 未激活为灰色
+                return 'gray-row';
+            }else if(record.get('public')){
+                // 未激活为灰色
+                return 'light-green-row';
+            }
+        }
+    },
+    columns: [{
+        xtype: 'rownumberer'
+    }, {
+        text: '编辑',
+        dataIndex: 'id',
+        align: 'center',
+        renderer: function(value, metaData, record, colIndex, store, view) {  
+        	return '<img style="cursor:pointer;" onclick="openEdit(' + colIndex + ');" src="'+homePath+'/public/images/icons/doc_edit.png"></img>';
+        },
+        flex: 0.4
+    }, {
+        text: 'ID',
+        hidden: true,
+        dataIndex: 'id',
+        align: 'center',
+        flex: 0.4
+    }, {
+        text: '类别',
+        dataIndex: 'type_id',
+        renderer: typeRender,
+        editor: new Ext.form.field.ComboBox({
+            editable: false,
+            displayField: 'name',
+            valueField: 'id',
+            triggerAction: 'all',
+            lazyRender: true,
+            store: typeListStore,
+            queryMode: 'local'
+        }),
+        flex: 0.7
+    }, {
+        xtype: 'checkcolumn',
+        text: '删除',
+        dataIndex: 'deleted',
+        stopSelection: false,
+        flex: 0.4
+    }, {
+        xtype: 'checkcolumn',
+        text: '状态',
+        dataIndex: 'active',
+        stopSelection: false,
+        flex: 0.4
+    }, {
+        xtype: 'checkcolumn',
+        text: '公开',
+        dataIndex: 'public',
+        stopSelection: false,
+        flex: 0.4
+    }, {
+        text: '标题',
+        dataIndex: 'title',
+        renderer: function(val, cellmeta, record, rowIndex){
+        	var id = record.get('id');
+        	return '<a title="' + val + '" target="_blank" href="'+homePath+'/public/hra/news/view/id/' + id + '">' + val + '</a>';
+        },
+        flex: 2
+    }, {
+        text: '副标题',
+        dataIndex: 'subhead',
+        flex: 2
+    }, {
+        text: '摘要',
+        dataIndex: 'summary',
+        renderer: function(value,metaData,record,colIndex,store,view) {
+            metaData.tdAttr = 'data-qtip="'+value+'"';
+            return value;
+        },
+        flex: 2
+    }, {
+        text: '内容',
+        dataIndex: 'content',
+        hidden: true,
+        flex: 2
+    }, {
+        text: '评论数',
+        align: 'center',
+        dataIndex: 'comment_cnt',
+        flex: 0.5
+    }, {
+        text: '创建人',
+        hidden: true,
+        dataIndex: 'creater',
+        flex: 0.6
+    }, {
+        text: '创建时间',
+        align: 'center',
+        dataIndex: 'create_time',
+        renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+        editor: Ext.create('Go.form.field.DateTime',{
+            renderTo:Ext.getBody(),
+            format:'Y-m-d H:i:s',
+            editable: false,
+            allowBlank: false,
+            anchor:'100%'
+        }),
+        flex: 1.2
+    }, {
+        text: '更新人',
+        hidden: true,
+        dataIndex: 'updater',
+        flex: 0.6
+    }, {
+        text: '更新时间',
+        hidden: true,
+        align: 'center',
+        dataIndex: 'update_time',
+        renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+        flex: 1.2
+    }]
+});
+
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+
+    newsStore.load();
+    
+    Ext.create('Ext.Viewport', {
+        layout: 'border',
+        items: [{
+            region: 'center',
+            layout: 'fit',
+            border: 0,
+            plain: true,
+            items: [newsGrid]
+        }]
+    });
+});
+</script>
+</head>
+<body>
+</body>
+</html>

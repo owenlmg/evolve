@@ -1,0 +1,968 @@
+<html>
+<head>
+    <?php echo SYS_HEAD; ?>
+    <?php
+    $user_session = new Zend_Session_Namespace('user');
+    $user = $user_session->user_info['employee_id'];
+    if (! $user)
+        $user = "0";
+    $editable = 0;
+    if (Application_Model_User::checkPermissionByRoleName('文件管理员') ||
+             Application_Model_User::checkPermissionByRoleName('系统管理员')) {
+        $editable = 1;
+    }
+    ?>
+<script src="<?php echo HOME_PATH ?>/public/js/comboxtree.js"></script>
+<script src="<?php echo HOME_PATH ?>/public/js/common.js"></script>
+<script src="<?php echo HOME_PATH ?>/public/js/downloadFile.js"></script>
+<script src="<?php echo HOME_PATH ?>/public/js/jquery-1.11.1.min.js"></script>
+<style>
+.fileQueue {
+	height: 150px;
+	overflow: auto;
+	border: 1px solid #E5E5E5;
+	margin-bottom: 2px;
+}
+ </style>
+<script type="text/javascript">
+Ext.require([
+    'Ext.data.*',
+    'Ext.grid.*',
+    'Ext.form.*',
+    'Ext.window.MessageBox'
+]);
+
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+
+    Ext.define('upload', {
+        extend: 'Ext.data.Model',
+        idProperty: 'id',
+        fields: [{
+                name: "id"
+            }, {
+                name: "name"
+            }, {
+                name: "path"
+            }, {
+                name: "view_path"
+            }, {
+                name: "size"
+            }, {
+                name: "type"
+            }, {
+                name: "description"
+            }, {
+                name: "remark"
+            }, {
+                name: "share_id"
+            }, {
+                name: "share_name"
+            }, {
+                name: "share_dept_name"
+            }, {
+                name: "share_dept"
+            }, {
+                name: "archive"
+            }, {
+                name: "private"
+            }, {
+                name: "del"
+            }, {
+                name: "share_time"
+            }, {
+                name: "create_time",
+                type: 'date',
+                dateFormat: 'timestamp'
+            }, {
+                name: "update_time",
+                type: 'date',
+                dateFormat: 'timestamp'
+            }, {
+                name: "share_time_begin",
+                type: 'date',
+                dateFormat: 'timestamp'
+            }, {
+                name: "share_time_end",
+                type: 'date',
+                dateFormat: 'timestamp'
+            }, {
+                name: "upload_time",
+                type: 'date',
+                dateFormat: 'timestamp'
+            }, {
+                name: "creater"
+            }, {
+                name: "updater"
+            }, {
+                name: "create_user"
+            }, {
+                name: "update_user"
+            }, {
+                name: "files_id"
+            }, {
+                name: "category"
+            }, {
+                name: "category_name"
+            }, {
+                name: "materiel_id"
+            }]
+    });
+    Ext.define('codemaster', {
+        extend: 'Ext.data.Model',
+        idProperty: 'id',
+        fields: [{name: "id"},
+            {name: "code"},
+            {name: 'text'}
+        ]
+    });
+
+    var uploadStore = Ext.create('Ext.data.Store', {
+        model: 'upload',
+        proxy: {
+            type: 'ajax',
+            reader: 'json',
+            url: '<?php echo HOME_PATH; ?>/public/dcc/upload/getfiles/all/1'
+        },
+        autoLoad: false
+    });
+    uploadStore.load({params:{"search_archive":0}});
+
+    var treeStore = Ext.create('Ext.data.TreeStore', {
+        proxy: {
+            type: 'ajax',
+            url: '<?php echo HOME_PATH; ?>/public/dcc/upload/gettree',
+            actionMethods: 'post'
+        },
+        sorters: [{
+                property: 'leaf',
+                direction: 'ASC'
+            },
+            {
+                property: 'text',
+                direction: 'ASC'
+            }]
+    });
+
+    var deptStore = Ext.create('Ext.data.TreeStore', {
+        proxy: {
+            type: 'ajax',
+            url: '<?php echo HOME_PATH; ?>/public/dcc/upload/gettree/method/dept',
+            actionMethods: 'post'
+        },
+        sorters: [{
+                property: 'leaf',
+                direction: 'ASC'
+            },
+            {
+                property: 'text',
+                direction: 'ASC'
+            }]
+    });
+
+    var categoryStore = Ext.create('Ext.data.Store', {
+        model: 'codemaster',
+        proxy: {
+            type: 'ajax',
+            reader: 'json',
+            url: '<?php echo HOME_PATH; ?>/public/dcc/type/getcodemaster/type/category'
+        },
+        autoLoad: true
+    });
+
+    var uploadedFileIds = new Array();
+
+    // 文件下载
+    var download = function(id) {
+        window.open('<?php echo HOME_PATH; ?>/public/dcc/download/download/id/' + id);
+    };
+
+    var fileForm = Ext.create('Ext.form.Panel', {
+        bodyPadding: 5,
+        border:0,
+        width: 600,
+        layout: 'form',
+        id: 'fileForm',
+        autoScroll: true,
+        waitMsgTarget: true,
+        fieldDefaults: {
+            labelAlign: 'left',
+            labelWidth: 85,
+            margin: '0 10 0 0',
+            msgTarget: 'side'
+        },
+        items: [{
+                xtype: 'fieldcontainer',
+                layout: 'hbox',
+                items: [{
+                        xtype: 'textfield',
+                        name: 'id',
+                        hidden: true
+                    }, {
+                        xtype: 'textfield',
+                        id: 'employeeId',
+                        name: 'employeeId',
+                        hidden: true
+                    }, {
+                        xtype: 'textfield',
+                        id: 'deptId',
+                        name: 'deptId',
+                        hidden: true
+                    }
+                ]}, {
+                    region: 'center',
+                    id: 'uploadPanel',
+                    xtype: 'panel',
+                    border : 0,
+                    items: [{
+                        html: '<input id="uploadFiles" type="file" name="uploadFiles" multiple="true" /><div id="fileQueue" class="fileQueue"></div><input id="upload" type="hidden" name="upload" value="上传" onclick="javascript:$(\'#uploadFiles\').uploadify(\'upload\',\'*\')" />'
+                    }],
+                    listeners: {
+                        afterrender : function() {
+                            $("#uploadFiles").uploadify({
+                        		swf: '<?php echo HOME_PATH; ?>/public/js/uploadify/scripts/uploadify.swf',
+                        		uploader:'<?php echo HOME_PATH; ?>/public/dcc/upload/multiupload',
+                        		formData:{
+                            		'employee_id' : <?=$user;?>
+                        		},
+                        		queueID:'fileQueue',
+                        		buttonText:'选择文件',
+                        		fileObjName : 'file',
+                        		auto : true,
+                        		removeCompleted: false,
+                        		uploadLimit: 99,
+                        		fileSizeLimit: '500MB',
+                        		'onUploadSuccess' : function(file, data, response) {
+                        			if(data) {
+                        				var json = Ext.JSON.decode(data);
+                        				if(json.result) {
+                        				    uploadedFileIds.push(json.id);
+                        				} else {
+                        					$(obj).uploadify('cancel', file.id);
+                        					Ext.Msg.alert('提示', json.info + ':' + file.name);
+                        				}
+                        			}
+                                },
+                                'onUploadError' : function(file, errorCode, errorMsg, errorString) {
+//                                     alert('文件 ' + file.name + ' 上传失败: ' + errorString);
+                                },
+                        		'onQueueComplete': function(queueData) {
+                                	if (queueData.uploadsErrored) {
+                                		Ext.Msg.alert('提示', '文件上传错误');
+                                	} else {
+//                                 		Ext.MessageBox.alert('提示', '文件上传成功');
+//                                 		form.reset();
+//                                         uploadStore.load();
+//                                         win.hide();
+                                	}
+                        		},
+                        		'onFallback': function () {
+                        			alert("您未安装FLASH控件，无法上传！请安装FLASH控件后再刷新本页面。");
+                        			window.open('http://get.adobe.com/cn/flashplayer/');
+                        		}
+                            });
+                        }
+                    }
+                }, {
+                xtype: 'fieldcontainer',
+                layout: 'hbox',
+                items: [{
+                        xtype: 'filefield',
+                        id: 'file',
+                        hidden: true,
+                        disabled: true,
+                        flex: 4,
+                        emptyText: '选择一个文件...',
+                        fieldLabel: '文件',
+                        name: 'file',
+                        allowBlank: false,
+                        buttonText: '浏览',
+                        validator: function(value) {
+                	        if(value && value.indexOf(',') !== -1) {
+                	        	Ext.Msg.alert('提示', '文件名中不能使用英文逗号“,”！');
+                                return false;
+                	        }
+                            //计算文件大小，返回文件大小值，单位K
+                            function getFileSize(target) {
+                                var isIE = /msie/i.test(navigator.userAgent) && !window.opera;
+                                var fs = 0;
+                                if (isIE && !target.files) {
+                                    var filePath = target.value;
+                                    if(0) {
+                                    	var fileSystem = new ActiveXObject("Scripting.FileSystemObject");
+                                        var file = fileSystem.GetFile(filePath);
+                                        fs = file.Size;
+                                    } else {
+                                    	fs = 0;
+                                    }
+
+                                } else if (target.files && target.files.length > 0) {
+                                    fs = target.files[0].size;
+                                } else {
+                                    fs = 0;
+                                }
+                                if (fs > 0) {
+                                    fs = fs / 1024;
+                                }
+                                return fs;
+                            }
+                            //取控件DOM对象
+                            var field = document.getElementById('file');
+                            //取控件中的input元素
+                            var inputs = field.getElementsByTagName('input');
+                            var fileInput = null;
+                            var il = inputs.length;
+                            //取出input 类型为file的元素
+                            for (var i = 0; i < il; i++) {
+                                if (inputs[i].type == 'file') {
+                                    fileInput = inputs[i];
+                                    break;
+                                }
+                            }
+                            if (fileInput != null) {
+                                var fileSize = getFileSize(fileInput);
+                                var private = Ext.getCmp("private").getValue();
+                                //允许上传不大于1M的文件
+                                if (private && fileSize > 500 * 1024) {
+                                    Ext.Msg.alert('提示', '文件太大，私有文件不能大于500M！');
+                                    return false;
+                                } else if (!private && fileSize > 150 * 1024) {
+                                    Ext.Msg.alert('提示', '文件太大，一般文件不能大于150M！');
+                                    return false;
+                                }
+                            }
+                            return true;
+                        },
+                        listeners:{
+                            afterrender:function(cmp){
+                                cmp.fileInputEl.set({
+                                    multiple:'multiple'
+                                });
+                            }
+                        }
+                    }
+                ]}, {
+                xtype: 'fieldcontainer',
+                fieldLabel: '文件',
+                id: 'filedownload',
+                hidden: true,
+                layout: 'hbox',
+                items: [{
+                        xtype: 'displayfield',
+                        id: 'name',
+                        name: 'name'
+                    }, {
+                        xtype: 'splitter'
+                    }, {
+                        xtype: 'button',
+                        text: '在线浏览',
+                        hidden: true,
+                        width: 60,
+                        handler: function() {
+                            var id = this.up('form').getForm().findField('id').getValue();
+
+                            window.open("<?php echo HOME_PATH; ?>/public/dcc/online/?id=" + id);
+                        }
+                    }, {
+                        xtype: 'splitter'
+                    }, {
+                        xtype: 'button',
+                        text: '下载',
+                        hidden: true,
+                        handler: function() {
+                            var form = this.ownerCt.ownerCt;
+                            var record = form.getRecord();
+
+                            download(record.data.id);
+                        }
+                    }]
+            }, {
+                xtype: 'fieldcontainer',
+                layout: 'hbox',
+                items: [{
+                        xtype: 'checkbox',
+                        checked: false,
+                        id: 'private',
+                        name: 'private',
+                        flex: 2,
+                        fieldLabel: '私有',
+                        listeners: {
+                            'change': function(obj, newValue, oldValue, eOpts) {
+                                Ext.getCmp('share_name').setVisible(!newValue);
+                                Ext.getCmp('share_dept').setVisible(!newValue);
+                                Ext.getCmp('share_time_begin').setVisible(!newValue);
+                                Ext.getCmp('share_time_end').setVisible(!newValue);
+                            }
+                        }
+                    }, {
+                        xtype: 'combobox',
+                        fieldLabel: '文件类别',
+                        id: 'category',
+                        name: 'category',
+                        emptyText: '无',
+                        flex: 2,
+                        editable: false,
+                        forceSelection: true,
+                        displayField: 'text',
+                        valueField: 'id',
+                        triggerAction: 'all',
+                        lazyRender: true,
+                        store: categoryStore,
+                        queryMode: 'local'
+                    }
+                ]
+            }, {
+                xtype: 'fieldcontainer',
+                layout: 'hbox',
+                items: [{
+                    xtype : 'employeebobox',
+                    fieldLabel: '共享给个人',
+                    itemId: 'share_name',
+                    name: 'share_name',
+                    hiddenName : 'employeeId',
+                    flex: 2,
+                    width: 460,
+                    allowBlank: true,
+                }/* Ext.create("Ext.ux.comboboxtree", {
+                        id: 'share_name',
+                        name: 'share_name',
+                        hiddenName: 'employeeId',
+                        flex: 2,
+                        labelWidth: 85,
+                        editable: false,
+                        store: treeStore,
+                        cascade: 'child', //级联方式:1.child子级联;2.parent,父级联,3,both全部级联
+                        onlyLeaf: true, //是否只选择叶子节点
+                        fieldLabel: '共享给个人',
+                        displayField: 'text',
+                        valueField: 'id',
+                        rootId: '0',
+                        rootText: 'DRP',
+                        treeNodeParameter: ''
+                    }) */,
+                    Ext.create("Ext.ux.comboboxtree", {
+                        id: 'share_dept',
+                        name: 'share_dept',
+                        hiddenName: 'deptId',
+                        flex: 2,
+                        labelWidth: 85,
+                        editable: false,
+                        store: deptStore,
+                        cascade: 'child', //级联方式:1.child子级联;2.parent,父级联,3,both全部级联
+                        onlyLeaf: false, //是否只选择叶子节点
+                        fieldLabel: '共享给部门',
+                        displayField: 'text',
+                        valueField: 'id',
+                        rootId: '0',
+                        rootText: 'DRP',
+                        treeNodeParameter: ''
+                    })
+                ]
+            }, {
+                xtype: 'fieldcontainer',
+                layout: 'hbox',
+                items: [{
+                        xtype: 'datefield',
+                        format: 'Y-m-d',
+                        id: 'share_time_begin',
+                        name: 'share_time_begin',
+                        flex: 2,
+                        fieldLabel: '共享时间从',
+                        value: new Date()
+                    }, {
+                        xtype: 'datefield',
+                        format: 'Y-m-d',
+                        id: 'share_time_end',
+                        name: 'share_time_end',
+                        flex: 2,
+                        fieldLabel: '共享时间至'
+                    }
+                ]
+            }, {
+                xtype: 'fieldcontainer',
+                layout: 'hbox',
+                items: [{
+                        xtype: 'textarea',
+                        fieldLabel: '描述',
+                        rows: 2,
+                        flex: 2,
+                        id: 'description',
+                        name: 'description'
+                    }, {
+                        xtype: 'textarea',
+                        fieldLabel: '备注',
+                        rows: 2,
+                        flex: 2,
+                        id: 'remark',
+                        name: 'remark'
+                    }
+                ]
+            }, {
+                xtype: "panel",
+                border: false,
+                height: 10,
+                html: '<hr width="100%">'
+            }, {
+                xtype: "panel",
+                border: false,
+                hidden: true,
+                height: 20,
+                html: '<div style="font-size:85%">说明一：私有文件大小限制500M以内，其他文件100M以内。</div>'
+            }, {
+                xtype: "panel",
+                border: false,
+                height: 20,
+                html: '<div style="font-size:85%">说明一：目前支持以下文件类型在线浏览：office、txt、pdf。</div>'
+            }, {
+                xtype: "panel",
+                border: false,
+                height: 20,
+                html: '<div style="font-size:85%">说明二：文件名中不能使用英文逗号“,”。</div>'
+            }
+        ],
+        buttons: [{
+                text: '保存',
+                handler: function() {
+                    var form = this.up('form').getForm();
+                    if (form.isValid()) {
+//                     	$('#uploadFiles').uploadify('upload','*');
+                    	var isAdd = !Ext.getCmp('uploadPanel').isHidden();
+                    	if(isAdd && uploadedFileIds.length == 0) {
+                        	// 没有上传文件
+                    		Ext.MessageBox.alert('错误', '没有上传文件');
+                    		return false;
+                    	}
+                        form.submit({
+                            url: '<?php echo HOME_PATH; ?>/public/dcc/upload/save',
+                            waitMsg: '提交中，请稍后...',
+                            params: {uploadedFileIds : uploadedFileIds.join(',')},
+                            success: function(form, action) {
+                                if (action.result.success) {
+                                    var info = "";
+                                    if (!action.result.convert) {
+                                        info = "， 在线浏览文件转换失败";
+                                    }
+                                    Ext.MessageBox.alert('提示', action.result.info + info);
+                                    if (action.result.result) {
+                                        form.reset();
+                                        if(isAdd) {
+                                            $("#uploadFiles").uploadify('cancel');
+                                        }
+                                        uploadStore.load();
+                                        win.hide();
+                                    }
+                                } else {
+                                    Ext.MessageBox.alert('错误', action.result.info);
+                                }
+                            },
+                            failure: function(form, action) {
+                                Ext.MessageBox.alert('错误', action.result.info);
+                            }
+                        });
+                    }
+                }
+            }, {
+                text: '取消',
+                handler: function() {
+                    this.up('form').getForm().reset();
+                    if(!Ext.getCmp('uploadPanel').isHidden()) {
+                        $("#uploadFiles").uploadify('cancel');
+                    }
+                    win.hide();
+                }
+            }]
+    });
+
+    var win = new Ext.Window({
+        xtype: "window",
+        border:0,
+        autoheight: true,
+        maxHeight: 480,
+        title: '文件上传',
+        layout: 'fit',
+        closable: false,
+        closeAction: 'hide',
+        items: [fileForm]
+    });
+
+
+    var codePanel = Ext.create('Ext.grid.Panel', {
+        store: uploadStore,
+        border:0,
+        selType: 'checkboxmodel',
+        columnLines: true,
+        viewConfig: {
+            stripeRows: false
+        },
+        tbar: [{
+                xtype: 'textfield',
+                id: 'search_name',
+                width: 120,
+                emptyText: '文件名...',
+                listeners: {
+                	specialKey :function(field,e){
+                        if (e.getKey() == Ext.EventObject.ENTER){
+                        	uploadStore.loadPage(1);
+                        }
+                    }
+                }
+            }, {
+                xtype: 'textfield',
+                id: 'search_description',
+                width: 120,
+                emptyText: '描述...',
+                listeners: {
+                	specialKey :function(field,e){
+                        if (e.getKey() == Ext.EventObject.ENTER){
+                        	uploadStore.loadPage(1);
+                        }
+                    }
+                }
+            }, {
+                xtype: 'datefield',
+                format: 'Y-m-d',
+                width: 100,
+                id: 'search_upload_date_from',
+                emptyText: '上传日期从...'
+            }, {
+                xtype: 'datefield',
+                format: 'Y-m-j',
+                width: 100,
+                id: 'search_upload_date_to',
+                emptyText: '上传日期至...'
+            }, {
+                xtype: 'combobox',
+                id: 'search_archive',
+                emptyText: '归档状态...',
+                value: "未归档",
+                width: 100,
+                store: [['已归档', '已归档'], ['未归档', '未归档']]
+            }, {
+                text: '查询',
+                iconCls: 'icon-search',
+                handler: function() {
+                    var search_name = Ext.getCmp('search_name').getValue();
+                    var search_description = Ext.getCmp('search_description').getValue();
+                    var search_upload_date_from = Ext.getCmp('search_upload_date_from').getValue();
+                    var search_upload_date_to = Ext.getCmp('search_upload_date_to').getValue();
+                    var search_archive = Ext.getCmp('search_archive').getValue();
+
+                    uploadStore.load({
+                        params: {
+                            search_name: search_name,
+                            search_description: search_description,
+                            search_upload_date_from: search_upload_date_from,
+                            search_upload_date_to: search_upload_date_to,
+                            search_archive: search_archive
+                        }
+                    });
+                }
+            }, {
+                text: '上传',
+                handler: function() {
+                    var fileField = fileForm.queryById("file");
+                    var filedownload = fileForm.queryById("filedownload");
+
+                    filedownload.setDisabled(true);
+                    filedownload.hide();
+
+//                     fileField.show();
+//                     fileField.setDisabled(false);
+                    //$("#uploadFiles").uploadify('cancel');
+                    Ext.getCmp('uploadPanel').show();
+
+                    uploadedFileIds = new Array();
+                    win.show();
+                }
+            }, {
+                text: '编辑',
+                scope: this,
+                handler: function() {
+                    var selection = codePanel.getView().getSelectionModel().getSelection();
+                    if (selection.length <= 0) {
+                        Ext.MessageBox.alert('请注意', '请您选择要编辑的记录！');
+                    } else if (selection.length >= 2) {
+                        Ext.MessageBox.alert('请注意', '不能同时编辑多个数据！');
+                    } else {
+                        var grid = selection[0];
+                        var user = <?php echo $user; ?>;
+                        var editable = <?php echo $editable ?>;
+                        if (user != grid.data.update_user && user != grid.data.create_user && !editable) {
+                            Ext.MessageBox.alert('请注意', '只能编辑自己上传的文件！');
+                        } else if(grid.data.archive && !editable) {
+                        	Ext.MessageBox.alert('请注意', '不能编辑已归档的文件！');
+                            return false;
+                        }else {
+                            var myMask = new Ext.LoadMask(Ext.getBody(), {
+                                msg: '正在加载，请稍后！',
+                                removeMask: true //完成后移除
+                            });
+                            myMask.show();
+                            treeStore.load();
+
+                            fileForm.getForm().reset();
+                            fileForm.getForm().loadRecord(grid);
+
+                            // 是否显示删除按钮
+
+//                            if (grid.data.archive || grid.data.files_id) {
+//                                fileForm.queryById("delBtn").hide();
+//                            } else {
+//                                fileForm.queryById("delBtn").show();
+//                            }
+
+                            if(grid.data.share_id) {
+	                            fileForm.queryById("employeeId").setValue(grid.data.share_id);
+//	                            fileForm.queryById("share_name").setShowValue(grid.data.share_id);
+                            }
+
+                            fileForm.queryById("deptId").setValue(grid.data.share_dept);
+                            fileForm.queryById("share_dept").setValue(grid.data.share_dept_name);
+
+                            // 文件属性
+                            var visiable = grid.data.private == "0";
+//                            Ext.getCmp('share_name').setVisible(visiable);
+                            Ext.getCmp('share_dept').setVisible(visiable);
+                            Ext.getCmp('share_time_begin').setVisible(visiable);
+                            Ext.getCmp('share_time_end').setVisible(visiable);
+
+                            Ext.getCmp('uploadPanel').hide();
+
+                            if (grid.data.name && grid.data.path) {
+                                fileForm.queryById("file").hide();
+                                fileForm.queryById("file").setDisabled(true);
+
+                                fileForm.queryById("filedownload").show();
+                                fileForm.queryById("filedownload").setDisabled(false);
+
+                                var id = grid.data.id;
+                                icon = "";
+                                if (grid.data.path) {
+                                    icon += '<img src="<?php echo HOME_PATH; ?>/public/images/icons/delete.gif" onclick="delFile()" style="cursor:pointer;"></img>';
+                                    icon += '&nbsp;&nbsp;<img src="<?php echo HOME_PATH; ?>/public/images/icons/download.png" onclick="download(' + id + ', \'文件日志\')" style="cursor:pointer;"></img>';
+                                }
+                                if (checkFileType(grid.data.type) && grid.data.private === "0") {
+                                    url = "<?php echo HOME_PATH; ?>/public/dcc/online/?id=" + id;
+                                    icon += '&nbsp;&nbsp;<img src="<?php echo HOME_PATH; ?>/public/images/icons/text-preview.png" onclick="javascript:window.open(\'' + url + '\')" style="cursor:pointer;"></img>';
+                                } else {
+                                	icon += '&nbsp;&nbsp;<img src="<?php echo HOME_PATH; ?>/public/images/icons/text-preview-gray.png">'
+                                            }
+                                            Ext.getCmp('name').setValue(icon + " " + grid.data.name)
+
+                                            setTimeout(function() {
+//                                                var dom = Ext.getDom(Ext.getCmp('delBtn').btnEl);
+//                                                dom.style.width = "100%";
+//                                                dom.style.height = 16;
+                                            }, 1000);
+                                        }
+                                        win.show();
+                                        myMask.hide();
+                                    }
+                                }
+                            }
+                        }, {
+                            text: '删除',
+                            scope: this,
+                            handler: function() {
+                                var selection = codePanel.getView().getSelectionModel().getSelection();
+                                if (selection.length <= 0) {
+                                    Ext.MessageBox.alert('请注意', '请您选择要删除的记录！');
+                                } else {
+                                    var ids = [];
+                                    var user = <?php echo $user; ?>;
+                        for (var i = 0; i < selection.length; i++) {
+                            if (selection[i].data.archive || selection[i].data.files_id !== null) {
+                                Ext.MessageBox.alert('请注意', '已归档和归档中的文件不能删除！');
+                                return false;
+                            }
+                            if (selection[i].data.materiel_id !== null) {
+                                Ext.MessageBox.alert('请注意', '物料代码申请过程中上传的文件不能删除！');
+                                return false;
+                            }
+                            if (selection[i].data.create_user != user && selection[i].data.update_user != user) {
+                                Ext.MessageBox.alert('请注意', '只能删除自己上传的文件！');
+                                return false;
+                            }
+                            ids[i] = selection[i].data.id;
+                        }
+                        ids = Ext.JSON.encode(ids);
+                        Ext.MessageBox.confirm('确认', '确定删除所选内容？', function(button, text) {
+                            if (button == 'yes') {
+                            	Ext.Msg.wait('提交中，请稍后...', '提示');
+                                Ext.Ajax.request({
+                                    url: '<?php echo HOME_PATH; ?>/public/dcc/upload/remove',
+                                    params: {id: ids},
+                                    method: 'POST',
+                                    success: function(response, options) {
+                                        var data = Ext.JSON.decode(response.responseText);
+                                        if (data.result) {
+                                            Ext.MessageBox.alert('错误', data.info);
+                                            codePanel.getStore().reload();
+                                        } else {
+                                            Ext.MessageBox.alert('错误', data.info);
+                                        }
+                                    },
+                                    failure: function(form, action) {
+                                        Ext.MessageBox.alert('错误', action.result.info);
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+            }, {
+                text: '查看',
+                hidden: true,
+                handler: function() {
+                    viewAction(codePanel.getView());
+                }
+            }],
+        columns: [{
+                xtype: 'rownumberer'
+            }, {
+                text: 'ID',
+                flex: .5,
+                hidden: true,
+                dataIndex: 'id'
+            }, {
+                text: '文件名',
+                flex: 2.5,
+                sortable: true,
+                dataIndex: 'name',
+                renderer: function(val, p, record) {
+                    var tip = val.replace(/,/g, '<br />');
+                    p.tdAttr = 'data-qtip="' + tip + '"';
+                    var id = record.data.id;
+                    icon = "";
+                    if (record.data.path) {
+                        icon += '<img src="<?php echo HOME_PATH; ?>/public/images/icons/download.png" onclick="download(' + id + ', \'文件上传\')" style="cursor:pointer;"></img>';
+                    }
+                    if (checkFileType(record.data.type) && record.data.private === "0") {
+                        url = "<?php echo HOME_PATH; ?>/public/dcc/online/?id=" + id;
+                        icon += '  <img src="<?php echo HOME_PATH; ?>/public/images/icons/text-preview.png" onclick="javascript:window.open(\'' + url + '\')" style="cursor:pointer;"></img>';
+                    } else {
+                    	icon += ' <img src="<?php echo HOME_PATH; ?>/public/images/icons/text-preview-gray.png">'
+                    }
+                    return icon + " " + val;
+                }
+            }, {
+                text: '是否私有',
+                flex: 1,
+                dataIndex: 'private',
+                renderer: function(value) {
+                    if (value === "1") {
+                        return "是";
+                    } else {
+                        return "否";
+                    }
+                }
+            }, {
+                text: '归档状态',
+                flex: 1,
+                dataIndex: 'archive',
+                renderer: function(value, p, record) {
+                    if (record.data.private === "1") {
+                        return "-";
+                    }
+                    if (value) {
+                        return "已归档";
+                    }
+                    if (record.data.files_id !== null) {
+                        return "归档中";
+                    }
+                    return "未归档";
+                }
+            }, {
+                text: '文件类别',
+                width: 140,
+                sortable: true,
+                dataIndex: 'category_name'
+            }, {
+                text: '大小(KB)',
+                flex: 1,
+                sortable: true,
+                dataIndex: 'size',
+                renderer: function(value) {
+                    if (value > 0) {
+                        return parseInt(value / 1024);
+                    }
+                }
+            }, {
+                text: '共享给个人',
+                flex: 1.5,
+                dataIndex: 'share_name'
+            }, {
+                text: '共享给部门',
+                flex: 1.5,
+                dataIndex: 'share_dept_name'
+            }, {
+                text: '共享期间',
+                flex: 1,
+                dataIndex: 'share_time',
+                renderer: showTitle
+            }, {
+                text: '描述',
+                flex: 1.5,
+                dataIndex: 'description',
+                renderer: showTitle
+            }, {
+                text: '备注',
+                flex: 1,
+                dataIndex: 'remark',
+                renderer: showTitle
+            }, {
+                text: '上传人',
+                flex: 0.8,
+                dataIndex: 'updater'
+            }, {
+                text: '上传时间',
+                flex: 1,
+                hidden: true,
+                dataIndex: 'upload_time',
+                renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+            }]
+    });
+
+    uploadStore.on("beforeload", function() {
+        var search_name = Ext.getCmp('search_name').getValue();
+        var search_description = Ext.getCmp('search_description').getValue();
+        var search_upload_date_from = Ext.getCmp('search_upload_date_from').getValue();
+        var search_upload_date_to = Ext.getCmp('search_upload_date_to').getValue();
+        var search_archive = Ext.getCmp('search_archive').getValue();
+
+        Ext.apply(uploadStore.proxy.extraParams, {
+            search_name: search_name,
+            search_description: search_description,
+            search_upload_date_from: search_upload_date_from,
+            search_upload_date_to: search_upload_date_to,
+            search_archive: search_archive
+        });
+    });
+
+    Ext.create('Ext.container.Viewport', {
+        layout: 'border',
+        border:0,
+        rtl: true,
+        items: [{
+                region: 'center',
+                border:0,
+                layout: 'fit',
+                plain: true,
+                items: [codePanel]
+            }]
+    });
+});
+</script>
+</head>
+<body>
+	<link
+		href="<?php echo HOME_PATH ?>/public/js/uploadify/css/uploadify.css"
+		rel="stylesheet" type="text/css" media="screen" />
+
+	<script
+		src="<?php echo HOME_PATH ?>/public/js/uploadify/scripts/jquery.uploadify.min.js"></script>
+	<script
+		src="<?php echo HOME_PATH ?>/public/js/uploadify/scripts/swfobject.js"></script>
+
+</body>
+</html>

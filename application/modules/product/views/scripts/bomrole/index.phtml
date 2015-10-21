@@ -1,0 +1,580 @@
+<html>
+    <head>
+        <?php echo SYS_HEAD; ?>
+        <?php
+        $user = new Application_Model_User();
+        $btnDisabled = $user->checkPermissionByRoleName('物料号管理-供应链') || Application_Model_User::checkPermissionByRoleName('系统管理员');
+        $btnDisabled = $btnDisabled ? 0 : 1;
+        $exportable = 1;
+        if (Application_Model_User::checkPermissionByRoleName('物料管理员') || Application_Model_User::checkPermissionByRoleName('系统管理员')) {
+            $delable = 1;
+            $exportable = 0;
+        }
+        ?>
+
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/common.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/models.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/comboxtree.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/BomCombo.js"></script>
+        <style type="text/css">
+            .x-fieldset{border:1px solid #B5B8C8;display:block;}
+            .x-fieldset-none{border:0;display:block;padding:0;}
+            .x-grid-cell.myreview
+            {
+                background-color: #9fc;
+            }
+        </style>
+        <script type="text/javascript">
+            Ext.require([
+                'Ext.*'
+            ]);
+            Ext.define('Ext.ux.CustomTrigger', {
+                extend: 'Ext.form.field.Trigger',
+                alias: 'widget.customtrigger',
+                // override onTriggerClick
+                onTriggerClick: function() {
+                    Ext.Msg.alert('Status', 'You clicked my trigger!');
+                }
+            });
+
+            Ext.onReady(function() {
+                Ext.QuickTips.init();
+
+                Ext.define('bomrole', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [
+                        {name: "id"},
+                        {name: "bom"},
+                        {name: "userId"},
+                        {name: "userName"},
+                        {name: "cuser"},
+                        {name: "cdate"},
+                        {name: "relation"}
+                    ]
+                });
+
+                Ext.define('bom', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [{name: "id"},
+                        {name: "bom"}
+                    ]
+                });
+                Ext.define('user', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [{name: "id"},
+                        {name: "number"},
+                        {name: "cname"},
+                        {name: "ename"},
+                        {name: "userId"},
+                        {name: "userName"}
+                    ]
+                });
+
+                var group = "<?php if(isset($_GET['group'])) echo $_GET['group']; else {echo 'user';} ?>";
+                var groupText = '用户';
+                if(group == 'user') {
+                    groupText = 'BOM';
+                }
+
+                var store = Ext.create('Ext.data.Store', {
+                    pageSize: 100,
+                    model: 'bomrole',
+                    proxy: {
+                        type: 'ajax',
+                        reader: {
+                            root: 'topics',
+                            totalProperty: 'totalCount'
+                        },
+                        url: '<?php echo HOME_PATH; ?>/public/product/bomrole/getlist?group=' + group
+                    },
+                    autoLoad: true
+                });
+
+                var bomStore = Ext.create('Ext.data.Store', {
+                    pageSize: 50,
+                    model: 'bom',
+                    proxy: {
+                        type: 'ajax',
+                        reader: {
+                            root: 'topics',
+                            totalProperty: 'totalCount'
+                        },
+                        url: '<?php echo HOME_PATH; ?>/public/product/bomrole/getbomlist'
+                    },
+                    autoLoad: false
+                });
+
+                var userStore = Ext.create('Ext.data.Store', {
+                    model: 'user',
+                    proxy: {
+                        type: 'ajax',
+                        reader: 'json',
+                        url: '<?php echo HOME_PATH; ?>/public/product/bomrole/getuser'
+                    },
+                    autoLoad: false
+                });
+
+                var column = "";
+                if(group == 'bom') {
+                    column = [{
+                        xtype: 'rownumberer'
+                    }, {
+                        text: 'ID',
+                        flex: 1.5,
+                        hidden: true,
+                        dataIndex: 'id'
+                    }, {
+                        text: 'BOM',
+                        flex: 1,
+                        sortable: true,
+                        dataIndex: 'bom'
+                    }, {
+                        text: '权限获取方式',
+                        flex: 0.5,
+                        sortable: true,
+                        dataIndex: 'relation'
+                    }, {
+                        text: '用户名称',
+                        flex: 5,
+                        dataIndex: 'userName',
+                        renderer: function(value) {
+                            if(value) {
+                                return '<a href="javascript:void(0)">' + value + '</a>';
+                            }
+                            return value;
+                        }
+                    }];
+                } else {
+                    column = [{
+                        xtype: 'rownumberer'
+                    }, {
+                        text: 'ID',
+                        flex: 1.5,
+                        hidden: true,
+                        dataIndex: 'id'
+                    }, {
+                        text: '用户名称',
+                        flex: 1,
+                        sortable: true,
+                        dataIndex: 'userName'
+                    }, {
+                        text: '权限获取方式',
+                        flex: 0.5,
+                        sortable: true,
+                        dataIndex: 'relation'
+                    }, {
+                        text: 'BOM',
+                        flex: 5,
+                        dataIndex: 'bom',
+                        renderer: function(value) {
+                            if(value) {
+                                return '<a href="javascript:void(0)">' + value + '</a>';
+                            }
+                            return value;
+                        }
+                    }];
+                }
+
+                function showBomGrid(data, userId) {
+                    var storeData = new Array();
+                    if(data) {
+                        var datas = data.split(',');
+                        for(var i = 0;i < datas.length; i++) {
+                            storeData.push({bom : datas[i]});
+                        }
+                    }
+                    var subStore = Ext.create("Ext.data.Store", {
+                        model: Ext.define('bom', {
+                            extend: 'Ext.data.Model',
+                            idProperty: 'bom',
+                            fields: [{name: "bom"}]
+                        }),
+                        data: storeData,
+                        autoLoad: true
+                    });
+                    new Ext.Window({
+                        xtype: "window",
+                        border:0,
+                        title: 'BOM列表',
+                        modal: true,
+                        layout: 'fit',
+                        autoheight: true,
+                        width: 340,
+                        height:400,
+                        closable: true,
+                        closeAction: 'close',
+                        items: [Ext.create('Ext.grid.Panel', {
+                            store: subStore,
+                            selType: 'checkboxmodel',
+                            columnLines: true,
+                            viewConfig: {
+                                stripeRows: false
+                            },
+                            columns: [{
+                                text: 'BOM',
+                                width : '100%',
+                                dataIndex: 'bom'
+                            }],
+                            tbar: [{
+                                text: '删除',
+                                iconCls: 'icon-delete',
+                                hidden : userId == undefined,
+                                handler: function() {
+                                    var grid = this.up('grid');
+                                    var selection = grid.getView().getSelectionModel().getSelection();
+                                    if (selection.length > 0) {
+                                        var window = this.up('window');
+                                        var ids = new Array();
+                                        for(var i = 0; i < selection.length; i++) {
+                                            ids.push(selection[i].data.bom);
+                                        }
+                                        Ext.Msg.wait('处理中，请稍后...', '提示');
+                                        Ext.Ajax.request({
+                                            url: '<?php echo HOME_PATH; ?>/public/product/bomrole/remove',
+                                            params: {boms: ids.join(','), userIds: userId},
+                                            method: 'POST',
+                                            success: function(response, options) {
+                                                var data = Ext.JSON.decode(response.responseText);
+                                                Ext.MessageBox.alert('提示', '处理成功');
+                                                window.close();
+                                                store.reload();
+                                            },
+                                            failure: function(form, action) {
+                                                Ext.MessageBox.alert('错误', action.result.info);
+                                            }
+                                        });
+
+                                    } else {
+                                        Ext.MessageBox.alert('错误', '没有选择删除对象！');
+                                    }
+                                }
+                            }]
+                        })],
+                        buttons: [{
+                            text: '关闭',
+                            handler: function() {
+                                this.up('window').close();
+                            }
+                        } ]
+                    }).show();
+                }
+
+                function showUserGrid(data, bomCode, userIds) {
+                    var storeData = new Array();
+                    if(data) {
+                        var datas = data.split(',');
+                        if(userIds) {
+                            userIds = userIds.split(',');
+                        }
+                        for(var i = 0;i < datas.length; i++) {
+                            var row = {};
+                            row.userName = datas[i];
+                            if(userIds) {
+                                row.userId = userIds[i];
+                            }
+
+                            storeData.push(row);
+                        }
+                    }
+                    var subStore = Ext.create("Ext.data.Store", {
+                        model: "user",
+                        data: storeData,
+                        autoLoad: true
+                    });
+                    new Ext.Window({
+                        xtype: "window",
+                        border:0,
+                        title: '用户列表',
+                        modal: true,
+                        layout: 'fit',
+                        autoheight: true,
+                        width: 340,
+                        height:400,
+                        closable: true,
+                        closeAction: 'close',
+                        items: [Ext.create('Ext.grid.Panel', {
+                            store: subStore,
+                            selType: 'checkboxmodel',
+                            columnLines: true,
+                            viewConfig: {
+                                stripeRows: false
+                            },
+                            columns: [{
+                                text: '用户ID',
+                                hidden: true,
+                                width : '100%',
+                                dataIndex: 'userId'
+                            }, {
+                                text: '用户姓名',
+                                width : '100%',
+                                dataIndex: 'userName'
+                            }],
+                            tbar: [{
+                                text: '删除',
+                                iconCls: 'icon-delete',
+                                hidden : bomCode == undefined,
+                                handler: function() {
+                                    var grid = this.up('grid');
+                                    var selection = grid.getView().getSelectionModel().getSelection();
+                                    if (selection.length > 0) {
+                                        var window = this.up('window');
+                                        var ids = new Array();
+                                        for(var i = 0; i < selection.length; i++) {
+                                            ids.push(selection[i].data.userId);
+                                        }
+                                        Ext.Msg.wait('处理中，请稍后...', '提示');
+                                        Ext.Ajax.request({
+                                            url: '<?php echo HOME_PATH; ?>/public/product/bomrole/remove',
+                                            params: {boms: bomCode, userIds: ids.join(',')},
+                                            method: 'POST',
+                                            success: function(response, options) {
+                                                var data = Ext.JSON.decode(response.responseText);
+                                                Ext.MessageBox.alert('提示', '处理成功');
+                                                window.close();
+                                                store.reload();
+                                            },
+                                            failure: function(form, action) {
+                                                Ext.MessageBox.alert('错误', action.result.info);
+                                            }
+                                        });
+
+                                    } else {
+                                        Ext.MessageBox.alert('错误', '没有选择删除对象！');
+                                    }
+                                }
+                            }]
+                        })],
+                        buttons: [{
+                            text: '关闭',
+                            handler: function() {
+                                this.up('window').close();
+                            }
+                        }]
+                    }).show();
+                }
+
+                var win = new Ext.Window({
+                    xtype: "window",
+                    title: 'BOM权限添加',
+                    border: 0,
+                    modal: true,
+                    layout: 'fit',
+                    closeAction: 'hide',
+                    items: [new Ext.form.Panel({
+                        width: 400,
+                        border: 0,
+                        bodyPadding: 2,
+                        layout: 'form',
+                        waitMsgTarget: true,
+                        fieldDefaults: {
+                            labelAlign: 'right',
+                            labelWidth: 95,
+                            msgTarget: 'side'
+                        },
+                        items: [
+                            {
+                                xtype: 'textfield',
+                                name: 'id',
+                                hidden: true
+                            },
+                            {
+                                xtype: 'textfield',
+                                name: 'employee_id',
+                                id: 'employee_id',
+                                hidden: true
+                            },
+                            {
+                                xtype: 'textfield',
+                                name: 'code_id',
+                                id: 'code_id',
+                                hidden: true
+                            },
+                            {
+                                xtype: 'bombobox',
+                                fieldLabel: 'BOM号',
+                                allowBlank: false,
+                                id: 'code',
+                                name: 'code'
+                            },
+                            {
+                                xtype: 'employeebobox',
+                                fieldLabel: '员工名称',
+                                allowBlank: false,
+                                name: 'employee',
+                                id: 'employee'
+                            }
+                        ]
+                    })],
+                    buttons: [
+                        {
+                            text: '提交',
+                            formBind: true,
+                            handler: function () {
+                                var window = this.up('window');
+                                var form = window.down('form').getForm();
+                                if (form.isValid()) {
+                                    form.submit({
+                                        clientValidation: true,
+                                        url: '<?php echo HOME_PATH; ?>/public/product/bomrole/save',
+                                        submitEmptyText: false,
+                                        waitMsg: '提交中，请稍后...',
+                                        method: 'POST',
+                                        success: function (form, action) {
+                                            Ext.MessageBox.alert('提示', action.result.info);
+                                            if (action.result.success) {
+                                                store.reload();
+                                                form.reset();
+                                                window.hide();
+                                            } else {
+                                                Ext.MessageBox.alert('错误', action.result.info);
+                                            }
+                                        },
+                                        failure: function (form, action) {
+                                            Ext.MessageBox.alert('错误', action.result.info);
+                                        }
+                                    });
+                                }
+                            }
+                        },
+                        {
+                            text: '取消',
+                            handler: function () {
+                                var window = this.up('window');
+                                window.down('form').getForm().reset();
+                                win.hide();
+                            }
+                        }
+                    ]
+                });
+
+                var grid = Ext.create('Ext.grid.Panel', {
+                    store: store,
+                    columnLines: true,
+                    viewConfig: {
+                        stripeRows: false
+                    },
+                    tbar: [{
+                            xtype: 'textfield',
+                            id: 'search_code',
+                            width: 150,
+                            emptyText: 'BOM号',
+                            listeners: {
+                            	specialKey :function(field,e){
+                                    if (e.getKey() == Ext.EventObject.ENTER){
+                                    	store.loadPage(1);
+                                    }
+                                }
+                            }
+                        }, {
+                            xtype: 'textfield',
+                            id: 'search_user',
+                            width: 150,
+                            emptyText: '姓名',
+                            listeners: {
+                            	specialKey :function(field,e){
+                                    if (e.getKey() == Ext.EventObject.ENTER){
+                                    	store.loadPage(1);
+                                    }
+                                }
+                            }
+                        }, {
+                            xtype: 'button',
+                            text: '查询',
+                            iconCls: 'icon-search',
+                            handler: function() {
+			                    var search_code = Ext.getCmp('search_code').getValue();
+			                    var search_user = Ext.getCmp('search_user').getValue();
+                                store.baseParams = {
+                                    search_bom: search_code,
+                                    search_employee_name: search_user
+                                }
+                                store.loadPage(1);
+                            }
+                        }, {
+                            text: '添加',
+                            scope: this,
+                            iconCls: 'icon-add',
+                            handler: function() {
+                                win.show();
+                            }
+                        }, {
+                            text: '删除',
+                            iconCls: 'icon-delete',
+                            scope: this,
+                            handler: function() {
+                                var selection = grid.getView().getSelectionModel().getSelection();
+
+                                if (selection.length == 1) {
+                                    if(group == 'user') {
+                                        showBomGrid(selection[0].data.bom, selection[0].get('userId'));
+                                    } else {
+                                        showUserGrid(selection[0].data.userName, selection[0].get('bom'), selection[0].data.userId);
+                                    }
+                                } else if(selection.length > 1) {
+                                    Ext.MessageBox.alert('错误', '一次只能处理一个对象！');
+                                } else {
+                                    Ext.MessageBox.alert('错误', '没有选择删除对象！');
+                                }
+                            }
+                        }, {
+                        text: '切换到' + groupText + '视角',
+                        scope: this,
+                        handler: function() {
+                            if(group == 'bom') {
+                                window.location.href='<?php echo HOME_PATH ?>/public/product/bomrole?group=user';
+                            } else {
+                                window.location.href='<?php echo HOME_PATH ?>/public/product/bomrole?group=bom';
+                            }
+
+                        }
+                    }],
+                    columns: column,
+                    listeners: {
+                        'cellclick': function(obj, td, cellIndex, record, tr, rowIndex, e, eOpts ) {
+                            if(cellIndex != 3) {
+                                return;
+                            }
+                            if(group == 'user') {
+                                showBomGrid(record.data.bom);
+                            } else {
+                                showUserGrid(record.data.userName);
+                            }
+                        }
+                    },
+                    bbar: Ext.create('Ext.PagingToolbar', {
+                        store: store,
+                        displayInfo: true,
+                        displayMsg: '显示 {0} - {1} 共 {2}',
+                        emptyMsg: "没有数据"
+                    })
+                });
+
+                store.on("beforeload", function() {
+                    var search_code = Ext.getCmp('search_code').getValue();
+                    var search_user = Ext.getCmp('search_user').getValue();
+                    Ext.apply(store.proxy.extraParams, {
+                        search_bom: search_code,
+                        search_employee_name: search_user
+                    });
+                });
+
+
+                Ext.create('Ext.container.Viewport', {
+                    layout: 'border',
+                    rtl: true,
+                    items: [{
+                            region: 'center',
+                            layout: 'fit',
+                            plain: true,
+                            items: [grid]
+                        }]
+                });
+            });
+        </script>
+    </head>
+    <body>
+    </body>
+</html>

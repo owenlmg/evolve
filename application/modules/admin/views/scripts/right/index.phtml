@@ -1,0 +1,1093 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/public/js/function.js"></script>
+<link rel="stylesheet" type="text/css" href="<?php echo HOME_PATH?>/library/ext/examples/ux/css/ItemSelector.css" />
+<script type="text/javascript">
+Ext.Loader.setConfig({enabled: true});
+Ext.Loader.setPath('Ext.ux', homePath+'/library/ext/examples/ux');
+Ext.require([
+    'Ext.data.*',
+    'Ext.grid.*',
+    'Ext.tree.*',
+    'Ext.form.Panel',
+    'Ext.ux.form.ItemSelector',
+    'Ext.ux.ajax.SimManager'
+]);
+
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+
+    // 选项数据模型
+    Ext.define('Selection', {
+        extend: 'Ext.data.Model',
+        fields: ['id', 'name']
+    });
+
+    // 用户列表
+    var userListStore = Ext.create('Ext.data.ArrayStore', {
+    	model: 'Selection',
+        proxy: {
+            type: 'ajax',
+            url: homePath+'/public/admin/account/getuserlist',
+            reader: 'json'
+        },
+        autoLoad: true
+    });
+
+    // 角色列表
+    var roleListStore = Ext.create('Ext.data.ArrayStore', {
+    	model: 'Selection',
+        proxy: {
+            type: 'ajax',
+            url: homePath+'/public/admin/right/getrole/option/list',
+            reader: 'json'
+        },
+        autoLoad: true
+    });
+
+    // 角色数据模型
+    Ext.define('Role', {
+        extend: 'Ext.data.Model',
+        idProperty: 'id',
+        fields: [{name: "id"}, 
+                 {name: "parentId"}, 
+                 {name: "name"}, 
+                 {name: "member"}, 
+                 {name: "description"}, 
+                 {name: "remark"}, 
+                 {name: "create_time",type: 'date',dateFormat: 'timestamp'}, 
+                 {name: "update_time",type: 'date',dateFormat: 'timestamp'}, 
+                 {name: "creater"}, 
+                 {name: "updater"}, 
+                 {name: "active"}, 
+                 {name: "lock"}]
+    });
+
+    // 角色数据源
+    var roleTreeStore = Ext.create('Ext.data.TreeStore', {
+        model: 'Role',
+        proxy: {
+            type: 'ajax',
+            reader: 'json',
+            url: homePath+'/public/admin/right/getrole/option/data'
+        },
+        lazyFill: true,
+        listeners: {
+            'load': function ( role, node, records, successful, eOpts ){
+                if(successful){
+                	if(Ext.getCmp('isExpand').getValue() == 1){
+                		roleTreePanel.expandAll();
+                	}
+                }
+            }
+        }
+    });
+
+    // 菜单数据模型
+    Ext.define('Menu', {
+        extend: 'Ext.data.Model',
+        idProperty: 'id',
+        fields: [{name: "id"}, 
+                 {name: "parentId"}, 
+                 {name: "order"}, 
+                 {name: "iconCls"}, 
+                 {name: "tooltip"}, 
+                 {name: "text"}, 
+                 {name: "role"}, 
+                 {name: "handler"}, 
+                 {name: "disabled"}, 
+                 {name: "url"}, 
+                 {name: "params"}, 
+                 {name: "create_time",type: 'date',dateFormat: 'timestamp'}, 
+                 {name: "update_time",type: 'date',dateFormat: 'timestamp'}, 
+                 {name: "creater"}, 
+                 {name: "updater"}]
+    });
+
+    //渲染长文本提示
+    var longTextRender = function(val, cellmeta, record){
+    	cellmeta.tdAttr = 'data-qtip="' + val + '"';
+    	return val;
+    };
+
+    // 菜单数据源
+    var menuTreeStore = Ext.create('Ext.data.TreeStore', {
+        model: 'Menu',
+        proxy: {
+            type: 'ajax',
+            reader: 'json',
+            url: homePath+'/public/home/index/getmenus/option/treedata'
+        },
+        lazyFill: true,
+        listeners: {
+            'load': function load( node, node, records, successful, eOpts ){
+                if(successful){
+                	if(Ext.getCmp('menuIsExpand').getValue() == 1){
+                		menuTreePanel.expandAll();
+                	}
+                }
+            },
+            'beforemove': function ( node, node, isMove, eOpts ){
+                /* if(node.data['id'] == '' || node.data['id'] == undefined){
+                    tree.resumeAutoSync( );
+                } */
+            },
+            'move': function ( node, oldParent, newParent, index, eOpts ){
+                var oldParentId = oldParent.data['id'];
+                var newParentId = newParent.data['id'];
+                var order = index;
+                var id = node.data['id'];
+
+                var changeMenu = {
+                        id: id,
+                		oldParentId: oldParent.data['id'],
+                		newParentId: newParent.data['id'],
+                		order: index
+                }
+
+                var json = Ext.JSON.encode(changeMenu);
+                
+                /*Ext.Ajax.request({
+                    url: '<?php //echo HOME_PATH; ?>/public/admin/right/menuorderedit',
+                    params: {json: json},
+                    method: 'POST',
+                    success: function(response, options) {
+                        var data = Ext.JSON.decode(response.responseText);
+
+                        if(data.success){
+                            Ext.MessageBox.alert('提示', data.info);
+                            menuTreeStore.reload();
+                        }else{
+                            Ext.MessageBox.alert('错误', data.info);
+                        }
+                    },
+                    failure: function(response){
+                        Ext.MessageBox.alert('错误', '保存提交失败');
+                    }
+                });*/
+            }
+        }
+    });
+
+    // 成员维护表单
+    var memberForm = Ext.widget('form', {
+        bodyPadding: 2,
+        border: 0,
+        height: 400,
+        layout: 'fit',
+        url: homePath+'/public/admin/right/editmember',
+        items:[{
+        	xtype: 'hiddenfield',
+            name: 'editrole_id',
+            id: 'editrole_id',
+            value: 0
+        }, {
+            xtype: 'itemselector',
+            name: 'member',
+            id: 'member',
+            anchor: '100%',
+            imagePath: homePath+'/library/ext/examples/ux/images/',
+            store: userListStore,
+            displayField: 'name',
+            valueField: 'id',
+            allowBlank: false,
+            msgTarget: 'side',
+            fromTitle: '用户列表',
+            toTitle: '成员'
+        }],
+        buttons: ['->', {
+            text: '清除',
+            handler: function(){
+                var field = Ext.getCmp('member');
+                if (!field.disabled) {
+                    field.clearValue();
+                }
+            }
+        }, {
+            text: '重置',
+            handler: function() {
+                Ext.getCmp('member').up('form').getForm().reset();
+            }
+        }, {
+            text: '保存',
+            handler: function(){
+                var form = Ext.getCmp('member').up('form').getForm();
+                form.getValues(true);
+                if (form.isValid()){
+                    Ext.MessageBox.confirm('确认', '确定提交？', function(button, text){
+                        if(button == 'yes'){
+                            form.submit({
+                                waitMsg: '提交中，请稍后...',
+                                success: function(form, action) {
+                                    var data = action.result;
+                                    
+                                    if(data.success){
+                                    	Ext.MessageBox.alert('提示', '保存成功');
+                                    	memberWin.hide();
+                                    	roleTreeStore.reload();
+                                    }else{
+                                        Ext.MessageBox.alert('错误', data.info);
+                                    }
+                                },
+                                failure: function(response){
+                                    Ext.MessageBox.alert('错误', '保存提交失败');
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+        }]
+    });
+    
+    // 成员维护窗口
+    var memberWin = Ext.create('Ext.window.Window', {
+    	title: '成员管理',
+    	border: 0,
+    	width: 600,
+    	modal: true,
+    	constrain: true,
+    	layout: 'fit',
+    	closeAction: 'hide',
+    	resizable: false,
+    	items: [{
+            region: 'center',
+            items: [memberForm]
+    	}]
+    });
+
+    // 菜单角色维护表单
+    var menuRoleForm = Ext.widget('form', {
+        bodyPadding: 2,
+        border: 0,
+        height: 300,
+        layout: 'fit',
+        url: homePath+'/public/admin/right/editmenurole',
+        items:[{
+        	xtype: 'hiddenfield',
+            name: 'editmenu_id',
+            id: 'editmenu_id',
+            value: 0
+        }, {
+            xtype: 'itemselector',
+            name: 'menuRole',
+            id: 'menuRole',
+            anchor: '100%',
+            imagePath: homePath+'/library/ext/examples/ux/images/',
+            store: roleListStore,
+            displayField: 'name',
+            valueField: 'id',
+            allowBlank: false,
+            msgTarget: 'side',
+            fromTitle: '角色列表',
+            toTitle: '角色'
+        }],
+        buttons: ['->', {
+            text: '清除',
+            handler: function(){
+                var field = Ext.getCmp('menuRole');
+                if (!field.disabled) {
+                    field.clearValue();
+                }
+            }
+        }, {
+            text: '重置',
+            handler: function() {
+                Ext.getCmp('menuRole').up('form').getForm().reset();
+            }
+        }, {
+            text: '保存',
+            handler: function(){
+                var form = Ext.getCmp('menuRole').up('form').getForm();
+                form.getValues(true);
+                if (form.isValid()){
+                    Ext.MessageBox.confirm('确认', '确定提交？', function(button, text){
+                        if(button == 'yes'){
+                            form.submit({
+                                waitMsg: '提交中，请稍后...',
+                                success: function(form, action) {
+                                    var data = action.result;
+                                    
+                                    if(data.success){
+                                    	Ext.MessageBox.alert('提示', '保存成功');
+                                    	menuRoleWin.hide();
+                                    	menuTreeStore.reload();
+                                    }else{
+                                        Ext.MessageBox.alert('错误', data.info);
+                                    }
+                                },
+                                failure: function(response){
+                                    Ext.MessageBox.alert('错误', '保存提交失败');
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+        }]
+    });
+    
+    // 菜单角色维护窗口
+    var menuRoleWin = Ext.create('Ext.window.Window', {
+    	title: '菜单角色管理',
+    	border: 0,
+    	width: 600,
+    	modal: true,
+    	constrain: true,
+    	layout: 'fit',
+    	closeAction: 'hide',
+    	resizable: false,
+    	items: [{
+            region: 'center',
+            items: [menuRoleForm]
+    	}]
+    });
+
+    // 角色树面板
+    var roleTreePanel = Ext.create('Ext.tree.Panel', {
+        title: '角色管理',
+        border: 0,
+        loadMask: true,
+        rootVisible: false,
+        layout: 'fit',
+        plugins: [
+            Ext.create('Ext.grid.plugin.CellEditing', {
+                clicksToEdit: 2
+            })
+        ],
+        store: roleTreeStore,
+        xtype: 'cell-editing',
+        viewConfig: {
+            plugins: {
+                ptype: 'treeviewdragdrop',
+                containerScroll: true
+            },
+            getRowClass: function(record) {
+                if(!record.get('active')){
+                    // 当角色启用状态为false时，设置背景色
+                    return 'gray-row';
+                }else if(record.get('name') == '新角色'){
+                    // 当新增角色未取名时，设置背景色
+                    return 'light-red-row';
+                }
+            }
+        },
+        tbar: [{
+            xtype: 'hiddenfield',
+            id: 'isExpand',
+            value: 0
+        }, {
+        	iconCls: 'icon-view-expand',
+        	id: 'expand_or_collapse',
+        	text: '展开',
+            scope: this,
+            handler: function(){
+                var btn = Ext.getCmp('expand_or_collapse');
+                var isExpand = Ext.getCmp('isExpand').getValue();
+
+                if(isExpand == 0){
+                	Ext.getCmp('isExpand').setValue(1)
+                	
+                	roleTreePanel.expandAll();
+
+                	btn.setIconCls('icon-view-collapse');
+                	btn.setText('折叠');
+                }else{
+                	Ext.getCmp('isExpand').setValue(0)
+                	
+                	roleTreePanel.collapseAll();
+
+                	btn.setIconCls('icon-view-expand');
+                	btn.setText('展开');
+                }
+            }
+        }, {
+            iconCls: 'icon-add',
+            text: '添加角色',
+            scope: this,
+            handler: function(){
+                var selModel = roleTreePanel.getSelectionModel();
+                
+                if(selModel.hasSelection()){
+                    var selDataModel = selModel.getLastSelected();
+                    var selNode = roleTreeStore.getNodeById(selDataModel.internalId);
+                    
+                    if(selNode != undefined && selNode.data['id'] != undefined){
+                        // 当新增子节点时，如父节点原先没有子节点，则需要更新父节点Leaf属性
+                        if(selNode.isLeaf()){
+                            selNode.data['leaf'] = false;
+                        }
+    
+                        // 新增节点
+                        selNode.appendChild({
+                            name: '新角色',
+                            active: true,
+                            leaf: true,
+                            parentId: selNode.data['parentId']
+                        });
+    
+                        // 新增节点自动展开
+                        selNode.expand();
+                    }else{
+                        Ext.MessageBox.alert('提示', '请先保存新增上级角色信息！');
+                    }
+                }else{
+                    var node = roleTreeStore.getRootNode();
+                    node.appendChild({
+                        name: '新角色',
+                        active: true,
+                        leaf: true,
+                        parentId: 0
+                    });
+                }
+            }
+        }, {
+            iconCls: 'icon-delete',
+            text: '删除角色',
+            scope: this,
+            handler: function(){
+                
+                var records = roleTreePanel.getView().getChecked();
+                
+                if(records.length > 0){
+                    var lockCnt = 0;
+
+                    for(var i = 0; i < records.length; i++){
+                        if(records[i].get('lock') == 1){
+                        	lockCnt++;
+                        }
+                    }
+
+                    if(lockCnt == 0){
+                    	var selModel = roleTreePanel.getSelectionModel();
+                        var selDataModel = selModel.getLastSelected();
+                        var selNode = roleTreeStore.getNodeById(selDataModel.internalId);
+    
+                        // 获取父节点
+                        var parentNode = selNode.parentNode;
+    
+                        // 当父节点仅有一个子节点，修改父节点Leaf属性
+                        if(parentNode.childNodes.length == 1){
+                            parentNode.data['leaf'] = true;
+                        }
+                        
+                        // 移除当前节点
+                        selNode.remove();
+                    }else{
+                        Ext.MessageBox.alert('错误', '有' + lockCnt + '个锁定角色不能删除！');
+                    }
+                }else{
+                    Ext.MessageBox.alert('错误', '没有选择删除对象！');
+                }
+            }
+        }, {
+            iconCls: 'icon-save',
+            text: '保存修改',
+            scope: this,
+            handler: function(){
+                var updateRecords = roleTreeStore.getUpdatedRecords();
+                var insertRecords = roleTreeStore.getNewRecords();
+                var deleteRecords = roleTreeStore.getRemovedRecords();
+
+                // 判断是否有修改数据
+                if(updateRecords.length + insertRecords.length + deleteRecords.length > 0){
+                    var changeRows = {
+                            updated:    [],
+                            inserted:   [],
+                            deleted:    []
+                    }
+
+                    // 判断角色名称是否有为空的情况
+                    var valueCheck = true;
+    
+                    for(var i = 0; i < updateRecords.length; i++){
+                        var data = updateRecords[i].data;
+                        
+                        if(data['name'] == '' || data['name'] == '新角色' || data['lock'] == 1){
+                            valueCheck = false;
+                            break;
+                        }
+    
+                        changeRows.updated.push(data)
+                    }
+    
+                    for(var i = 0; i < insertRecords.length; i++){
+                        var data = insertRecords[i].data;
+                        
+                        if(data['name'] == '' || data['name'] == '新角色'){
+                            valueCheck = false;
+                            break;
+                        }
+    
+                        changeRows.inserted.push(data)
+                    }
+    
+                    for(var i = 0; i < deleteRecords.length; i++){
+                        changeRows.deleted.push(deleteRecords[i].data)
+                    }
+
+                    // 格式正确则提交修改数据
+                    if(valueCheck){
+                        Ext.MessageBox.confirm('确认', '确定保存修改内容？', function(button, text){
+                            if(button == 'yes'){
+                                var json = Ext.JSON.encode(changeRows);
+
+                                Ext.Msg.wait('保存中，请稍后...', '提示');
+                                Ext.Ajax.request({
+                                    url: homePath+'/public/admin/right/edit',
+                                    params: {json: json},
+                                    method: 'POST',
+                                    success: function(response, options) {
+                                        var data = Ext.JSON.decode(response.responseText);
+
+                                        if(data.success){
+                                            Ext.MessageBox.alert('提示', data.info);
+                                            roleTreePanel.getSelectionModel().clearSelections();
+                                            roleTreeStore.reload();
+                                        }else{
+                                            Ext.MessageBox.alert('错误', data.info);
+                                        }
+                                    },
+                                    failure: function(response){
+                                        Ext.MessageBox.alert('错误', '保存提交失败');
+                                    }
+                                });
+                            }
+                        });
+                    }else{
+                        Ext.MessageBox.alert('提示', '锁定角色不能修改，且角色名称不能为空或“新角色”！');
+                    }
+                }else{
+                    Ext.MessageBox.alert('提示', '没有修改任何数据！');
+                }
+            }
+        }, {
+            iconCls: 'icon-group',
+            text: '成员管理',
+            scope: this,
+            handler: function(){
+                var selModel = roleTreePanel.getSelectionModel();
+                
+                if(selModel.hasSelection()){
+                    var selDataModel = selModel.getLastSelected();
+                    var selNode = roleTreeStore.getNodeById(selDataModel.internalId);
+
+                    var active = selNode.data['active'];
+                    var role_id = selNode.data['id'];
+
+                    if(role_id){
+                        if(active){
+                            memberWin.show();
+        
+                            memberWin.setTitle('成员管理 - ' + selNode.data['name']);
+                            
+                            Ext.getCmp('member').up('form').getForm().reset();
+                            Ext.getCmp('editrole_id').setValue(role_id);
+
+                            Ext.Msg.wait('成员获取中，请稍后...', '提示');
+                            Ext.Ajax.request({
+                                url: homePath+'/public/admin/right/getMember/parentid/' + role_id,
+                                params: '',
+                                method: 'POST',
+                                success: function(response, options) {
+                                    var data = Ext.JSON.decode(response.responseText);
+                                    var member = new Array();
+        
+                                    for(var i = 0; i < data.length; i++){
+                                        member[i] = data[i].user_id;
+                                    }
+                                    
+                                    Ext.getCmp('member').setValue(member);
+                                    Ext.Msg.hide();
+                                },
+                                failure: function(response){
+                                    Ext.MessageBox.alert('错误', '获取成员失败');
+                                    Ext.Msg.hide();
+                                }
+                            });
+                        }else{
+                            Ext.MessageBox.alert('提示', '当前角色已停用！');
+                        }
+                    }else{
+                        Ext.MessageBox.alert('提示', '当前角色未保存！');
+                    }
+                }else{
+                    Ext.MessageBox.alert('提示', '请选择角色！');
+                }
+            }
+        }, '->', {
+            iconCls: 'icon-refresh',
+            text: '刷新',
+            scope: this,
+            handler: function(){
+                roleTreeStore.reload();
+            }
+        }],
+        columns: [{
+            text: 'ID',
+            hidden: true,
+            align: 'center',
+            flex: 1,
+            dataIndex: 'id'
+        }, {
+            align: 'center',
+            flex: 0.2,
+            dataIndex: 'lock',
+            renderer: function(val){
+            	if(val == 1){
+            		return '<img src="<?php echo HOME_PATH?>/public/images/icons/lock.png"></img>';
+            	}
+            }
+        }, {
+            xtype: 'treecolumn',
+            text: '角色名称',
+            flex: 1.5,
+            sortable: true,
+            dataIndex: 'name',
+            editor: 'textfield'
+        }, {
+            xtype: 'checkcolumn',
+            text: '启用',
+            flex: 0.5,
+            dataIndex: 'active',
+            stopSelection: false
+        }, {
+            text: '成员',
+            flex: 3,
+            renderer: longTextRender,
+            dataIndex: 'member'
+        }, {
+            text: '描述',
+            flex: 1.5,
+            dataIndex: 'description',
+            editor: 'textfield'
+        }, {
+            text: '备注',
+            flex: 1.5,
+            dataIndex: 'remark',
+            editor: 'textfield'
+        }, {
+            text: '创建人',
+            hidden: true,
+            flex: 0.5,
+            dataIndex: 'creater'
+        }, {
+            text: '创建时间',
+            hidden: true,
+            flex: 1,
+            dataIndex: 'create_time',
+            renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+        }, {
+            text: '更新人',
+            hidden: true,
+            flex: 0.5,
+            dataIndex: 'updater'
+        }, {
+            text: '更新时间',
+            hidden: true,
+            flex: 1,
+            dataIndex: 'update_time',
+            renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+        }],
+        listeners: {
+            'itemclick': function(treeview, record, item, index, e, opts){
+                treeview.toggleOnDblClick = false;
+                if(!record.get('leaf')){
+                    var selModel = roleTreePanel.getSelectionModel();
+                    var selDataModel = selModel.getLastSelected();
+                    var selNode = roleTreeStore.getNodeById(selDataModel.internalId);
+
+                    selNode.expand();
+                }
+            }
+        }
+    });
+
+    // 菜单树面板
+    var menuTreePanel = Ext.create('Ext.tree.Panel', {
+        title: '菜单管理',
+        border: 0,
+        loadMask: true,
+        rootVisible: false,
+        layout: 'fit',
+        plugins: [
+            Ext.create('Ext.grid.plugin.CellEditing', {
+                clicksToEdit: 2
+            })
+        ],
+        store: menuTreeStore,
+        xtype: 'cell-editing',
+        viewConfig: {
+            plugins: {
+                ptype: 'treeviewdragdrop',
+                containerScroll: true
+            },
+            getRowClass: function(record) {
+                if(record.get('disabled')){
+                    // 当菜单被禁用时，设置背景色
+                    return 'gray-row';
+                }else if(record.get('text') == '新菜单'){
+                    // 当新增菜单未命名时，设置背景色
+                    return 'light-red-row';
+                }
+            }
+        },
+        tbar: [{
+            xtype: 'hiddenfield',
+            id: 'menuIsExpand',
+            value: 0
+        }, {
+        	iconCls: 'icon-view-expand',
+        	id: 'menu_expand_or_collapse',
+        	text: '展开',
+            scope: this,
+            handler: function(){
+                var btn = Ext.getCmp('menu_expand_or_collapse');
+                var isExpand = Ext.getCmp('menuIsExpand').getValue();
+
+                if(isExpand == 0){
+                	Ext.getCmp('menuIsExpand').setValue(1)
+                	
+                	menuTreePanel.expandAll();
+
+                	btn.setIconCls('icon-view-collapse');
+                	btn.setText('折叠');
+                }else{
+                	Ext.getCmp('menuIsExpand').setValue(0)
+                	
+                	menuTreePanel.collapseAll();
+
+                	btn.setIconCls('icon-view-expand');
+                	btn.setText('展开');
+                }
+            }
+        }, {
+            iconCls: 'icon-add',
+            text: '添加菜单',
+            scope: this,
+            handler: function(){
+                var selModel = menuTreePanel.getSelectionModel();
+                
+                if(selModel.hasSelection()){
+                    var selDataModel = selModel.getLastSelected();
+                    var selNode = menuTreeStore.getNodeById(selDataModel.internalId);
+                    
+                    if(selNode != undefined && selNode.data['id'] != undefined){
+                        // 当新增子节点时，如父节点原先没有子节点，则需要更新父节点Leaf属性
+                        if(selNode.isLeaf()){
+                            selNode.data['leaf'] = false;
+                        }
+    
+                        // 新增节点
+                        selNode.appendChild({
+                            text: '新菜单',
+                            disabled: true,
+                            leaf: true,
+                            parentId: selNode.data['parentId']
+                        });
+    
+                        // 新增节点自动展开
+                        selNode.expand();
+                    }else{
+                        Ext.MessageBox.alert('提示', '请先保存新增上级菜单信息！');
+                    }
+                }else{
+                    var node = menuTreeStore.getRootNode();
+                    node.appendChild({
+                    	text: '新菜单',
+                        disabled: true,
+                        leaf: true,
+                        parentId: 0
+                    });
+                }
+            }
+        }, {
+            iconCls: 'icon-delete',
+            text: '删除菜单',
+            scope: this,
+            handler: function(){
+                var selModel = menuTreePanel.getSelectionModel();
+                
+                if(selModel.hasSelection()){
+                    var selDataModel = selModel.getLastSelected();
+                    var selNode = menuTreeStore.getNodeById(selDataModel.internalId);
+
+                    // 获取父节点
+                    var parentNode = selNode.parentNode;
+
+                    // 当父节点仅有一个子节点，修改父节点Leaf属性
+                    if(parentNode.childNodes.length == 1){
+                        parentNode.data['leaf'] = true;
+                    }
+                    
+                    // 移除当前节点
+                    selNode.remove();
+                }else{
+                    Ext.MessageBox.alert('提示', '没有选择删除对象！');
+                }
+            }
+        }, {
+            iconCls: 'icon-save',
+            text: '保存修改',
+            scope: this,
+            handler: function(){
+                var updateRecords = menuTreeStore.getUpdatedRecords();
+                var insertRecords = menuTreeStore.getNewRecords();
+                var deleteRecords = menuTreeStore.getRemovedRecords();
+
+                // 判断是否有修改数据
+                if(updateRecords.length + insertRecords.length + deleteRecords.length > 0){
+                    var changeRows = {
+                            updated:    [],
+                            inserted:   [],
+                            deleted:    []
+                    }
+
+                    // 判断角色名称是否有为空的情况
+                    var valueCheck = true;
+    
+                    for(var i = 0; i < updateRecords.length; i++){
+                        var data = updateRecords[i].data;
+                        
+                        if(data['text'] == '' || data['text'] == '新菜单'){
+                            valueCheck = false;
+                            break;
+                        }
+    
+                        changeRows.updated.push(data)
+                    }
+    
+                    for(var i = 0; i < insertRecords.length; i++){
+                        var data = insertRecords[i].data;
+                        
+                        if(data['text'] == '' || data['text'] == '新菜单'){
+                            valueCheck = false;
+                            break;
+                        }
+    
+                        changeRows.inserted.push(data)
+                    }
+    
+                    for(var i = 0; i < deleteRecords.length; i++){
+                        changeRows.deleted.push(deleteRecords[i].data)
+                    }
+
+                    // 格式正确则提交修改数据
+                    if(valueCheck){
+                        Ext.MessageBox.confirm('确认', '确定保存修改内容？', function(button, text){
+                            if(button == 'yes'){
+                                var json = Ext.JSON.encode(changeRows);
+
+                                Ext.Msg.wait('保存中，请稍后...', '提示');
+                                Ext.Ajax.request({
+                                    url: homePath+'/public/admin/right/editmenu',
+                                    params: {json: json},
+                                    method: 'POST',
+                                    success: function(response, options) {
+                                        var data = Ext.JSON.decode(response.responseText);
+
+                                        if(data.success){
+                                            Ext.MessageBox.alert('提示', data.info);
+                                            menuTreePanel.getSelectionModel().clearSelections();
+                                            menuTreeStore.reload();
+                                        }else{
+                                            Ext.MessageBox.alert('错误', data.info);
+                                        }
+                                    },
+                                    failure: function(response){
+                                        Ext.MessageBox.alert('错误', '保存提交失败');
+                                    }
+                                });
+                            }
+                        });
+                    }else{
+                        Ext.MessageBox.alert('提示', '角色名称不能为空或“新角色”！');
+                    }
+                }else{
+                    Ext.MessageBox.alert('提示', '没有修改任何数据！');
+                }
+            }
+        }, {
+            iconCls: 'icon-group',
+            text: '菜单角色管理',
+            scope: this,
+            handler: function(){
+                var selModel = menuTreePanel.getSelectionModel();
+                
+                if(selModel.hasSelection()){
+                    var selDataModel = selModel.getLastSelected();
+                    var selNode = menuTreeStore.getNodeById(selDataModel.internalId);
+
+                    var disabled = selNode.data['disabled'];
+                    var menu_id = selNode.data['id'];
+
+                    if(menu_id){
+                        if(!disabled){
+                        	menuRoleWin.show();
+        
+                            menuRoleWin.setTitle('菜单角色管理 - ' + selNode.data['text']);
+                            
+                            Ext.getCmp('menuRole').up('form').getForm().reset();
+                            Ext.getCmp('editmenu_id').setValue(menu_id);
+
+                            Ext.Msg.wait('成员获取中，请稍后...', '提示');
+                            Ext.Ajax.request({
+                                url: homePath+'/public/admin/right/getmenurole/parentid/' + menu_id,
+                                params: '',
+                                method: 'POST',
+                                success: function(response, options) {
+                                    var data = Ext.JSON.decode(response.responseText);
+                                    var member = new Array();
+        
+                                    for(var i = 0; i < data.length; i++){
+                                        member[i] = data[i].id;
+                                    }
+                                    
+                                    Ext.getCmp('menuRole').setValue(member);
+                                    Ext.Msg.hide();
+                                },
+                                failure: function(response){
+                                    Ext.MessageBox.alert('错误', '获取角色失败');
+                                    Ext.Msg.hide();
+                                }
+                            });
+                        }else{
+                            Ext.MessageBox.alert('提示', '当前菜单已停用！');
+                        }
+                    }else{
+                        Ext.MessageBox.alert('提示', '当前菜单未保存！');
+                    }
+                }else{
+                    Ext.MessageBox.alert('提示', '请选择菜单！');
+                }
+            }
+        }, '->', {
+            iconCls: 'icon-refresh',
+            text: '刷新',
+            scope: this,
+            handler: function(){
+                menuTreeStore.reload();
+            }
+        }],
+        columns: [{
+            text: 'ID',
+            hidden: true,
+            align: 'center',
+            flex: 1,
+            dataIndex: 'id'
+        }, {
+            xtype: 'treecolumn',
+            text: '菜单名称',
+            flex: 1.5,
+            sortable: true,
+            dataIndex: 'text',
+            editor: 'textfield'
+        }, {
+            xtype: 'checkcolumn',
+            text: '禁用',
+            flex: 0.5,
+            dataIndex: 'disabled',
+            stopSelection: false
+        }, {
+            text: '角色',
+            flex: 5,
+            renderer: longTextRender,
+            dataIndex: 'role'
+        }, {
+            text: '图标',
+            flex: 1,
+            hidden: true,
+            dataIndex: 'iconCls',
+            editor: 'textfield'
+        }, {
+            text: '提示',
+            flex: 1,
+            dataIndex: 'tooltip',
+            editor: 'textfield'
+        }, {
+            text: '事件',
+            flex: 1,
+            hidden: true,
+            dataIndex: 'handler',
+            editor: 'textfield'
+        }, {
+            text: '链接',
+            flex: 1,
+            hidden: true,
+            dataIndex: 'url',
+            editor: 'textfield'
+        }, {
+            text: '参数',
+            flex: 1,
+            hidden: true,
+            dataIndex: 'params',
+            editor: 'textfield'
+        }, {
+            text: '创建人',
+            hidden: true,
+            flex: 1,
+            dataIndex: 'creater'
+        }, {
+            text: '创建时间',
+            hidden: true,
+            flex: 1,
+            dataIndex: 'create_time',
+            renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+        }, {
+            text: '更新人',
+            hidden: true,
+            flex: 0.5,
+            dataIndex: 'updater'
+        }, {
+            text: '更新时间',
+            hidden: true,
+            flex: 1,
+            dataIndex: 'update_time',
+            renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+        }],
+        listeners: {
+            'itemclick': function(treeview, record, item, index, e, opts){
+                treeview.toggleOnDblClick = false;
+                if(!record.get('leaf')){
+                    var selModel = menuTreePanel.getSelectionModel();
+                    var selDataModel = selModel.getLastSelected();
+                    var selNode = menuTreeStore.getNodeById(selDataModel.internalId);
+
+                    selNode.expand();
+                }
+            }
+        }
+    });
+
+    Ext.create('Ext.Viewport', {
+        layout: 'border',
+        border: 0,
+        margins: '0 0 0 0',
+        items: [{
+            region: 'center',
+            border: 0,
+            deferredRender: false,
+            layout: 'fit',
+            items: [{
+                xtype: 'tabpanel',
+                layout: 'fit',
+                border: 0,
+                margin: '2 0 0 0',
+                plain: true,
+                tabBar: {
+                	height: 24,
+                	defaults: {
+                		height: 22
+                    }
+                },
+                items: [roleTreePanel, menuTreePanel]
+            }]
+        }]
+    });
+});
+</script>
+</head>
+<body>
+</body>
+</html>

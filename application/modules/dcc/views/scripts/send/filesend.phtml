@@ -1,0 +1,24 @@
+<html>
+    <head>
+        <?php echo SYS_HEAD; ?>
+        <?php 
+            $user_session = new Zend_Session_Namespace('user');
+            $user = $user_session->user_info['employee_id'];
+        ?>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/function.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/comboxtree.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/createField.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/models.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/fileSelect.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/downloadFile.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/codeSelect.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/codeFileSelect.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/uploadify.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/FileView.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/common.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/dcc/views/scripts/send/js/filesend.js"></script>
+    </head>
+<body>
+
+</body>
+</html>

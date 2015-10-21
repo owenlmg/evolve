@@ -1,0 +1,34 @@
+<html>
+<head>
+	<title>任务管理</title>
+	<?php echo SYS_HEAD; ?>
+	<link rel="stylesheet" type="text/css" href="<?php echo HOME_PATH?>/application/modules/user/views/scripts/task/calendar/resources/css/calendar.css" />
+	<link rel="stylesheet" type="text/css" href="<?php echo HOME_PATH?>/application/modules/user/views/scripts/task/calendar/resources/css/examples.css" />
+	<script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/common.js"></script>
+
+	<script type="text/javascript">
+		Ext.Loader.setConfig({
+			enabled: true,
+			paths: {
+				'Ext.calendar': '<?php echo HOME_PATH?>/application/modules/user/views/scripts/task/calendar/src'
+			}
+		});
+		Ext.require([
+			//'Ext.diag.layout.Context',
+			//'Ext.diag.layout.ContextItem',
+			'Ext.calendar.App'
+		]);
+		Ext.onReady(function(){
+			// launch the app:
+			Ext.create('Ext.calendar.App');
+		});
+	</script>
+</head>
+<body>
+<div style="display:none;">
+	<div id="app-header-content">
+		<span id="app-msg" class="x-hidden"></span>
+	</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,388 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<?php 
+    $left_code = "";
+    $right_code = "";
+    $left_ver = "";
+    $right_ver = "";
+    if (isset($_GET['left_code'])) {
+        $left_code = $_GET['left_code'];
+    }
+    if (isset($_GET['right_code'])) {
+        $right_code = $_GET['right_code'];
+    }
+    if (isset($_GET['left_ver'])) {
+        $left_ver = $_GET['left_ver'];
+    }
+    if (isset($_GET['right_ver'])) {
+        $right_ver = $_GET['right_ver'];
+    }
+?>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/public/js/common.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/models.js"></script>
+<style type="text/css">
+.x-fieldset{border:1px solid #B5B8C8;display:block;}
+.x-fieldset-none{border:0;display:block;padding:0;}
+.x-grid-cell.change
+{
+    background-color: #FA8072;
+}
+.x-grid-cell.insert
+{
+    background-color: #1E90FF;
+}
+.x-grid-cell.delete
+{
+    background-color: #E6D933;
+}
+</style>
+<script type="text/javascript">
+Ext.require([
+    'Ext.*'
+]);
+Ext.define('Ext.ux.CustomTrigger', {
+    extend: 'Ext.form.field.Trigger',
+    alias: 'widget.customtrigger',
+
+    // override onTriggerClick
+    onTriggerClick: function() {
+        Ext.Msg.alert('Status', 'You clicked my trigger!');
+    }
+});
+
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+
+    Ext.define('upddetail', {
+	    extend: 'Ext.data.Model',
+	    idProperty: 'code',
+	    fields: [{ name: "code" },
+	             { name: "code1" },
+	             { name: "code2" },
+	             { name: "description" },
+	             { name: "name" },
+	             { name: "qty1" },
+	             { name: "partposition1" },
+	             { name: "replace1" },
+	             { name: "qty2" },
+	             { name: "partposition2" },
+	             { name: "replace2" },
+	             { name: "remark" },
+	             { name: "state" },
+	             { name: "msg" }
+	            ]
+    });
+
+    Ext.define('comboModel', {
+	    extend: 'Ext.data.Model',
+	    idProperty: 'id',
+	    fields: [{ name: "id" },
+	             { name: "text" }
+	            ]
+    });
+    var store = Ext.create('Ext.data.Store', {
+        model: 'upddetail',
+        proxy: {
+            type: 'ajax',
+            reader: 'json',
+            url: '<?php echo HOME_PATH; ?>/public/product/upddetail/getlist/'
+        },
+        autoLoad: false
+    });
+    var verlStore = Ext.create('Ext.data.Store', {
+        model: 'comboModel',
+        proxy: {
+            type: 'ajax',
+            reader: 'json',
+            url: '<?php echo HOME_PATH; ?>/public/product/upddetail/getcodever'
+        },
+        autoLoad: false
+    });
+    var verrStore = Ext.create('Ext.data.Store', {
+        model: 'comboModel',
+        proxy: {
+            type: 'ajax',
+            reader: 'json',
+            url: '<?php echo HOME_PATH; ?>/public/product/upddetail/getcodever'
+        },
+        autoLoad: false
+    });
+
+    <?php if($left_code && $left_ver && $right_code && $right_ver) { ?>
+        store.load({
+    		params:{
+        		left_code: '<?php echo $left_code?>',
+        		left_ver: '<?php echo $left_ver?>',
+        		right_code: '<?php echo $right_code?>',
+        		right_ver: '<?php echo $right_ver?>',
+		    }
+    	});
+   <?php } ?>
+
+    var grid = Ext.create('Ext.grid.Panel', {
+        store: store,
+        id : 'bomGrid',
+        columnLines: true,
+        viewConfig: {
+            stripeRows: false // 取消偶数行背景色
+        },
+        tbar: ['左边BOM号:', {
+            xtype: 'textfield',
+            id: 'left_code',
+            value : '<?php echo $left_code?>',
+            width: 150,
+            listeners : {
+                blur : function(obj) {
+                    var thisvalue = Ext.getCmp('left_code').getValue();
+                    if(thisvalue) {
+                    	verlStore.load({
+                            params: {
+                            	code: thisvalue
+                            },
+                            callback: function(records, operation, success) {
+                                if(records && records.length > 0) {
+                                    Ext.getCmp("left_ver").bindStore(verlStore);
+                                    if(records.length == 1) {
+                                        Ext.getCmp("left_ver").setValue(records[0]);
+                                    } else {
+                                        Ext.getCmp("left_ver").setValue(records[1]);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        }, 
+        '左边版本: ', {
+            xtype: 'combobox',
+            id: 'left_ver',
+            store : verlStore,
+            queryMode: 'local',
+            value: '<?php echo $left_ver?>',
+            width: 80
+        }, 
+        '右边版本:', {
+            xtype: 'textfield',
+            id: 'right_code',
+            value: '<?php echo $right_code?>',
+            width: 150,
+            listeners : {
+                blur : function(obj) {
+                    var thisvalue = Ext.getCmp('right_code').getValue();
+                    if(thisvalue) {
+                    	verrStore.load({
+                            params: {
+                            	code: thisvalue
+                            },
+                            callback: function(records, operation, success) {
+                                if(records && records.length > 0) {
+                                    Ext.getCmp("right_ver").bindStore(verrStore);
+                                    Ext.getCmp("right_ver").setValue(records[0]);
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        },
+        '右边版本: ', {
+            xtype: 'combobox',
+            id: 'right_ver',
+            queryMode: 'local',
+            store : verrStore,
+            value: '<?php echo $right_ver?>',
+            width: 80
+        }, , {
+            text: '比较',
+            xtype: 'button',
+            iconCls: 'icon-search',
+            handler: function() {
+                var left_code = Ext.getCmp('left_code').getValue();
+                var right_code = Ext.getCmp('right_code').getValue();
+                var left_ver = Ext.getCmp('left_ver').getValue();
+                var right_ver = Ext.getCmp('right_ver').getValue();
+                if(!left_code || !right_code || !left_ver || !right_ver) {
+                	Ext.MessageBox.alert('提示', "请把BOM信息填写完整");
+                	return false;
+                }
+                store.load({
+                    params: {
+                    	left_code: left_code,
+	                	right_code: right_code,
+	                	left_ver: left_ver,
+	                	right_ver: right_ver
+                    },
+                    callback: function(records, operation, success) {
+                        if(records.length == 1 && records[0].data.msg) {
+                        	Ext.MessageBox.alert('提示', records[0].data.msg);
+                        	return false;
+                        }
+                        return records;
+                    }
+                });
+            }
+        }],
+        columns: [{
+            text: '物料代码',
+            width: 120,
+            locked: true,
+            dataIndex: 'code',
+            renderer: showTitle
+        },{
+            text: '物料名称',
+            width: 120,
+            locked: true,
+            dataIndex: 'name',
+            renderer: showTitle
+        },{
+            text: '物料描述',
+            width: 180,
+            locked: true,
+            dataIndex: 'description',
+            renderer: showTitle
+        },{
+            text: '数量',
+            width: 80,
+            dataIndex: 'qty1',
+            renderer: function(value, p, record) {
+            	if(record.get('code1') && record.get('code2')) {
+            		if(record.get('qty1') != record.get('qty2')) {
+            			p.css = "change";
+            		}
+            	}
+            	return value;
+            }
+        },{
+            text: '替代料',
+            width: 180,
+            dataIndex: 'replace1',
+            renderer: function(value, p, record) {
+				if(!value) value = "";
+				if(value.indexOf(',') !== -1) {
+					var first = value.substr(0, value.indexOf(',')+1);
+					value = value.replace(first, "<b>" + first + "</b>");
+				}
+			    var tip = value.replace(/,/g, '<br />');
+			    p.tdAttr = 'data-qtip="' + tip + '"';
+
+			    if(record.get('code1') && record.get('code2')) {
+            		if(record.get('replace1') != record.get('replace2')) {
+            			p.css = "change";
+            		}
+            	}
+			    return value;
+			}
+        },{
+            text: '器件位置',
+            width: 180,
+            dataIndex: 'partposition1',
+            renderer: function(value, p, record) {
+			    if(record.get('code1') && record.get('code2')) {
+            		if(record.get('partposition1') != record.get('partposition2')) {
+            			p.css = "change";
+            		}
+            	}
+            	if(!value) return "";
+			    var tip = value.replace(/,/g, '<br />');
+			    p.tdAttr = 'data-qtip="' + tip + '"';
+			    return value;
+			}
+        }, {
+            text: '变更',
+            width: 60,
+            align: 'center',
+            dataIndex: 'change',
+            renderer: function(value, p, record) {
+            	value = "相同";
+            	if(record.get('code1') && record.get('code2')) {
+            		if(record.get('qty1') != record.get('qty2')
+            		|| record.get('partposition1') != record.get('partposition2')
+            		|| record.get('replace1') != record.get('replace2')) {
+            			p.css = "change";
+            			value = "变更";
+            		}
+            	} else if(record.get('code1') && !record.get('code2')) {
+            		p.css = "delete";
+            		value = "删除";
+            	} else if(!record.get('code1') && record.get('code2')) {
+            		p.css = "insert";
+            		value = "增加";
+            	}
+            	return value;
+            }
+        },{
+            text: '数量',
+            width: 80,
+            style: {'background-image': '-moz-linear-gradient(center top, #fffff2, #ffffca)'},
+            dataIndex: 'qty2',
+            renderer: function(value, p, record) {
+            	if(record.get('code1') && record.get('code2')) {
+            		if(record.get('qty1') != record.get('qty2')) {
+            			p.css = "change";
+            		}
+            	}
+            	return value;
+            }
+        },{
+            text: '替代料',
+            width: 180,
+            style: {'background-image': '-moz-linear-gradient(center top, #fffff2, #ffffca)'},
+            dataIndex: 'replace2',
+            renderer: function(value, p, record) {
+				if(!value) return "";
+				if(value.indexOf(',') !== -1) {
+					var first = value.substr(0, value.indexOf(',')+1);
+					value = value.replace(first, "<b>" + first + "</b>");
+				}
+			    var tip = value.replace(/,/g, '<br />');
+			    p.tdAttr = 'data-qtip="' + tip + '"';
+
+			    if(record.get('code1') && record.get('code2')) {
+            		if(record.get('replace1') != record.get('replace2')) {
+            			p.css = "change";
+            		}
+            	}
+			    return value;
+			}
+        },{
+            text: '器件位置',
+            width: 180,
+            style: {'background-image': '-moz-linear-gradient(center top, #fffff2, #ffffca)'},
+            dataIndex: 'partposition2',
+            renderer: function(value, p, record) {
+			    if(record.get('code1') && record.get('code2')) {
+            		if(record.get('partposition1') != record.get('partposition2')) {
+            			p.css = "change";
+            		}
+            	}
+            	if(!value) return "";
+			    var tip = value.replace(/,/g, '<br />');
+			    p.tdAttr = 'data-qtip="' + tip + '"';
+			    return value;
+			}
+        }],
+        listeners: {
+            itemdblclick: function(grid) {
+                //viewAction(grid, 'view');
+            }
+        }
+    });
+
+    Ext.create('Ext.container.Viewport', {
+        layout: 'border',
+        rtl: true,
+        items: [{
+            region: 'center',
+            layout: 'fit',
+            plain: true,
+            items:[grid]
+        }]
+    });
+});
+</script>
+</head>
+<body>
+</body>
+</html>

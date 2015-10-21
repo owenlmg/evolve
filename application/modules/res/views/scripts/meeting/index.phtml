@@ -1,0 +1,69 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+var user_id = <?php echo $this->user_id?>;
+var meetingAdmin = <?php echo $this->meetingAdmin?>;
+
+Ext.require(['*']);
+
+Ext.Loader.setConfig({
+	enabled:true,
+	disableCaching:false,
+	paths:{
+		'Go':homePath+'/library/ext/plugins/Go'
+	}
+});
+
+Ext.define('Selection', {
+    extend: 'Ext.data.Model',
+    fields: [{name: 'id', type: 'int'}, {name: 'name'}, {name: 'number'}, {name: 'cname'}, {name: 'ename'}]
+});
+
+// 员工数据源
+var employeeListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/admin/account/getuserlist'
+    },
+    autoLoad: true
+});
+
+// 必填提示
+var required = '<span style="color:red;font-weight:bold" data-qtip="Required">*</span>';
+
+var longTextRender = function(val, cellmeta, record){
+	if(val != undefined && val != ''){
+		   cellmeta.tdAttr = 'data-qtip="' + val + '"';
+	}
+	
+	return val;
+};
+</script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/public/js/editor.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/res/views/scripts/meeting/js/mom.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/res/views/scripts/meeting/js/room.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/res/views/scripts/meeting/js/new.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/res/views/scripts/meeting/js/meeting.js"></script>
+<script type="text/javascript">
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+
+    Ext.apply(Ext.QuickTips.getQuickTip(), {showDelay: 100, dismissDelay: 30000});
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+    
+    Ext.create('Ext.Viewport', {
+        layout: 'fit',
+        border: 0,
+        margins: '0 0 0 0',
+        items: [meetingGrid]
+    });
+});
+</script>
+</head>
+<body>
+</body>
+</html>

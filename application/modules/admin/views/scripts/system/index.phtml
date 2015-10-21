@@ -1,0 +1,90 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script language="javascript">
+Ext.require([
+    'Ext.*'
+]);
+</script>
+
+<script language="javascript">
+Ext.define('Selection', {
+    extend: 'Ext.data.Model',
+    fields: [{name: 'id', type: 'int'}, {name: 'name'}]
+});
+
+Ext.onReady(function() {
+    var panel = Ext.create('widget.panel', {
+        renderTo: Ext.getBody(),
+        height: 500,
+        border: 0,
+        layout: 'fit',
+        tbar: [{
+            xtype: 'buttongroup',
+            title: '常规设置',
+            columns: 2,
+            defaults: {
+                scale: 'small'
+            },
+            items: [{
+                text: '公司信息',
+                iconCls: 'icon-email'
+            }, {
+                text: '邮箱',
+                iconCls: 'icon-email'
+            }, {
+                text: '邮箱',
+                iconCls: 'icon-email'
+            }, {
+                text: '邮箱',
+                iconCls: 'icon-email'
+            }]
+        }, {
+            xtype: 'buttongroup',
+            title: '系统参数',
+            columns: 2,
+            defaults: {
+                scale: 'small'
+            },
+            items: [{
+                text: '选项列表'
+            }, {
+                text: '选项列表'
+            }, {
+                text: '选项列表'
+            }, {
+                text: '选项列表'
+            }, {
+                text: '选项列表'
+            }, {
+                text: '选项列表'
+            }]
+        }, {
+            xtype: 'buttongroup',
+            title: '其它设置',
+            columns: 2,
+            defaults: {
+                scale: 'small'
+            },
+            items: [{
+                text: '其它设置'
+            }, {
+                text: '其它设置'
+            }, {
+                text: '其它设置'
+            }, {
+                text: '其它设置'
+            }, {
+                text: '其它设置'
+            }, {
+                text: '其它设置'
+            }]
+        }],
+        items: []
+    });
+});
+</script>
+</head>
+<body>
+</body>
+</html>

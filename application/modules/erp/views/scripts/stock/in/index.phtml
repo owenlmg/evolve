@@ -1,0 +1,321 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+var user_id = <?php echo $this->user_id?>;
+var accessViewTotal = <?php echo $this->accessViewTotal?>;
+
+Ext.require([
+    'Ext.*'
+]);
+
+Ext.define('Selection', {
+    extend: 'Ext.data.Model',
+    fields: [{name: 'id', type: 'int'},
+             {name: 'code'},
+             {name: 'name'},
+             {name: 'unit'},
+             {name: 'description'},
+             {name: 'text'}]
+});
+
+//物料代码
+var codeStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+       type: 'ajax',
+       reader: 'json',
+       url: homePath+'/public/erp/warehouse_pricelist/getcodeList/option/list'
+    },
+    autoLoad: true
+});
+
+// 仓库
+var warehouseStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/erp/warehouse_index/getlist'
+    },
+    autoLoad: true
+});
+
+// 库存交易类别
+var transactionListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/erp/warehouse_index/gettransaction/option/list'
+    },
+    autoLoad: true
+});
+
+//仓库渲染
+var warehouseRender = function(val){
+	if(val != ''){
+		index = warehouseStore.findExact('code',val);
+        if (index != -1){
+            rs = warehouseStore.getAt(index).data;
+            return rs.name;
+        }
+        return val;
+	}else{
+		return '无';
+	}
+}
+
+// 数据模型
+Ext.define('Instock', {
+    extend: 'Ext.data.Model',
+    fields: [{name: "id"},
+             {name: "number"},
+             {name: "date",type: 'date',dateFormat: 'Y-m-d'},
+             {name: "total"},
+             {name: "description"},
+             {name: "remark"},
+             {name: "transaction_type"},
+             {name: "create_time",type:'date',dateFormat: 'timestamp'},
+             {name: "update_time",type:'date',dateFormat: 'timestamp'},
+             {name: "creater"},
+             {name: "updater"}]
+});
+
+// 库存交易-收货数据源
+var instockStore = Ext.create('Ext.data.Store', {
+    model: 'Instock',
+    pageSize: 50,
+    proxy: {
+        type: 'ajax',
+        reader: {
+            type: 'json',
+            root: 'rows',
+            totalProperty: 'total'
+        },
+        url: homePath+'/public/erp/stock_in/getinstock'
+    },
+    listeners: {
+    	beforeload: loadIn
+    }
+});
+
+function loadIn(){
+	var key = Ext.getCmp('search_key').getValue();
+	var date_from = Ext.Date.format(Ext.getCmp('search_date_from').getValue(), 'Y-m-d');
+    var date_to = Ext.Date.format(Ext.getCmp('search_date_to').getValue(), 'Y-m-d');
+    
+	Ext.apply(instockStore.proxy.extraParams, {
+		key: key,
+		date_from: date_from,
+		date_to: date_to
+    });
+};
+
+var required = '<span style="color:red;font-weight:bold" data-qtip="Required">*</span>';
+</script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/library/LodopFuncs.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/stock/in/js/items.js"></script>
+<script type="text/javascript">
+
+// 显示查看窗口
+function openView(idx){
+	instockWin.show();
+	itemsForm.getForm().reset();
+    var record = instockStore.getAt(idx);
+    itemsForm.getForm().loadRecord(record);
+    instockWin.setTitle('库存交易-收货');
+    Ext.getCmp('instockSaveBtn').disable();
+	Ext.getCmp('itemsAddBtn').disable();
+	Ext.getCmp('itemsDeleteBtn').disable();
+	Ext.getCmp('print_preview').enable();
+	Ext.getCmp('itemsImportBtn').disable();
+
+	itemsStore.load({
+        params: {
+        	instock_id: record.get('id')
+        }
+    });
+}
+
+var totalColumn = Ext.create('Ext.grid.column.Column', {
+	text: '金额',
+    dataIndex: 'total',
+    renderer: function(val){
+    	return Ext.util.Format.currency(val, '￥', 2);
+    },
+    flex: 1
+});
+
+// 收货单列表
+var instockGrid = Ext.create('Ext.grid.Panel', {
+    border: 0,
+	store: instockStore,
+	id: 'instockGrid',
+    columnLines: true,
+    tbar: [{
+        xtype: 'datefield',
+        format: 'Y-m-d',
+        width: 100,
+        id: 'search_date_from',
+        value: Ext.util.Format.date(new Date(), 'Y-m-01'),
+        emptyText: '日期从...'
+    }, {
+        xtype: 'datefield',
+        format: 'Y-m-d',
+        width: 100,
+        id: 'search_date_to',
+        value: Ext.util.Format.date(new Date(), 'Y-m-t'),
+        emptyText: '日期至...'
+    }, {
+        xtype: 'textfield',
+        id: 'search_key',
+        emptyText: '关键字...',
+        listeners: {
+        	specialKey :function(field,e){
+                if (e.getKey() == Ext.EventObject.ENTER){
+                	instockStore.loadPage(1);
+                }
+            }
+        }
+    }, {
+        xtype: 'splitbutton',
+        text: '查询',
+        iconCls: 'icon-search',
+        handler: function(){
+        	instockStore.loadPage(1);
+        },
+        menu: [{
+            text: '导出',
+            iconCls: 'icon-export',
+            handler: function(){
+            	window.open(homePath+'/public/erp/stock_in/getinstock/option/csv');
+            }
+        }]
+    }, {
+        text: '收货',
+        iconCls: 'icon-doc',
+        handler: function(){
+        	instockWin.show();
+
+        	Ext.getCmp('instockSaveBtn').enable();
+        	Ext.getCmp('itemsAddBtn').enable();
+        	Ext.getCmp('itemsDeleteBtn').enable();
+        	Ext.getCmp('print_preview').disable();
+
+        	itemsStore.loadData([],false);
+        	Ext.getCmp('itemsForm').getForm().reset();
+        	Ext.getCmp('operate').setValue('new');
+
+        	Ext.getCmp('itemsImportBtn').enable();
+        }
+    }, '->', {
+        text: '刷新',
+        iconCls: 'icon-refresh',
+        handler: function(){
+        	instockStore.reload();
+        }
+    }],
+    columns: [{
+        xtype: 'rownumberer'
+    }, {
+        text: 'ID',
+        align: 'center',
+        hidden: true,
+        dataIndex: 'id'
+    }, {
+        text: '库存交易类别',
+        align: 'center',
+        dataIndex: 'transaction_type',
+        width: 120
+    }, {
+        text: '收货单号',
+        align: 'center',
+        dataIndex: 'number',
+        width: 120
+    }, {
+        text: '收货日期',
+        dataIndex: 'date',
+        align: 'center',
+        renderer: Ext.util.Format.dateRenderer('Y-m-d'),
+        flex: 1
+    }, /* {
+        text: '金额',
+        dataIndex: 'total',
+        renderer: function(val){
+        	return Ext.util.Format.currency(val, '￥', 2);
+        },
+        flex: 1
+    },  */{
+        text: '描述',
+        dataIndex: 'description',
+        flex: 4
+    }, {
+        text: '备注',
+        dataIndex: 'remark',
+        flex: 3
+    }, {
+        text: '收货人',
+        dataIndex: 'creater',
+        align: 'center',
+        flex: 1
+    }, {
+        text: '收货时间',
+        dataIndex: 'create_time',
+        align: 'center',
+        renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+        flex: 1.5
+    }, {
+        text: '更新人',
+        hidden: true,
+        dataIndex: 'updater',
+        align: 'center',
+        flex: 1
+    }, {
+        text: '更新时间',
+        hidden: true,
+        dataIndex: 'update_time',
+        align: 'center',
+        renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+        flex: 1.5
+    }],
+    listeners: {
+        itemdblclick: function( grid, record, item, index, e, eOpts ) {
+        	openView(index);
+        }
+    },
+    bbar: Ext.create('Ext.PagingToolbar', {
+    	border: 0,
+        store: instockStore,
+        displayInfo: true,
+        displayMsg: '显示 {0} - {1} 共 {2}',
+        emptyMsg: "没有数据"
+    })
+});
+
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+    
+    Ext.create('Ext.Viewport', {
+        layout: 'border',
+        items: [{
+            region: 'center',
+            layout: 'fit',
+            border: 0,
+            items: [instockGrid]
+        }]
+    });
+
+    /* if(accessViewTotal){
+    	Ext.getCmp('instockGrid').getView().headerCt.insert(5, totalColumn);
+    } */
+
+    instockStore.loadPage(1);
+});
+</script>
+</head>
+<body>
+</body>
+</html>

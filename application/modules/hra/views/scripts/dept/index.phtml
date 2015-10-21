@@ -1,0 +1,380 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+Ext.require([
+    'Ext.data.*',
+    'Ext.grid.*',
+    'Ext.tree.*'
+]);
+
+Ext.define('Selection', {
+    extend: 'Ext.data.Model',
+    fields: [{name: 'id', type: 'int'}, {name: 'name'}]
+});
+
+var employeeListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/hra/employee/getemployee/option/list'
+    },
+    autoLoad: true
+});
+
+var employeeRender = function (val){
+	if(val > 0){
+		index = employeeListStore.findExact('id',val); 
+        if (index != -1){
+            rs = employeeListStore.getAt(index).data; 
+            return rs.name; 
+        }
+        return val;
+	}else{
+		return '无';
+	}
+};
+
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+    
+    Ext.define('dept', {
+        extend: 'Ext.data.Model',
+        idProperty: 'id',
+        fields: [{name: "id"}, 
+                 {name: "parentId"}, 
+                 {name: "name"}, 
+                 {name: "manager_id", type: 'int'}, 
+                 {name: "description"}, 
+                 {name: "remark"}, 
+                 {name: "create_time",type: 'date',dateFormat: 'timestamp'}, 
+                 {name: "update_time",type: 'date',dateFormat: 'timestamp'}, 
+                 {name: "creater"}, 
+                 {name: "updater"}, 
+                 {name: "active"}]
+    });
+    
+    var deptTreeStore = Ext.create('Ext.data.TreeStore', {
+        model: 'dept',
+        proxy: {
+            type: 'ajax',
+            reader: 'json',
+            url: homePath+'/public/hra/dept/getdept/option/data'
+        },
+        lazyFill: true
+    });
+
+    var tipRender = function(value,metaData,record,colIndex,store,view) {
+        metaData.tdAttr = 'data-qtip="'+value+'"';
+        return value;
+    };
+    
+    var deptTreePanel = Ext.create('Ext.tree.Panel', {
+        //loadMask: true,
+    	border: 0,
+        useArrows: true,
+        rootVisible: false,
+        layout: 'fit',
+        plugins: [
+            Ext.create('Ext.grid.plugin.CellEditing', {
+                clicksToEdit: 2
+            })
+        ],
+        store: deptTreeStore,
+        xtype: 'cell-editing',
+        animate: false,
+        viewConfig: {
+            plugins: {
+                ptype: 'treeviewdragdrop',
+                containerScroll: true
+            },
+            getRowClass: function(record) {
+                if(!record.get('active')){
+                    // 当部门启用状态为false时，设置背景色
+                    return 'gray-row';
+                }else if(record.get('name') == '新部门'){
+                    // 当新增部门未取名时，设置背景色
+                    return 'light-red-row';
+                }
+            }
+        },
+        tbar: [{
+            xtype: 'hiddenfield',
+            id: 'isExpand',
+            value: 0
+        }, {
+        	iconCls: 'icon-view-expand',
+        	id: 'expand_or_collapse',
+        	text: '展开',
+            scope: this,
+            handler: function(){
+                var btn = Ext.getCmp('expand_or_collapse');
+                var isExpand = Ext.getCmp('isExpand').getValue();
+
+                if(isExpand == 0){
+                	Ext.getCmp('isExpand').setValue(1)
+                	
+                	deptTreePanel.expandAll();
+
+                	btn.setIconCls('icon-view-collapse');
+                	btn.setText('折叠');
+                }else{
+                	Ext.getCmp('isExpand').setValue(0)
+                	
+                	deptTreePanel.collapseAll();
+
+                	btn.setIconCls('icon-view-expand');
+                	btn.setText('展开');
+                }
+            }
+        }, {
+            iconCls: 'icon-add',
+            text: '添加部门',
+            scope: this,
+            handler: function(){
+                var selModel = deptTreePanel.getSelectionModel();
+                
+                if(selModel.hasSelection()){
+                    var selDataModel = selModel.getLastSelected();
+                    var selNode = deptTreeStore.getNodeById(selDataModel.internalId);
+                    
+                    if(selNode != undefined && selNode.data['id'] != undefined){
+                        // 当新增子节点时，如父节点原先没有子节点，则需要更新父节点Leaf属性
+                        if(selNode.isLeaf()){
+                            selNode.data['leaf'] = false;
+                        }
+    
+                        // 新增节点
+                        selNode.appendChild({
+                            name: '新部门',
+                            active: true,
+                            leaf: true,
+                            parentId: selNode.data['parentId']
+                        });
+    
+                        // 新增节点自动展开
+                        selNode.expand();
+                    }else{
+                        Ext.MessageBox.alert('提示', '请先保存新增上级部门信息！');
+                    }
+                }else{
+                    var node = deptTreeStore.getRootNode();
+                    node.appendChild({
+                        name: '新部门',
+                        active: true,
+                        leaf: true,
+                        parentId: 0
+                    });
+                }
+            }
+        }, {
+            iconCls: 'icon-delete',
+            text: '删除部门',
+            scope: this,
+            handler: function(){
+                var selModel = deptTreePanel.getSelectionModel();
+                
+                if(selModel.hasSelection()){
+                    var selDataModel = selModel.getLastSelected();
+                    var selNode = deptTreeStore.getNodeById(selDataModel.internalId);
+
+                    // 获取父节点
+                    var parentNode = selNode.parentNode;
+
+                    // 当父节点仅有一个子节点，修改父节点Leaf属性
+                    if(parentNode.childNodes.length == 1){
+                        parentNode.data['leaf'] = true;
+                    }
+                    
+                    // 移除当前节点
+                    selNode.remove();
+                }else{
+                    Ext.MessageBox.alert('提示', '没有选择删除对象！');
+                }
+            }
+        }, {
+            iconCls: 'icon-save',
+            text: '保存修改',
+            scope: this,
+            handler: function(){
+                var updateRecords = deptTreeStore.getUpdatedRecords();
+                var insertRecords = deptTreeStore.getNewRecords();
+                var deleteRecords = deptTreeStore.getRemovedRecords();
+
+                // 判断是否有修改数据
+                if(updateRecords.length + insertRecords.length + deleteRecords.length > 0){
+                    var changeRows = {
+                            updated:    [],
+                            inserted:   [],
+                            deleted:    []
+                    }
+
+                    // 判断部门名称是否有为空的情况
+                    var valueCheck = true;
+    
+                    for(var i = 0; i < updateRecords.length; i++){
+                        var data = updateRecords[i].data;
+                        
+                        if(data['name'] == '' || data['name'] == '新部门'){
+                            valueCheck = false;
+                            break;
+                        }
+    
+                        changeRows.updated.push(data)
+                    }
+    
+                    for(var i = 0; i < insertRecords.length; i++){
+                        var data = insertRecords[i].data;
+                        
+                        if(data['name'] == '' || data['name'] == '新部门'){
+                            valueCheck = false;
+                            break;
+                        }
+    
+                        changeRows.inserted.push(data)
+                    }
+    
+                    for(var i = 0; i < deleteRecords.length; i++){
+                        changeRows.deleted.push(deleteRecords[i].data)
+                    }
+
+                    // 格式正确则提交修改数据
+                    if(valueCheck){
+                        Ext.MessageBox.confirm('确认', '确定保存修改内容？', function(button, text){
+                            if(button == 'yes'){
+                                var json = Ext.JSON.encode(changeRows);
+                                
+                                Ext.Msg.wait('提交中，请稍后...', '提示');
+                                Ext.Ajax.request({
+                                    url: homePath+'/public/hra/dept/edit',
+                                    params: {json: json},
+                                    method: 'POST',
+                                    success: function(response, options) {
+                                        var data = Ext.JSON.decode(response.responseText);
+
+                                        if(data.success){
+                                            Ext.MessageBox.alert('提示', data.info);
+                                            deptTreePanel.getSelectionModel().clearSelections();
+                                            deptTreeStore.reload();
+                                        }else{
+                                            Ext.MessageBox.alert('错误', data.info);
+                                        }
+                                    },
+                                    failure: function(response){
+                                        Ext.MessageBox.alert('错误', '菜单获取失败');
+                                    }
+                                });
+                            }
+                        });
+                    }else{
+                        Ext.MessageBox.alert('提示', '部门名称不能为空或“新部门”！');
+                    }
+                }else{
+                    Ext.MessageBox.alert('提示', '没有修改任何数据！');
+                }
+            }
+        }, {
+            iconCls: 'icon-refresh',
+            text: '刷新',
+            scope: this,
+            handler: function(){deptTreeStore.reload();}
+        }],
+        columns: [{
+            text: 'ID',
+            hidden: true,
+            dataIndex: 'id',
+            flex: 0.2
+        }, {
+            xtype: 'treecolumn',
+            text: '部门名称',
+            flex: 1,
+            sortable: true,
+            dataIndex: 'name',
+            editor: 'textfield'
+        }, {
+            xtype: 'checkcolumn',
+            text: '启用状态',
+            flex: 0.5,
+            dataIndex: 'active',
+            stopSelection: false
+        }, {
+            text: '部门经理',
+            dataIndex: 'manager_id',
+            renderer: employeeRender,
+            editor: new Ext.form.field.ComboBox({
+                editable: false,
+                displayField: 'name',
+                valueField: 'id',
+                triggerAction: 'all',
+                lazyRender: true,
+                store: employeeListStore,
+                queryMode: 'local'
+            }),
+            width: 150
+        }, {
+            text: '描述',
+            flex: 1.5,
+            dataIndex: 'description',
+            renderer: tipRender,
+            editor: 'textfield'
+        }, {
+            text: '备注',
+            flex: 2,
+            dataIndex: 'remark',
+            renderer: tipRender,
+            editor: 'textfield'
+        }, {
+            text: '创建人',
+            hidden: true,
+            flex: 0.5,
+            dataIndex: 'creater'
+        }, {
+            text: '创建时间',
+            hidden: true,
+            flex: 1,
+            dataIndex: 'create_time',
+            renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+        }, {
+            text: '更新人',
+            hidden: true,
+            flex: 0.5,
+            dataIndex: 'updater'
+        }, {
+            text: '更新时间',
+            hidden: true,
+            flex: 1,
+            dataIndex: 'update_time',
+            renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+        }],
+        listeners: {
+            'itemclick': function(treeview, record, item, index, e, opts){
+                treeview.toggleOnDblClick = false;
+                if(!record.get('leaf')){
+                    var selModel = deptTreePanel.getSelectionModel();
+                    var selDataModel = selModel.getLastSelected();
+                    var selNode = deptTreeStore.getNodeById(selDataModel.internalId);
+
+                    selNode.expand();
+                }
+            }
+        }
+    });
+    
+    Ext.create('Ext.container.Viewport', {
+        layout: 'border',
+        rtl: true,
+        items: [{
+            region: 'center',
+            border: 0,
+            deferredRender: false,
+            layout: 'fit',
+            items: [deptTreePanel]
+        }]
+    });
+});
+</script>
+</head>
+<body>
+</body>
+</html>

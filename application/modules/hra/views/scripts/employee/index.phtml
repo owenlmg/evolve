@@ -1,0 +1,1225 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<SCRIPT type="text/javascript">
+Ext.require([
+    'Ext.*'
+]);
+
+Ext.define('Selection', {
+    extend: 'Ext.data.Model',
+    fields: [{name: 'id', type: 'int'}, {name: 'name'}]
+});
+</script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/hra/views/scripts/employee/js/type.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/hra/views/scripts/employee/js/post.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/hra/views/scripts/employee/js/chart_structure_pie.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/hra/views/scripts/employee/js/separation_rate.js"></script>
+<SCRIPT type="text/javascript">
+var employeeNameStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/hra/employee/getemployeelist'
+    },
+    autoLoad: true
+});
+
+var areaStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/admin/system/getoptions/type/employee_area'
+    },
+    autoLoad: true
+});
+
+var professionalQualificationsStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/admin/system/getoptions/type/professional_qualifications'
+    },
+    autoLoad: true
+});
+
+Ext.define('Employee', {
+    extend: 'Ext.data.Model',
+    fields: [{name: "id"}, 
+             {name: "active"}, 
+             {name: "leader"}, 
+             {name: "account"}, 
+             {name: "hide"}, 
+             {name: "account_active"}, 
+             {name: "birthday",type: 'date',dateFormat: 'Y-m-d'}, 
+             {name: "dept_id", type: 'int'}, 
+             {name: "post_id", type: 'int'}, 
+             {name: "area_id", type: 'int'}, 
+             {name: "dept_info"},
+             {name: "professional_qualifications_id", type: 'int'}, 
+             {name: "cname"}, 
+             {name: "ename"}, 
+             {name: "photo_path"}, 
+             {name: "number"}, 
+             {name: "sex"}, 
+             {name: "email"}, 
+             {name: "tel"}, 
+             {name: "msn"}, 
+             {name: "official_qq"}, 
+             {name: "work_place"}, 
+             {name: "short_num"}, 
+             {name: "address"}, 
+             {name: "offical_address"}, 
+             {name: "other_contact"}, 
+             {name: "other_relationship"}, 
+             {name: "other_contact_way"}, 
+             {name: "work_years",type: "float"}, 
+             {name: "politics_status"}, 
+             {name: "employment_type"}, 
+             {name: "remark"}, 
+             {name: "manager_id", type: 'int'}, 
+             {name: "dept_manager_id", type: 'int'}, 
+             {name: "marital_status"}, 
+             {name: "marry_day",type: 'date',dateFormat: 'Y-m-d'}, 
+             {name: "children_birthday",type: 'date',dateFormat: 'Y-m-d'}, 
+             {name: "id_card"}, 
+             {name: "insurcode"}, 
+             {name: "accumulation_fund_code"}, 
+             {name: "salary",type: "float"}, 
+             {name: "ext"}, 
+             {name: "driving_license"}, 
+             {name: "bank"}, 
+             {name: "bank_num"}, 
+             {name: "education"}, 
+             {name: "school"}, 
+             {name: "major"}, 
+             {name: "entry_date",type: 'date',dateFormat: 'Y-m-d'}, 
+             {name: "regularization_date",type: 'date',dateFormat: 'Y-m-d'}, 
+             {name: "labor_contract_start",type: 'date',dateFormat: 'Y-m-d'}, 
+             {name: "labor_contract_end",type: 'date',dateFormat: 'Y-m-d'}, 
+             {name: "leave_date",type: 'date',dateFormat: 'Y-m-d'}, 
+             {name: "create_time",type: 'date',dateFormat: 'timestamp'}, 
+             {name: "update_time",type: 'date',dateFormat: 'timestamp'}, 
+             {name: "creater"}, 
+             {name: "updater"}]
+});
+
+var employeeStore = Ext.create('Ext.data.Store', {
+    model: 'Employee',
+    pageSize: 50,
+    proxy: {
+        type: 'ajax',
+        reader: {
+            type: 'json',
+            root: 'rows',
+            totalProperty: 'total'
+        },
+        url: homePath+'/public/hra/employee/getemployee/option/data'
+    },
+    listeners: {
+    	beforeload: function(){
+    		var key = Ext.getCmp('search_key').getValue();
+            var entry_date_from = Ext.Date.format(Ext.getCmp('search_entry_date_from').getValue(), 'Y-m-d');
+            var entry_date_to = Ext.Date.format(Ext.getCmp('search_entry_date_to').getValue(), 'Y-m-d');
+            var dept_id = Ext.JSON.encode(Ext.getCmp('search_dept_id').getValue());
+            var active = Ext.getCmp('search_active').getValue();
+            var employment_type = Ext.JSON.encode(Ext.getCmp('search_employment_type').getValue());
+            
+    		Ext.apply(employeeStore.proxy.extraParams, {
+    			active: active,
+    			employment_type: employment_type,
+    			key: key,
+                entry_date_from: entry_date_from,
+                entry_date_to: entry_date_to,
+                dept_id: dept_id
+            });
+        }
+    }
+});
+
+var employeeListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/hra/employee/getemployee/option/list'
+    },
+    autoLoad: true
+});
+
+var deptListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/hra/dept/getdept/option/list'
+    },
+    autoLoad: true
+});
+
+var typeListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/hra/employee/gettype/option/list'
+    },
+    autoLoad: true
+});
+
+var postListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/hra/employee/getpost/option/list'
+    },
+    autoLoad: true
+});
+
+var employeeRowEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+    clicksToEdit: 1
+});
+
+var deptRender = function (val){
+	if(val > 0){
+		index = deptListStore.findExact('id',val); 
+        if (index != -1){
+            rs = deptListStore.getAt(index).data; 
+            return rs.name; 
+        }
+        return val;
+	}else{
+		return '无';
+	}
+};
+
+var typeRender = function (val){
+	if(val > 0){
+		index = typeListStore.findExact('id',val); 
+        if (index != -1){
+            rs = typeListStore.getAt(index).data; 
+            return rs.name; 
+        }
+        return val;
+	}else{
+		return '无';
+	}
+};
+
+var employeeRender = function (val){
+	if(val > 0){
+		index = employeeListStore.findExact('id',val); 
+        if (index != -1){
+            rs = employeeListStore.getAt(index).data; 
+            return rs.name; 
+        }
+        return val;
+	}else{
+		return '无';
+	}
+};
+
+var professionalQualificationsRender = function (val){
+    if(val > 0){
+        index = professionalQualificationsStore.findExact('id',val); 
+        if (index != -1){
+            rs = professionalQualificationsStore.getAt(index).data; 
+            return rs.name; 
+        }
+        return val;
+    }else{
+        return '无';
+    }
+};
+
+var areaRender = function (val){
+    if(val > 0){
+        index = areaStore.findExact('id',val); 
+        if (index != -1){
+            rs = areaStore.getAt(index).data; 
+            return rs.name; 
+        }
+        return val;
+    }else{
+        return '无';
+    }
+};
+
+var attachWin = Ext.create('Ext.window.Window', {
+    title: '照片',
+    modal: true,
+    constrain: true,
+    closeAction: 'hide',
+    layout: 'fit',
+    fieldDefaults: {
+        labelAlign: 'left',
+        labelWidth: 90,
+        anchor: '100%'
+    },
+    items: [Ext.create('Ext.form.Panel', {
+        id: 'attachForm',
+        border: 0,
+        url: homePath+'/public/hra/employee/photo',
+        bodyPadding: '2 2 0',
+        fieldDefaults: {
+            msgTarget: 'side',
+            labelAlign: 'right',
+            labelWidth: 60,
+            anchor: '100%'
+        },
+        items: [{
+            xtype: 'hiddenfield',
+            name: 'employee_id'
+        }, {
+            xtype: 'filefield',
+            name: 'attach_file',
+            allowBlank: false,
+            buttonText: '选择相片'
+        }]
+    })],
+    buttons: [{
+        text: '提交',
+        handler: function() {
+            var form = Ext.getCmp('attachForm').getForm();
+
+            if(form.isValid()){
+                form.submit({
+                    waitMsg: '提交中，请稍后...',
+                    success: function(form, action) {
+                        var data = action.result;
+
+                        if(data.success){
+                            form.reset();
+                            attachWin.hide();
+                            employeeStore.reload();
+                        }else{
+                            Ext.MessageBox.alert('错误', data.info);
+                        }
+                    },
+                    failure: function(response){
+                        Ext.MessageBox.alert('错误', '保存提交失败');
+                    }
+                });
+            }
+        }
+    }, {
+        text: '取消',
+        handler: function() {
+            Ext.getCmp('attachForm').getForm().reset();
+            attachWin.hide();
+        }
+    }]
+});
+
+var photoViewWin = Ext.create('Ext.window.Window', {
+    title: '照片',
+    modal: true,
+    constrain: true,
+    closeAction: 'hide',
+    layout: 'fit',
+    height: 240,
+    width: 220,
+    html: ''
+});
+
+function viewPhoto(path){
+	photoViewWin.update('<img width="100%" height="100%" src="../'+path+'"></img>');
+	photoViewWin.show();
+}
+
+var employeeGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
+	extend: 'Ext.grid.Panel',
+    xtype: 'locking-grid',
+    border: 0,
+    id: 'employeeGrid',
+    store: employeeStore,
+    selType: 'checkboxmodel',
+    columnLines: true,
+    tbar: [{
+    	xtype: 'combobox',
+        id: 'search_active',
+        value: 1,
+        editable: false,
+        displayField: 'text',
+        valueField: 'val',
+        width: 65,
+        store: Ext.create('Ext.data.Store', {
+            fields: ['text', 'val'],
+            data: [
+                {"text": "在职", "val": 1},
+                {"text": "离职", "val": 0}
+            ]
+        })
+    }, {
+        xtype: 'combobox',
+        id: 'search_employment_type',
+        emptyText: '用工形式...',
+        //value: 1,
+        displayField: 'name',
+        valueField: 'id',
+        width: 150,
+        store: typeListStore,
+        editable: false,
+        multiSelect: true,
+        queryMode: 'local'
+    }, {
+        xtype: 'combobox',
+        id: 'search_dept_id',
+        emptyText: '部门...',
+        displayField: 'name',
+        valueField: 'id',
+        width: 150,
+        store: deptListStore,
+        editable: false,
+        multiSelect: true,
+        queryMode: 'local'
+    }, {
+        xtype: 'datefield',
+        format: 'Y-m-d',
+        width: 110,
+        id: 'search_entry_date_from',
+        emptyText: '入职日期从...'
+    }, {
+        xtype: 'datefield',
+        format: 'Y-m-d',
+        width: 110,
+        id: 'search_entry_date_to',
+        emptyText: '入职日期至...'
+    }, {
+        xtype: 'combobox',
+        id: 'search_key',
+        emptyText: '工号/中、英文名...',
+        displayField: 'name',
+        valueField: 'name',
+        width: 200,
+        store: employeeNameStore,
+        queryMode: 'local',
+        listeners: {
+        	'beforequery':function(e){
+                var combo = e.combo;  
+                if(!e.forceAll){  
+                    var input = e.query;  
+                    // 检索的正则
+                    var regExp = new RegExp(".*" + input.toLowerCase() + ".*");
+                    // 执行检索
+                    combo.store.filterBy(function(record,id){  
+                        // 得到每个record的项目名称值
+                        var text = record.get(combo.displayField).toLowerCase();  
+                        return regExp.test(text); 
+                    });
+                    combo.expand();  
+                    return false;
+                }
+            },
+            specialKey :function(field,e){
+                if (e.getKey() == Ext.EventObject.ENTER){
+                    employeeStore.loadPage(1);
+                }
+            },
+            select: function( combo, records, eOpts ){
+                var key = combo.getValue();
+                combo.setValue(key.substring(0, key.indexOf(' ')));
+            }
+        }
+    }, {
+        xtype: 'splitbutton',
+        text: '查询',
+        iconCls: 'icon-search',
+        handler: function(){
+        	employeeStore.loadPage(1);
+        },
+        menu: [{
+        	text: '导出',
+            iconCls: 'icon-export',
+            handler: function(){
+                var key = Ext.getCmp('search_key').getValue();
+                var entry_date_from = Ext.Date.format(Ext.getCmp('search_entry_date_from').getValue(), 'Y-m-d');
+                var entry_date_to = Ext.Date.format(Ext.getCmp('search_entry_date_to').getValue(), 'Y-m-d');
+                var dept_id = Ext.JSON.encode(Ext.getCmp('search_dept_id').getValue());
+                var active = Ext.getCmp('search_active').getValue();
+                var employment_type = Ext.JSON.encode(Ext.getCmp('search_employment_type').getValue());
+                
+            	window.open(homePath+'/public/hra/employee/getemployee/option/csv/key/'+key
+                    	+'/entry_date_from/'+entry_date_from
+                    	+'/entry_date_to/'+entry_date_to
+                    	+'/dept_id/'+dept_id
+                    	+'/active/'+active
+                    	+'/employment_type/'+employment_type+'/');
+            }
+        }]
+    }, {
+    	tooltip: '添加',
+        iconCls: 'icon-user-add',
+        handler: function(){
+            employeeRowEditing.cancelEdit();
+            
+            var r = Ext.create('Employee', {
+                cname: '新员工',
+                number: 'CD0000',
+                dept_id: 0,
+                post_id: 0,
+                hide: false,
+                active: true,
+                leader: false,
+                account: false,
+                account_active: false,
+                sex: 1,
+                marital_status: 0,
+                wrok_years: 0,
+                politics_status: 0,
+                employment_type: 1,
+                email: '<?php echo SYS_EMAIL_SUFFIX?>',
+                entry_date: Ext.Date.clearTime(new Date()),
+                salary: 0
+            });
+
+            employeeStore.insert(0, r);
+            employeeRowEditing.startEdit(0, 0);
+        }
+    }, {
+    	tooltip: '删除',
+        iconCls: 'icon-user-delete',
+        handler: function(){
+            var selection = Ext.getCmp('employeeGrid').getView().getSelectionModel().getSelection();
+
+            if(selection.length > 0){
+                employeeStore.remove(selection);
+            }else{
+                Ext.MessageBox.alert('错误', '没有选择删除对象！');
+            }
+        }
+    }, {
+    	tooltip: '保存',
+        iconCls: 'icon-save',
+        handler: function(){
+            var updateRecords = employeeStore.getUpdatedRecords();
+            var insertRecords = employeeStore.getNewRecords();
+            var deleteRecords = employeeStore.getRemovedRecords();
+
+            // 判断是否有修改数据
+            if(updateRecords.length + insertRecords.length + deleteRecords.length > 0){
+                var changeRows = {
+                        updated:    [],
+                        inserted:   [],
+                        deleted:    []
+                }
+
+                // 判断员工信息是否完整
+                var valueCheck = true;
+
+                for(var i = 0; i < updateRecords.length; i++){
+                    var data = updateRecords[i].data;
+                    
+                    if(data['number'] == '' || data['cname'] == '' || (data['account'] == 1 && data['email'] == '')){
+                        valueCheck = false;
+                        break;
+                    }
+                    
+                    changeRows.updated.push(data)
+                }
+                
+                for(var i = 0; i < insertRecords.length; i++){
+                    var data = insertRecords[i].data;
+                    
+                    if(data['number'] == '' || data['cname'] == '' || (data['account'] == 1 && data['email'] == '')){
+                        valueCheck = false;
+                        break;
+                    }
+                    
+                    changeRows.inserted.push(data)
+                }
+                
+                for(var i = 0; i < deleteRecords.length; i++){
+                    changeRows.deleted.push(deleteRecords[i].data)
+                }
+
+                // 格式正确则提交修改数据
+                if(valueCheck){
+                    Ext.MessageBox.confirm('确认', '确定保存修改内容？', function(button, text){
+                        if(button == 'yes'){
+                            var json = Ext.JSON.encode(changeRows);
+                            
+                            Ext.Msg.wait('提交中，请稍后...', '提示');
+                            Ext.Ajax.request({
+                                url: homePath+'/public/hra/employee/edit',
+                                params: {json: json},
+                                method: 'POST',
+                                success: function(response, options) {
+                                    var data = Ext.JSON.decode(response.responseText);
+
+                                    if(data.success){
+                                        Ext.MessageBox.alert('提示', data.info);
+                                        employeeStore.reload();
+                                    }else{
+                                        Ext.MessageBox.alert('错误', data.info);
+                                    }
+                                },
+                                failure: function(response){
+                                    Ext.MessageBox.alert('错误', '保存提交失败');
+                                }
+                            });
+                        }
+                    });
+                }else{
+                    Ext.MessageBox.alert('错误', '员工信息不完整，请继续填写！（开通系统账号时，邮箱地址不能为空）');
+                }
+            }else{
+                Ext.MessageBox.alert('提示', '没有修改任何数据！');
+            }
+        }
+    }, {
+        tooltip: '设置',
+        iconCls: 'icon-admin-system',
+        menu: [{
+            text: '用工形式管理',
+            handler: function(){
+                typeStore.load();
+                typeStore.load();
+                
+                typeWin.show();
+            }
+        }, {
+            text: '职位管理',
+            handler: function(){
+                postTypeStore.load();
+                postStore.load();
+                
+                postWin.show();
+            }
+        }]
+    }, {
+    	tooltip: '统计',
+        iconCls: 'icon-statistics',
+        menu: [{
+            text: '人员结构分析',
+            iconCls: 'icon-chart-pie',
+            handler: function(){
+                structureStore.getProxy().url = homePath+'/public/hra/employee/getstructure/option/education';
+            	structureStore.load();
+            	chartStructurePieWin.show();
+            }
+        }, {
+            text: '人员离职率',
+            iconCls: 'icon-grid',
+            handler: function(){
+                seperationWin.show();
+            }
+        }, {
+            text: '其它',
+            iconCls: 'icon-chart-bar',
+            handler: function(){
+                
+            }
+        }]
+    }, {
+        id: 'photoBtn',
+        tooltip: '上传员工照片(JPG: 180(宽) × 220(高)',
+        disabled: true,
+        iconCls: 'icon-attach',
+        handler: function(){
+            attachWin.show();
+
+            Ext.getCmp('attachForm').getForm().findField('employee_id').setValue(Ext.getCmp('employeeGrid').getView().getSelectionModel().getSelection()[0].get('id'));
+        }
+    }, '->', {
+    	tooltip: '刷新',
+        iconCls: 'icon-refresh',
+        handler: function(){
+            employeeStore.reload();
+        }
+    }],
+    plugins: employeeRowEditing,
+    viewConfig: {
+        stripeRows: false,// 取消偶数行背景色
+        getRowClass: function(record) {
+            if(!record.get('active')){
+                // 离职员工背景色为灰色
+                return 'gray-row';
+            }
+        }
+    },
+    columns: [{
+        xtype: 'rownumberer'
+    }, {
+        text: 'ID',
+        hidden: true,
+        dataIndex: 'id',
+        width: 50
+    }, {
+        xtype: 'checkcolumn',
+        //locked: true,
+        text: '隐藏',
+        dataIndex: 'hide',
+        stopSelection: false,
+        width: 50
+    }, {
+        xtype: 'checkcolumn',
+        //locked: true,
+        text: '在职',
+        dataIndex: 'active',
+        stopSelection: false,
+        width: 50
+    }, {
+        xtype: 'checkcolumn',
+        //locked: true,
+        text: '系统账号',
+        dataIndex: 'account',
+        stopSelection: false,
+        width: 80
+    }, {
+        xtype: 'checkcolumn',
+        //locked: true,
+        text: '账号状态',
+        dataIndex: 'account_active',
+        stopSelection: false,
+        width: 80
+    }, {
+        text: '用工形式',
+        width: 80,
+        dataIndex: 'employment_type',
+        align: 'center',
+        editor: new Ext.form.field.ComboBox({
+            typeAhead: true,
+            editable: false,
+            triggerAction: 'all',
+            displayField: 'name',
+            valueField: 'id',
+            queryMode: 'local',
+            store: typeListStore
+        }),
+        renderer: typeRender
+    }, {
+        xtype: 'checkcolumn',
+        hidden: true,
+        text: '公司领导',
+        dataIndex: 'leader',
+        stopSelection: false,
+        width: 80
+    }, {
+        text: '工号',
+        align: 'center',
+        dataIndex: 'number',
+        editor: 'textfield',
+        width: 70
+    }, {
+        text: '中文名',
+        dataIndex: 'cname',
+        editor: 'textfield',
+        width: 80
+    }, {
+        text: '英文名',
+        dataIndex: 'ename',
+        editor: 'textfield',
+        width: 100
+    }, {
+        text: '照片',
+        dataIndex: 'photo_path',
+        width: 50,
+        align: 'center',
+        renderer: function(val, meta, rec){
+            if(val != null && val != ''){
+            	return '<img style="cursor:pointer;" onclick="viewPhoto(\''+val+'\');" src="'+homePath+'/public/images/icons/ok.png"></img>';
+            }
+        }
+    }, {
+        text: '工作地点',
+        dataIndex: 'work_place',
+        editor: 'textfield',
+        width: 100
+    }, {
+        text: '性别',
+        dataIndex: 'sex',
+        align: 'center',
+        editor: new Ext.form.field.ComboBox({
+            typeAhead: true,
+            editable: false,
+            triggerAction: 'all',
+            displayField: 'text',
+            valueField: 'val',
+            store: Ext.create('Ext.data.Store', {
+                fields: ['text', 'val'],
+                data: [
+                    {"text": "男", "val": 1},
+                    {"text": "女", "val": 0}
+                ]
+            })
+        }),
+        renderer: function(val){
+            if(val == 1){
+                return '男';
+            }else{
+                return '女';
+            }
+        },
+        width: 65
+    }, {
+        text: '出生日期',
+        dataIndex: 'birthday',
+        align: 'center',
+        renderer: Ext.util.Format.dateRenderer('Y-m-d'),
+        editor: {
+            xtype: 'datefield',
+            editable: false,
+            format: 'Y-m-d'
+        },
+        width: 120
+    }, {
+        text: '部门',
+        dataIndex: 'dept_id',
+        renderer: function(val, meta, rec){
+        	meta.tdAttr = 'data-qtip="' + rec.get('dept_info') + '"';
+            return rec.get('dept_info');
+        },
+        editor: new Ext.form.field.ComboBox({
+            editable: false,
+            displayField: 'name',
+            valueField: 'id',
+            triggerAction: 'all',
+            lazyRender: true,
+            store: deptListStore,
+            queryMode: 'local'
+        }),
+        width: 180
+    }, {
+        text: '职位',
+        dataIndex: 'post_id',
+        renderer: postRender,
+        editor: new Ext.form.field.ComboBox({
+            editable: false,
+            displayField: 'name',
+            valueField: 'id',
+            triggerAction: 'all',
+            lazyRender: true,
+            store: postListStore,
+            queryMode: 'local'
+        }),
+        width: 100
+    }, {
+        text: '部门主管',
+        dataIndex: 'dept_manager_id',
+        renderer: employeeRender,
+        editor: new Ext.form.field.ComboBox({
+            editable: false,
+            displayField: 'name',
+            valueField: 'id',
+            triggerAction: 'all',
+            lazyRender: true,
+            store: employeeListStore,
+            queryMode: 'local'
+        }),
+        width: 100
+    }, {
+        text: '直接主管',
+        dataIndex: 'manager_id',
+        renderer: employeeRender,
+        editor: new Ext.form.field.ComboBox({
+            editable: false,
+            displayField: 'name',
+            valueField: 'id',
+            triggerAction: 'all',
+            lazyRender: true,
+            store: employeeListStore,
+            queryMode: 'local'
+        }),
+        width: 100
+    }, {
+        text: '邮箱',
+        dataIndex: 'email',
+        editor: 'textfield',
+        width: 160
+    }, {
+        text: '电话',
+        dataIndex: 'tel',
+        editor: 'textfield',
+        width: 100
+    }, {
+        text: 'MSN',
+        dataIndex: 'msn',
+        editor: 'textfield',
+        width: 180
+    }, {
+        text: '企业QQ',
+        align: 'center',
+        dataIndex: 'official_qq',
+        editor: 'textfield',
+        width: 100
+    }, {
+        text: '短号',
+        align: 'center',
+        dataIndex: 'short_num',
+        editor: 'textfield',
+        width: 60
+    }, {
+        text: '分机号',
+        align: 'center',
+        dataIndex: 'ext',
+        editor: 'textfield',
+        width: 60
+    }, {
+        text: '家庭住址',
+        dataIndex: 'address',
+        editor: 'textfield',
+        width: 120
+    }, {
+        text: '地区',
+        dataIndex: 'area_id',
+        renderer: areaRender,
+        editor: new Ext.form.field.ComboBox({
+            editable: false,
+            displayField: 'name',
+            valueField: 'id',
+            triggerAction: 'all',
+            lazyRender: true,
+            store: areaStore,
+            queryMode: 'local'
+        }),
+        width: 100
+    }, {
+        text: '户籍住址',
+        dataIndex: 'offical_address',
+        editor: 'textfield',
+        width: 120
+    }, {
+        text: '紧急联系人',
+        dataIndex: 'other_contact',
+        editor: 'textfield',
+        width: 120
+    }, {
+        text: '双方关系',
+        dataIndex: 'other_relationship',
+        editor: 'textfield',
+        width: 120
+    }, {
+        text: '联系方式',
+        dataIndex: 'other_contact_way',
+        editor: 'textfield',
+        width: 120
+    }, {
+        text: '工作年限',
+        align: 'center',
+        dataIndex: 'work_years',
+        editor: {
+            xtype: 'numberfield',
+            allowBlank: false,
+            minValue: 0
+        },
+        width: 80
+    }, {
+        text: '政治面貌',
+        dataIndex: 'politics_status',
+        align: 'center',
+        editor: new Ext.form.field.ComboBox({
+            typeAhead: true,
+            editable: false,
+            triggerAction: 'all',
+            displayField: 'text',
+            valueField: 'val',
+            store: Ext.create('Ext.data.Store', {
+                fields: ['text', 'val'],
+                data: [
+                    {"text": "群众", "val": 0},
+                    {"text": "团员", "val": 1},
+                    {"text": "党员", "val": 2},
+                    {"text": "其他", "val": 3}
+                ]
+            })
+        }),
+        renderer: function(val){
+        	if(val == 0){
+                return '群众';
+            }else if(val == 1){
+                return '团员';
+            }else{
+                return '党员';
+            }
+        },
+        width: 80
+    }, {
+        text: '婚否',
+        dataIndex: 'marital_status',
+        align: 'center',
+        editor: new Ext.form.field.ComboBox({
+            typeAhead: true,
+            editable: false,
+            triggerAction: 'all',
+            displayField: 'text',
+            valueField: 'val',
+            store: Ext.create('Ext.data.Store', {
+                fields: ['text', 'val'],
+                data: [
+                    {"text": "是", "val": 1},
+                    {"text": "否", "val": 0}
+                ]
+            })
+        }),
+        renderer: function(val){
+            if(val == 1){
+                return '是';
+            }else{
+                return '否';
+            }
+        },
+        width: 80
+    }, {
+        text: '结婚纪念日',
+        dataIndex: 'marry_day',
+        align: 'center',
+        renderer: Ext.util.Format.dateRenderer('Y-m-d'),
+        editor: {
+            xtype: 'datefield',
+            editable: false,
+            format: 'Y-m-d'
+        },
+        width: 120
+    }, {
+        text: '小孩生日',
+        dataIndex: 'children_birthday',
+        align: 'center',
+        renderer: Ext.util.Format.dateRenderer('Y-m-d'),
+        editor: {
+            xtype: 'datefield',
+            editable: false,
+            format: 'Y-m-d'
+        },
+        width: 120
+    }, {
+        text: '身份证号',
+        dataIndex: 'id_card',
+        editor: 'textfield',
+        width: 150
+    }, {
+        text: '社保号',
+        dataIndex: 'insurcode',
+        editor: 'textfield',
+        width: 100
+    }, {
+        text: '薪水',
+        dataIndex: 'salary',
+        editor: {
+            xtype: 'numberfield',
+            allowBlank: false,
+            minValue: 1
+        },
+        width: 100
+    }, {
+        text: '技术职称等级',
+        dataIndex: 'professional_qualifications_id',
+        renderer: professionalQualificationsRender,
+        editor: new Ext.form.field.ComboBox({
+            editable: false,
+            displayField: 'name',
+            valueField: 'id',
+            triggerAction: 'all',
+            lazyRender: true,
+            store: professionalQualificationsStore,
+            queryMode: 'local'
+        }),
+        width: 100
+    }, {
+        text: '驾照',
+        dataIndex: 'driving_license',
+        align: 'center',
+        editor: new Ext.form.field.ComboBox({
+            typeAhead: true,
+            editable: false,
+            triggerAction: 'all',
+            displayField: 'text',
+            valueField: 'val',
+            store: Ext.create('Ext.data.Store', {
+                fields: ['text', 'val'],
+                data: [
+                    {"text": "无", "val": 0},
+                    {"text": "有", "val": 1}
+                ]
+            })
+        }),
+        renderer: function(val){
+            if(val == 1){
+                return '有';
+            }else{
+                return '无';
+            }
+        },
+        width: 80
+    }, {
+        text: '开户行',
+        dataIndex: 'bank',
+        editor: 'textfield',
+        width: 100
+    }, {
+        text: '银行卡号',
+        dataIndex: 'bank_num',
+        editor: 'textfield',
+        width: 100
+    }, {
+        text: '公积金号',
+        dataIndex: 'accumulation_fund_code',
+        editor: 'textfield',
+        width: 100
+    }, {
+        text: '学历',
+        dataIndex: 'education',
+        editor: new Ext.form.field.ComboBox({
+            typeAhead: true,
+            editable: false,
+            triggerAction: 'all',
+            displayField: 'text',
+            //valueField: 'val',
+            store: Ext.create('Ext.data.Store', {
+                fields: ['text', 'val'],
+                data: [
+                    {"text": "本科", "val": "本科"},
+                    {"text": "大专", "val": "大专"},
+                    {"text": "硕士", "val": "硕士"},
+                    {"text": "博士", "val": "博士"},
+                    {"text": "中专", "val": "中专"},
+                    {"text": "高中", "val": "高中"},
+                    {"text": "初中", "val": "初中"},
+                    {"text": "小学", "val": "小学"},
+                    {"text": "无", "val": "无"}
+                ]
+            })
+        }),
+        width: 80
+    }, {
+        text: '毕业院校',
+        dataIndex: 'school',
+        editor: 'textfield',
+        width: 120
+    }, {
+        text: '专业',
+        dataIndex: 'major',
+        editor: 'textfield',
+        width: 150
+    }, {
+        text: '入职日期',
+        dataIndex: 'entry_date',
+        align: 'center',
+        renderer: Ext.util.Format.dateRenderer('Y-m-d'),
+        editor: {
+            xtype: 'datefield',
+            editable: false,
+            format: 'Y-m-d'
+        },
+        width: 120
+    }, {
+        text: '转正日期',
+        dataIndex: 'regularization_date',
+        align: 'center',
+        renderer: Ext.util.Format.dateRenderer('Y-m-d'),
+        editor: {
+            xtype: 'datefield',
+            editable: false,
+            format: 'Y-m-d'
+        },
+        width: 120
+    }, {
+        text: '劳动合同-开始',
+        dataIndex: 'labor_contract_start',
+        align: 'center',
+        renderer: Ext.util.Format.dateRenderer('Y-m-d'),
+        editor: {
+            xtype: 'datefield',
+            editable: false,
+            format: 'Y-m-d'
+        },
+        width: 120
+    }, {
+        text: '劳动合同-截止',
+        dataIndex: 'labor_contract_end',
+        align: 'center',
+        renderer: Ext.util.Format.dateRenderer('Y-m-d'),
+        editor: {
+            xtype: 'datefield',
+            editable: false,
+            format: 'Y-m-d'
+        },
+        width: 120
+    }, {
+        text: '离职日期',
+        dataIndex: 'leave_date',
+        align: 'center',
+        renderer: Ext.util.Format.dateRenderer('Y-m-d'),
+        editor: {
+            xtype: 'datefield',
+            editable: false,
+            format: 'Y-m-d'
+        },
+        width: 120
+    }, {
+        text: '备注',
+        dataIndex: 'remark',
+        editor: 'textfield',
+        width: 120
+    }, {
+        text: '创建人',
+        dataIndex: 'creater',
+        hidden: true,
+        align: 'center',
+        width: 80
+    }, {
+        text: '创建时间',
+        dataIndex: 'create_time',
+        hidden: true,
+        align: 'center',
+        renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+        width: 140
+    }, {
+        text: '更新人',
+        dataIndex: 'updater',
+        hidden: true,
+        align: 'center',
+        width: 80
+    }, {
+        text: '更新时间',
+        dataIndex: 'update_time',
+        hidden: true,
+        align: 'center',
+        renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+        width: 140
+    }],
+    listeners: {
+        selectionchange: function( sel, selected, eOpts ){
+            if(selected.length == 1){
+                Ext.getCmp('photoBtn').enable();
+            }else{
+                Ext.getCmp('photoBtn').disable();
+            }
+        }
+    },
+    bbar: Ext.create('Ext.PagingToolbar', {
+    	border: 0,
+        store: employeeStore,
+        displayInfo: true,
+        displayMsg: '显示 {0} - {1} 共 {2}',
+        emptyMsg: "没有数据"
+    })
+});
+
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+    
+    Ext.create('Ext.Viewport', {
+        layout: 'border',
+        items: [{
+            region: 'center',
+            border: 0,
+            layout: 'fit',
+            plain: true,
+            items: [employeeGrid]
+        }]
+    });
+
+    employeeStore.loadPage(1);
+});
+</script>
+</head>
+<body>
+</body>
+</html>

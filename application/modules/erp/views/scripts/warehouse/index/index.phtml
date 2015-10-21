@@ -1,0 +1,375 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+Ext.require([
+    'Ext.*'
+]);
+
+// 选项数据模型
+Ext.define('Selection', {
+    extend: 'Ext.data.Model',
+    fields: [{name: 'id', type: 'int'},
+             {name: 'code'},
+             {name: 'name'}]
+});
+</script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/warehouse/index/js/receiver.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/warehouse/index/js/type.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/warehouse/index/js/transaction.js"></script>
+<script type="text/javascript">
+// 数据模型
+Ext.define('Warehouse', {
+    extend: 'Ext.data.Model',
+    fields: [{name: "id"},
+             {name: "active"},
+             {name: "in_stock"},
+             {name: "locked"},
+             {name: "type_id", type: 'int'},
+             {name: "type_code"},
+             {name: "code", type: 'int'},
+             {name: "name"},
+             {name: "description"},
+             {name: "remark"},
+             {name: "create_time",type: 'date',dateFormat: 'timestamp'},
+             {name: "update_time",type: 'date',dateFormat: 'timestamp'},
+             {name: "creater"},
+             {name: "updater"}]
+});
+
+// 数据源
+var warehouseStore = Ext.create('Ext.data.Store', {
+    model: 'Warehouse',
+    pageSize: 100,
+    proxy: {
+        type: 'ajax',
+        reader: {
+            type: 'json',
+            root: 'rows',
+            totalProperty: 'total'
+        },
+        url: homePath+'/public/erp/warehouse_index/getwarehouse'
+    },
+    listeners: {
+    	beforeload: function(){
+    		var type_id = Ext.JSON.encode(Ext.getCmp('search_type_id').getValue());
+    		var key = Ext.getCmp('search_key').getValue();
+    		
+    		Ext.apply(warehouseStore.proxy.extraParams, {
+    			type_id: type_id,
+    			key: key
+            });
+        }
+    },
+    autoLoad: true
+});
+
+// 编辑插件
+var warehouseRowEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+    clicksToEdit: 1
+});
+
+// 仓库列表
+var warehouseGrid = Ext.create('Ext.grid.Panel', {
+	store: warehouseStore,
+	border: 0,
+	id: 'warehouseGrid',
+    columnLines: true,
+    tbar: [{
+        xtype: 'combobox',
+        id: 'search_type_id',
+        width: 120,
+        emptyText: '选择类别...',
+        displayField: 'name',
+        valueField: 'id',
+        store: typeStore,
+        queryMode: 'local',
+        multiSelect: true
+    }, {
+        xtype: 'textfield',
+        id: 'search_key',
+        emptyText: '名称/代码...',
+        listeners: {
+        	specialKey :function(field,e){
+                if (e.getKey() == Ext.EventObject.ENTER){
+                	warehouseStore.loadPage(1);
+                }
+            }
+        }
+    }, {
+        xtype: 'splitbutton',
+        text: '查询',
+        iconCls: 'icon-search',
+        handler: function(){
+        	warehouseStore.loadPage(1);
+        },
+        menu: [{
+            text: '导出',
+            iconCls: 'icon-export',
+            handler: function(){
+            	window.open(homePath+'/public/erp/warehouse_index/getwarehouse/option/csv');
+            }
+        }]
+    }, {
+    	text: '添加',
+        iconCls: 'icon-add',
+        handler: function(){
+        	warehouseRowEditing.cancelEdit();
+            
+            var r = Ext.create('Warehouse', {
+            	in_stock: true,
+                active: true,
+                locked: false,
+                type_id: 0
+            });
+
+            warehouseStore.insert(0, r);
+            warehouseRowEditing.startEdit(0, 0);
+        }
+    }, {
+    	text: '删除',
+        iconCls: 'icon-delete',
+        handler: function(){
+            var selection = Ext.getCmp('warehouseGrid').getView().getSelectionModel().getSelection();
+
+            if(selection.length > 0){
+            	warehouseStore.remove(selection);
+            }else{
+                Ext.MessageBox.alert('错误', '没有选择删除对象！');
+            }
+        }
+    }, {
+        text: '保存',
+        iconCls: 'icon-save',
+        handler: function(){
+            var updateRecords = warehouseStore.getUpdatedRecords();
+            var insertRecords = warehouseStore.getNewRecords();
+            var deleteRecords = warehouseStore.getRemovedRecords();
+
+            // 判断是否有修改数据
+            if(updateRecords.length + insertRecords.length + deleteRecords.length > 0){
+                var changeRows = {
+                        updated:    [],
+                        inserted:   [],
+                        deleted:    []
+                }
+
+                // 判断信息是否完整
+                var valueCheck = true;
+
+                for(var i = 0; i < updateRecords.length; i++){
+                    var data = updateRecords[i].data;
+                    
+                    if(data['code'] == '' || data['type_id'] == '' || data['name'] == ''){
+                        valueCheck = false;
+                        break;
+                    }
+                    
+                    changeRows.updated.push(data)
+                }
+                
+                for(var i = 0; i < insertRecords.length; i++){
+                    var data = insertRecords[i].data;
+                    
+                    if(data['code'] == '' || data['type_id'] == '' || data['name'] == ''){
+                        valueCheck = false;
+                        break;
+                    }
+                    
+                    changeRows.inserted.push(data)
+                }
+                
+                for(var i = 0; i < deleteRecords.length; i++){
+                    changeRows.deleted.push(deleteRecords[i].data)
+                }
+
+                // 格式正确则提交修改数据
+                if(valueCheck){
+                    Ext.MessageBox.confirm('确认', '确定保存修改内容？', function(button, text){
+                        if(button == 'yes'){
+                            var json = Ext.JSON.encode(changeRows);
+                            
+                            Ext.Msg.wait('提交中，请稍后...', '提示');
+                            Ext.Ajax.request({
+                                url: homePath+'/public/erp/warehouse_index/edit',
+                                params: {json: json},
+                                method: 'POST',
+                                success: function(response, options) {
+                                    var data = Ext.JSON.decode(response.responseText);
+
+                                    if(data.success){
+                                        Ext.MessageBox.alert('提示', data.info);
+                                        warehouseStore.reload();
+                                    }else{
+                                        Ext.MessageBox.alert('错误', data.info);
+                                    }
+                                },
+                                failure: function(response){
+                                    Ext.MessageBox.alert('错误', '保存提交失败');
+                                }
+                            });
+                        }
+                    });
+                }else{
+                    Ext.MessageBox.alert('错误', '信息不完整，请继续填写！');
+                }
+            }else{
+                Ext.MessageBox.alert('提示', '没有修改任何数据！');
+            }
+        }
+    }, {
+        text: '仓库管理',
+        iconCls: 'icon-hra-dept',
+        handler: function(){
+            typeStore.load();
+            
+            typeWin.show();
+        }
+    }, {
+        text: '收货人管理',
+        iconCls: 'icon-user-edit',
+        handler: function(){
+        	receiverWin.show();
+        	receiverStore.load();
+        }
+    }, {
+        text: '库存交易类别管理',
+        iconCls: 'icon-doc-edit',
+        handler: function(){
+        	transactionWin.show();
+        	transactionStore.load();
+        }
+    }, '->', {
+        text: '刷新',
+        iconCls: 'icon-refresh',
+        handler: function(){
+        	warehouseStore.reload();
+        }
+    }],
+    viewConfig: {
+        stripeRows: false,// 取消偶数行背景色
+        getRowClass: function(record) {
+            if(!record.get('active')){
+                return 'gray-row';
+            }else if(record.get('locked')){
+                return 'light-red-row';
+            }
+        }
+    },
+    plugins: warehouseRowEditing,
+    columns: [{
+        xtype: 'rownumberer'
+    }, {
+        text: 'ID',
+        align: 'center',
+        hidden: true,
+        dataIndex: 'id'
+    }, {
+        xtype: 'checkcolumn',
+        text: '启用',
+        dataIndex: 'active',
+        stopSelection: false,
+        width: 50
+    }, {
+        xtype: 'checkcolumn',
+        text: '库存',
+        dataIndex: 'in_stock',
+        stopSelection: false,
+        width: 50
+    }, {
+        xtype: 'checkcolumn',
+        text: '锁定',
+        dataIndex: 'locked',
+        stopSelection: false,
+        width: 50
+    }, {
+        text: '仓库',
+        dataIndex: 'type_id',
+        renderer: warehouseTypeRender,
+        editor: new Ext.form.field.ComboBox({
+            displayField: 'name',
+            valueField: 'id',
+            triggerAction: 'all',
+            lazyRender: true,
+            store: typeListStore,
+            editable: false,
+            queryMode: 'local'
+        }),
+        flex: 2
+    }, {
+        text: '仓位代码',
+        dataIndex: 'code',
+        editor: 'textfield',
+        flex: 1
+    }, {
+        text: '仓位名称',
+        dataIndex: 'name',
+        editor: 'textfield',
+        flex: 2
+    }, {
+        text: '仓位描述',
+        dataIndex: 'description',
+        editor: 'textfield',
+        flex: 5
+    }, {
+        text: '备注',
+        dataIndex: 'remark',
+        editor: 'textfield',
+        flex: 3
+    }, {
+        text: '创建人',
+        hidden: true,
+        dataIndex: 'creater',
+        align: 'center',
+        flex: 1
+    }, {
+        text: '创建时间',
+        hidden: true,
+        dataIndex: 'create_time',
+        align: 'center',
+        renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+        flex: 1.5
+    }, {
+        text: '更新人',
+        hidden: true,
+        dataIndex: 'updater',
+        align: 'center',
+        flex: 1
+    }, {
+        text: '更新时间',
+        hidden: true,
+        dataIndex: 'update_time',
+        align: 'center',
+        renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+        flex: 1.5
+    }],
+    bbar: Ext.create('Ext.PagingToolbar', {
+        store: warehouseStore,
+        border: 0,
+        displayInfo: true,
+        displayMsg: '显示 {0} - {1} 共 {2}',
+        emptyMsg: "没有数据"
+    })
+});
+
+Ext.onReady(function() {
+    Ext.tip.QuickTipManager.init();
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+    
+    Ext.create('Ext.Viewport', {
+        layout: 'border',
+        items: [{
+            region: 'center',
+            layout: 'fit',
+            border: 0,
+            plain: true,
+            items: [warehouseGrid]
+        }]
+    });
+});
+</script>
+</head>
+<body>
+</body>
+</html>

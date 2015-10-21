@@ -1,0 +1,597 @@
+<html>
+    <head>
+        <?php echo SYS_HEAD; ?>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/common.js"></script>
+        <script type="text/javascript">
+            Ext.require([
+                'Ext.*'
+            ]);
+
+            Ext.onReady(function() {
+                Ext.QuickTips.init();
+
+                Ext.grid.PageRowNumberer = Ext.extend(Ext.grid.RowNumberer, {
+                    renderer: function(value, cellmeta, record, rowIndex, columnIndex, store) {
+                        return (store.currentPage - 1) * store.pageSize + rowIndex + 1;
+                    }
+                });
+
+                Ext.define('flow', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [{
+                            name: "id"
+                        }, {
+                            name: "state"
+                        }, {
+                            name: "flow_name"
+                        }, {
+                            name: "description"
+                        }, {
+                            name: "remark"
+                        }, {
+                            name: "step_ids"
+                        }, {
+                            name: "step_names"
+                        }, {
+                            name: "tips"
+                        }]
+                });
+
+                Ext.define('step', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [{
+                            name: "id"
+                        }, {
+                            name: "step_name"
+                        }, {
+                            name: "user"
+                        }, {
+                            name: "dept"
+                        }, {
+                            name: "method"
+                        }, {
+                            name: "method_name"
+                        }, {
+                            name: "return"
+                        }, {
+                            name: "return_name"
+                        }, {
+                            name: "step_name"
+                        }, {
+                            name: "model_id"
+                        }, {
+                            name: "step_user_name"
+                        }, {
+                            name: "step_dept_name"
+                        }, {
+                            name: "remark"
+                        }, {
+                            name: "description"
+                        }]
+                });
+
+                var flowStore = Ext.create('Ext.data.Store', {
+                    model: 'flow',
+                    pageSize: 100,
+                    proxy: {
+                        type: 'ajax',
+                        reader: {
+                            root: 'topics',
+                            totalProperty: 'totalCount'
+                        },
+                        url: '<?php echo HOME_PATH; ?>/public/admin/flow/getlist'
+                    },
+                    autoLoad: true
+                });
+
+                var stepStore = Ext.create('Ext.data.Store', {
+                    model: 'step',
+                    pageSize: 100,
+                    proxy: {
+                        type: 'ajax',
+                        reader: {
+                            root: 'topics',
+                            totalProperty: 'totalCount'
+                        },
+                        url: '<?php echo HOME_PATH; ?>/public/admin/step/getlist'
+                    },
+                    autoLoad: false
+                });
+
+                var stepSelStore = Ext.create('Ext.data.Store', {
+                    model: 'step',
+                    pageSize: 100,
+                    proxy: {
+                        type: 'ajax',
+                        reader: {
+                            root: 'topics',
+                            totalProperty: 'totalCount'
+                        },
+                        url: '<?php echo HOME_PATH; ?>/public/admin/flow/getstep'
+                    },
+                    autoLoad: false
+                });
+
+                var rowEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+                    clicksToEdit: 1
+                });
+
+                var stepPanel = Ext.create('Ext.grid.Panel', {
+                    store: stepStore,
+                    border:0,
+                    selType: 'checkboxmodel',
+                    sortableColumns: false, // 禁止排序
+                    columnLines: true,
+                    tbar: [{
+                            xtype: 'textfield',
+                            id: 'search_step_name',
+                            width: 120,
+                            emptyText: '阶段名称...'
+                        }, {
+                            xtype: 'textfield',
+                            id: 'search_description1',
+                            width: 120,
+                            emptyText: '描述...'
+                        }, {
+                            text: '查询',
+                            iconCls: 'icon-search',
+                            handler: function() {
+                                var search_step_name = Ext.getCmp('search_step_name').getValue();
+                                var search_description = Ext.getCmp('search_description1').getValue();
+
+                                stepStore.load({
+                                    params: {
+                                        search_step_name: search_step_name,
+                                        search_description: search_description,
+                                        limit: 15,
+                                        start: 0
+                                    }
+                                });
+                            }
+                        }],
+                    columns: [{
+                            xtype: 'rownumberer',
+                            flex: 0.5
+                        }, {
+                            text: 'ID',
+                            flex: 1,
+                            hidden: true,
+                            dataIndex: 'id'
+                        }, {
+                            text: '阶段名称',
+                            flex: 1.5,
+                            dataIndex: 'step_name'
+                        }, {
+                            text: '人员',
+                            flex: 2.5,
+                            dataIndex: 'step_user_name'
+                        }, {
+                            text: '角色',
+                            flex: 1.5,
+                            dataIndex: 'step_dept_name'
+                        }, {
+                            text: '处理方式',
+                            flex: 1.5,
+                            sortable: false,
+                            dataIndex: 'method_name',
+                            editor: 'textfield'
+                        }, {
+                            text: '退回后的处理',
+                            flex: 1.5,
+                            dataIndex: 'return_name',
+                            editor: 'textfield'
+                        }, {
+                            text: '描述',
+                            flex: 1.5,
+                            dataIndex: 'description',
+                            editor: 'textfield'
+                        }, {
+                            text: '备注',
+                            flex: 1.5,
+                            dataIndex: 'remark',
+                            editor: 'textfield'
+                        }],
+                    bbar: Ext.create('Ext.PagingToolbar', {
+                        store: stepStore,
+                        displayInfo: true,
+                        displayMsg: '显示 {0} - {1} 共 {2}',
+                        emptyMsg: "没有数据"
+                    })
+                });
+                var required = '<span style="color:red;font-weight:bold" data-qtip="Required">*</span>';
+
+                var form = new Ext.form.Panel({
+                    width: 800,
+                    border:0,
+                    bodyPadding: 2,
+                    layout: 'form',
+                    waitMsgTarget: true,
+                    fieldDefaults: {
+                        labelAlign: 'left',
+                        labelWidth: 80,
+                        margin: '0 20 0 0',
+                        msgTarget: 'side'
+                    },
+                    items: [{
+                            xtype: 'fieldcontainer',
+                            layout: 'hbox',
+                            items: [{
+                                    xtype: 'textfield',
+                                    id: 'id',
+                                    name: 'id',
+                                    hidden: true
+                                }, {
+                                    xtype: 'textfield',
+                                    afterLabelTextTpl: required,
+                                    allowBlank: false,
+                                    fieldLabel: '流程名称',
+                                    name: 'flow_name'
+                                }, {
+                                    fieldLabel: '是否启用',
+                                    xtype: 'checkbox',
+                                    checked: true,
+                                    name: 'state',
+                                    allowBlank: false
+                                }]
+                        }, {
+                            xtype: 'fieldcontainer',
+                            layout: 'hbox',
+                            items: [{
+                                    xtype: 'textfield',
+                                    fieldLabel: '描述',
+                                    name: 'description'
+                                }, {
+                                    xtype: 'textfield',
+                                    fieldLabel: '备注',
+                                    name: 'remark'
+                                }]
+                        }, {
+                            xtype: 'fieldcontainer',
+                            fieldLabel: '阶段配置',
+                            layout: 'fit',
+                            items: []
+                        }, {
+                            xtype: 'fieldcontainer',
+                            border: 1,
+                            items: [Ext.create('Ext.grid.Panel', {
+                                    store: stepSelStore,
+                                    border: true,
+                                    sortableColumns: false, // 禁止排序
+                                    columnLines: true,
+                                    viewConfig: {
+                                        plugins: {
+                                            ptype: 'gridviewdragdrop',
+                                            dragText: '拖动来改变顺序'
+                                        },
+                                        listeners: {
+                                            drop: function(node, data, dropRec, dropPosition) {
+                                                var store = this.getStore();
+                                                for (i = 0; i < store.getCount(); i++)
+                                                {
+                                                    store.getAt(i).set('index', i + 1);//model类的set,写入编号
+                                                    store.getAt(i).set('form_sort', i + 1);
+                                                }
+                                            }
+                                        }
+                                    },
+                                    plugins: rowEditing,
+                                    tbar: [{
+                                            text: '添加',
+                                            scope: this,
+                                            handler: function() {
+                                    	        stepStore.load();
+                                                Ext.create('Ext.window.Window', {
+                                                    title: '阶段管理',
+                                                    height: 400,
+                                                    modal: true,
+                                                    width: 900,
+                                                    layout: 'fit',
+                                                    closeAction: 'hide',
+                                                    items: [stepPanel],
+                                                    buttons: [{
+                                                            text: '<font color="blue">选择</font>',
+                                                            formBind: true,
+                                                            handler: function() {
+                                                                var window = this.up('window');
+                                                                var grid = window.down('panel');
+                                                                var selection = grid.getView().getSelectionModel().getSelection();
+                                                                if (selection.length > 0) {
+                                                                    for (var i = 0; i < selection.length; i++) {
+                                                                        var grid = selection[i];
+                                                                        var id = grid.data.id;
+                                                                        if (!stepSelStore.getById(id)) {
+                                                                            rowEditing.cancelEdit();
+                                                                            stepSelStore.insert(stepSelStore.getCount(), grid);
+                                                                        }
+                                                                        var store = stepSelStore;
+                                                                        for (var k = 0; k < store.getCount(); k++)
+                                                                        {
+                                                                            store.getAt(i).set('index', k + 1);//model类的set,写入编号
+                                                                            store.getAt(i).set('form_sort', k + 1);
+                                                                        }
+                                                                        window.hide();
+                                                                    }
+                                                                }
+                                                            }
+                                                        }]
+                                                }).show();
+                                            }
+                                        }, {
+                                            text: '删除',
+                                            scope: this,
+                                            handler: function() {
+                                                var selection = form.down('panel').getView().getSelectionModel().getSelection();
+                                                if (selection.length > 0) {
+                                                    stepSelStore.remove(selection);
+                                                } else {
+                                                    Ext.MessageBox.alert('错误', '没有选择删除对象！');
+                                                }
+                                            }
+                                        }],
+                                    columns: [
+                                        Ext.create('Ext.grid.PageRowNumberer', {
+                                            header: '顺序',
+                                            flex: 0.5
+                                        }),
+                                        {text: 'sort', hidden: true, dataIndex: 'form_sort', flex: 0.7},
+                                        {text: 'ID', hidden: true, dataIndex: 'id' },
+                                        {text: '阶段名称', dataIndex: 'step_name', flex: 1.5},
+                                        {text: '人员', dataIndex: 'step_user_name', flex: 1.5,renderer: showTitle},
+                                        {text: '角色', dataIndex: 'step_dept_name', flex: 1.5,renderer: showTitle},
+                                        {text: '处理方式', dataIndex: 'method_name', flex: 1.5},
+                                        {text: '退回后的处理', dataIndex: 'return_name', flex: 1.7},
+                                        {text: '描述', dataIndex: 'description', flex: 2.5,renderer: showTitle},
+                                        {text: '备注', dataIndex: 'remark', flex: 2.5}
+
+                                    ]
+                                })
+                            ]
+                        }
+                    ]
+                });
+
+                var winFlow = new Ext.Window({
+                    xtype: "window",
+                    border:0,
+                    title: '添加流程',
+                    modal: true,
+                    maximized: true,
+                    layout: 'fit',
+                    closeAction: 'hide',
+                    items: [form],
+                    buttons: [{
+                            text: '提交',
+                            formBind: true,
+                            handler: function() {
+                                var window = this.up('window');
+                                var form = window.down('form').getForm();
+                                var grid = window.down('form').down('grid');
+                                var gridValue = [];
+                                grid.getStore().each(function(s) {
+                                    gridValue.push(s.data.id);
+                                });
+                                if (gridValue.length === 0) {
+                                    Ext.MessageBox.alert('错误', '请选择阶段！');
+                                    return;
+                                }
+                                if (form.isValid()) {
+                                    form.submit({
+                                        clientValidation: true,
+                                        url: '<?php echo HOME_PATH; ?>/public/admin/flow/save',
+                                        submitEmptyText: false,
+                                        params: {json: gridValue.join(',')},
+                                        waitMsg: '提交中，请稍后...',
+                                        method: 'POST',
+                                        success: function(form, action) {
+                                            Ext.MessageBox.alert('提示', action.result.info);
+                                            if (action.result.result) {
+                                                flowStore.reload();
+                                                form.reset();
+                                                winFlow.hide();
+                                            } else {
+                                                Ext.MessageBox.alert('错误', action.result.info);
+                                            }
+                                        },
+                                        failure: function(form, action) {
+                                            Ext.MessageBox.alert('错误', action.result.info);
+                                        }
+                                    });
+                                }
+                            }
+                        }, {
+                            text: '取消',
+                            handler: function() {
+                                winFlow.hide();
+                            }
+                        }]
+                });
+
+                var panel = Ext.create('Ext.grid.Panel', {
+                    store: flowStore,
+                    border:0,
+                    selType: 'checkboxmodel',
+                    columnLines: true,
+                    tbar: [{
+                            xtype: 'textfield',
+                            id: 'search_flow_name',
+                            width: 120,
+                            emptyText: '流程名称...'
+                        }, {
+                            xtype: 'textfield',
+                            id: 'search_description',
+                            width: 120,
+                            emptyText: '描述...'
+                        }, {
+                            text: '查询',
+                            iconCls: 'icon-search',
+                            handler: function() {
+                                var search_flow_name = Ext.getCmp('search_flow_name').getValue();
+                                var search_description = Ext.getCmp('search_description').getValue();
+
+                                flowStore.load({
+                                    params: {
+                                        search_flow_name: search_flow_name,
+                                        search_description: search_description,
+                                        limit: 15,
+                                        start: 0
+                                    }
+                                });
+                            }
+                        }, {
+                            text: '新流程',
+                            scope: this,
+                            handler: function() {
+                                form.getForm().reset();
+                                stepSelStore.removeAll();
+                                winFlow.show();
+                            }
+                        }, {
+                            text: '编辑',
+                            scope: this,
+                            handler: function() {
+                                var selection = panel.getView().getSelectionModel().getSelection();
+                                if (selection.length <= 0) {
+                                    Ext.MessageBox.alert('请注意', '请您选择要编辑的记录！');
+                                } else if (selection.length >= 2) {
+                                    Ext.MessageBox.alert('请注意', '不能同时编辑多个数据！');
+                                } else {
+                                    var grid = selection[0];
+                                    form.getForm().reset();
+                                    form.getForm().loadRecord(grid);
+                                    stepSelStore.load({params: {ids: grid.data.step_ids}});
+
+                                    winFlow.show();
+                                }
+                            }
+                        }, {
+                            text: '删除',
+                            scope: this,
+                            handler: function() {
+                                var selection = panel.getView().getSelectionModel().getSelection();
+                                if (selection.length > 0) {
+
+                                    // 格式正确则提交修改数据
+                                    Ext.MessageBox.confirm('确认', '确定删除所选内容？删除后所有使用此流程的模块流程将无效！', function(button, text) {
+                                        if (button === 'yes') {
+                                            flowStore.remove(selection);
+
+                                            var deleteRecords = flowStore.getRemovedRecords();
+
+                                            var changeRows = {
+                                                deleted: []
+                                            }
+
+                                            for (var i = 0; i < deleteRecords.length; i++) {
+                                                changeRows.deleted.push(deleteRecords[i].data)
+                                            }
+
+                                            var json = Ext.JSON.encode(changeRows);
+
+                                            Ext.Msg.wait('提交中，请稍后...', '提示');
+                                            Ext.Ajax.request({
+                                                url: '<?php echo HOME_PATH; ?>/public/admin/flow/remove',
+                                                params: {json: json},
+                                                method: 'POST',
+                                                success: function(response, options) {
+                                                    var data = Ext.JSON.decode(response.responseText);
+
+                                                    if (data.success) {
+                                                        Ext.MessageBox.alert('提示', data.info);
+                                                        flowStore.reload();
+                                                    } else {
+                                                        Ext.MessageBox.alert('错误', data.info);
+                                                    }
+                                                },
+                                                failure: function(response, options) {
+                                                    Ext.MessageBox.alert('错误', options.result.info);
+                                                }
+                                            });
+                                        }
+                                    });
+                                } else {
+                                    Ext.MessageBox.alert('错误', '没有选择删除对象！');
+                                }
+                            }
+                        }, {
+                            text: '阶段管理',
+                            scope: this,
+                            handler: function() {
+                                Ext.create('Ext.window.Window', {
+                                    title: '阶段管理',
+                                    height: 400,
+                                    maximized: true,
+                                    width: 900,
+                                    layout: 'fit',
+                                    html: "<iframe src='<?php echo HOME_PATH; ?>/public/admin/step' frameborder=0 width=100% height=100%></iframe>"
+                                }).show();
+                            }
+                        }],
+                    columns: [{
+                            xtype: 'rownumberer'
+                        }, {
+                            text: 'ID',
+                            flex: 0.5,
+                            hidden: true,
+                            dataIndex: 'id'
+                        }, {
+                            text: '流程',
+                            flex: 1,
+                            sortable: true,
+                            dataIndex: 'flow_name'
+                        }, {
+                            xtype: 'checkcolumn',
+                            text: '是否激活',
+                            flex: 0.5,
+                            dataIndex: 'state'
+                        }, {
+                            text: '阶段',
+                            flex: 2.5,
+                            dataIndex: 'step_names',
+                            renderer: function(value, p, record) {
+	                        	if(!value) return "";
+	                            var tip = record.get('tips');
+	                            p.tdAttr = 'data-qtip="' + tip + '"';
+	                            return value;
+                            }
+                        }, {
+                            text: '描述',
+                            flex: 1.5,
+                            dataIndex: 'description',
+                            editor: 'textfield',
+                            renderer: showTitle
+                        }, {
+                            text: '备注',
+                            flex: 1.5,
+                            dataIndex: 'remark',
+                            editor: 'textfield',
+                            renderer: showTitle
+                        }],
+                    bbar: Ext.create('Ext.PagingToolbar', {
+                        store: flowStore,
+                        displayInfo: true,
+                        displayMsg: '显示 {0} - {1} 共 {2}',
+                        emptyMsg: "没有数据"
+                    })
+                });
+
+
+                Ext.create('Ext.container.Viewport', {
+                    layout: 'border',
+                    border:0,
+                    rtl: true,
+                    plain: true,
+                    items: [{
+                            region: 'center',
+                            border:0,
+                            layout: 'fit',
+                            items: [panel]
+                        }]
+                });
+            });
+        </script>
+    </head>
+    <body>
+    </body>
+</html>

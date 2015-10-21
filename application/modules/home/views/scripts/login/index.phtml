@@ -1,0 +1,180 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+var copyRight = '<?php echo SYS_COPYRIGHT?>';
+var newsPublic = 1;
+var user_id;
+var key;
+Ext.require(['*']);
+</script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/home/views/scripts/index/js/latestnews.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/home/views/scripts/login/js/form.js"></script>
+<style type="text/css"> 
+#warp {
+    position: absolute; 
+    width:595px;
+    height:265px;
+    left:50%;
+    top:50%;
+    margin-left:-299px;
+    margin-top:-186px;
+}
+.hr0{ height:1px;border:none;border-top:1px dashed #a0a0a0;}
+</style> 
+<script type="text/javascript">
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+
+    var loginSub = function() {
+        var form = loginForm.getForm();
+        if (form.isValid()) {
+            form.submit({
+            	waitMsg: '登录中，请稍后...',
+                success: function(form, action) {
+                    if(action.result.success){
+                        if(action.result.need_change_pwd){
+                        	resetPwdWin.show();
+                        	Ext.getCmp('user_id').setValue(action.result.user_info['user_id']);
+                        	Ext.getCmp('reset_pwd_tips').setValue('您的密码过于简单，请修改初始密码！');
+                        }else{
+                            window.location.href = homePath+'/public/index';
+                        }
+                    }else{
+                        Ext.Msg.alert('错误', action.result.info);
+                    }
+                },
+                failure: function(form, action) {
+                    Ext.Msg.alert('错误', action.result.info);
+                }
+            });
+        }
+    }
+    
+    var loginForm = Ext.create('Ext.form.Panel', {
+        margin: '25 0 0 0',
+        border: 0,
+        bodyPadding: 10,
+        url: homePath+'/public/home/login/login',
+        defaults: {
+            xtype: 'textfield',
+            labelAlign: 'right',
+            labelWidth: 40,
+            width: 220
+        },
+        items: [{
+            fieldLabel: '账号',
+            value: '<?php echo $this->username?>',
+            emptyText: '邮箱地址',
+            name: 'username',
+            id: 'username',
+            allowBlank: false,
+            listeners: {
+            	specialKey :function(field,e){
+                    if (e.getKey() == Ext.EventObject.ENTER){
+                    	loginSub();
+                    }
+                }
+            }
+        }, {
+            fieldLabel: '密码',
+            value: '',
+            inputType: 'password',
+            name: 'password',
+            id: 'password',
+            allowBlank: false,
+            listeners: {
+            	specialKey :function(field,e){
+                    if (e.getKey() == Ext.EventObject.ENTER){
+                    	loginSub();
+                    }
+                }
+            }
+        }],
+
+        // Reset and Submit buttons
+        buttons: [{
+            text: '找回密码',
+            iconCls: 'icon-help',
+            handler: function() {
+                var email = Ext.getCmp('username').getValue();
+                
+                if(email != ''){
+                	Ext.Msg.wait('请求发送中，请稍后...', '提示');
+                	Ext.Ajax.request({
+                        url: homePath+'/public/home/login/getpassword',
+                        params: {email: email},
+                        method: 'POST',
+                        success: function(response, options) {
+                            var data = Ext.JSON.decode(response.responseText);
+
+                            if(data.success){
+                                Ext.MessageBox.alert('提示', data.info);
+                            }else{
+                                Ext.MessageBox.alert('错误', data.info);
+                            }
+                        },
+                        failure: function(response){
+                            Ext.MessageBox.alert('错误', '删除失败');
+                        }
+                    });
+                }else{
+                	Ext.Msg.alert('错误', '请输入邮箱地址');
+                }
+            }
+        }, {
+            text: '登录',
+            iconCls: 'icon-accept',
+            formBind: true, //only enabled once the form is valid
+            disabled: true,
+            handler: loginSub
+        }]
+    });
+    
+    Ext.create('Ext.window.Window', {
+        /*title: '<a class="declare-text">Evolve - OA [ <?php //echo SYS_COPYRIGHT; ?> ]</a>',
+        header: {
+            titlePosition: 3,
+            titleAlign: 'center'
+        },*/
+        border: 0,
+        closable: false,
+        draggable: false,
+        resizable:false,
+        width: 650,
+        height: 280,
+        y: 150,
+        layout: {
+            type: 'border'
+        },
+        items: [{
+            title: '登录',
+            region: 'east',
+            border: 0,
+            width: 250,
+            split: true,
+            collapsible: false,
+            floatable: false,
+            layout: 'fit',
+            items: loginForm
+        }, {
+            region: 'center',
+            xtype: 'tabpanel',
+            border: 0,
+            items: [news01Grid, news02Grid, news03Grid, news04Grid]
+        }, {
+        	region: 'south',
+        	html: '<div class="declare-text" style="padding: 5px; background-color: #3892d3; text-align: center;">Evolve - OA [ '+copyRight+' ]</div>'
+        }]
+    }).show();
+
+    Ext.getCmp('username').focus();
+});
+</script>
+</head>
+<body>
+<div class="login-bg">
+<div class="login-bg-top"></div>
+</div>
+</body>
+</html>

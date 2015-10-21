@@ -1,0 +1,59 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script language="javascript">
+var user_id = <?php echo $this->user_id?>;
+var admin = <?php echo $this->admin?>;
+
+var default_date_from = '<?php echo $this->default_date_from?>';
+var default_date_to = '<?php echo $this->default_date_to?>';
+
+Ext.require(['*']);
+
+Ext.define('Selection', {
+    extend: 'Ext.data.Model',
+    fields: [{name: 'id', type: 'int'}, {name: 'name'}]
+});
+</script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/setting/js/currency_rate.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/setting/js/currency.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/setting/js/tax_rate.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/setting/js/tax.js"></script>
+<script type="text/javascript">
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+    
+    var viewport = Ext.create('Ext.Viewport', {
+        layout: 'border',
+        border: 0,
+        margins: '0 0 0 0',
+        items: [{
+            region: 'center',
+            deferredRender: false,
+            layout: 'fit',
+            border: 0,
+            items: [{
+                xtype: 'tabpanel',
+                border: 0,
+                margin: '2 0 0 0',
+                plain: true,
+                tabBar: {
+                	height: 24,
+                	defaults: {
+                		height: 22
+                    }
+                },
+                id: 'tab_erp_setting',
+                layout: 'fit',
+                items: [currencyGrid, taxGrid]
+            }]
+        }]
+    });
+});
+</script>
+</head>
+<body>
+</body>
+</html>

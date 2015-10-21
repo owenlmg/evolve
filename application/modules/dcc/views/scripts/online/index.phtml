@@ -1,0 +1,70 @@
+<html>
+<?php echo SYS_HEAD; ?>
+<head>
+　　<title>Flexpaper</title>
+　　<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <script type="text/javascript" src="<?php echo HOME_PATH?>/public/js/flexpaper/jquery.min.js"></script>
+    <script type="text/javascript" src="<?php echo HOME_PATH?>/public/js/flexpaper/flexpaper.js"></script>
+    <script type="text/javascript" src="<?php echo HOME_PATH?>/public/js/flexpaper/flexpaper_handlers.js"></script>
+</head>
+<body>
+<div style="position:absolute;left:0;top:0;">
+<div id="documentViewer" class="flexpaper_viewer" style="width:970px;height:600px"></div>
+<?php
+//echo $_SERVER['HTTP_REFERER'];
+?>
+<script type="text/javascript">
+    var width = document.body.clientWidth;
+    var height = document.body.clientHeight;
+    $("#documentViewer").width(width);
+    $("#documentViewer").height(height);
+    var id = <?php echo $_GET['id']; ?>;
+    $.ajax({
+        type: 'POST',
+        url: '<?php echo HOME_PATH; ?>/public/dcc/online/view/id/' + id,
+        data: {id: id},
+        success: function(response, options) {
+            var data = jQuery.parseJSON(response);
+            if(data.viewpath && data.viewpath.indexOf('.swf') > 0) {
+                $('#documentViewer').FlexPaperViewer({ 
+                    config : {
+                        SWFFile : '<?php echo HOME_PATH; ?>' + data.viewpath,
+                        jsDirectory : "<?php echo HOME_PATH?>/public/js/flexpaper//",
+                        Scale : 1,
+                        ZoomTransition : 'easeOut',
+                        ZoomTime : 0.5,
+                        ZoomInterval : 0.2,
+                        FitPageOnLoad : true,
+                        FitWidthOnLoad : false,
+                        FullScreenAsMaxWindow : true,
+                        ProgressiveLoading : false,
+                        MinZoomSize : 0.2,
+                        MaxZoomSize : 5,
+                        SearchMatchAll : false,
+                        InitViewMode : 'Portrait',
+                        RenderingOrder : 'flash',
+                        StartAtPage : '',
+
+                        ViewModeToolsVisible : true,
+                        ZoomToolsVisible : true,
+                        NavToolsVisible : true,
+                        CursorToolsVisible : true,
+                        SearchToolsVisible : true,
+                        WMode : 'window',
+                        localeChain: 'zh_CN'
+                    }}
+                );
+            } else {
+                alert('文件转换失败');
+                window.close();
+            }
+        },
+        failure: function(response){
+            alert('加载失败');
+        }
+    });
+    
+</script>
+</div>
+</body>
+</html>

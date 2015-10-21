@@ -1,0 +1,340 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+var user_id = <?php echo $this->user_id?>;
+var accessViewTotal = <?php echo $this->accessViewTotal?>;
+
+Ext.require([
+    'Ext.*'
+]);
+
+Ext.define('Selection', {
+    extend: 'Ext.data.Model',
+    fields: [{name: 'id', type: 'int'},
+             {name: 'currency_id', type: 'int'},
+             {name: 'currency'},
+             {name: 'code'},
+             {name: 'name'},
+             {name: 'symbol'},
+             {name: 'text'},
+             {name: 'rate'},
+             {name: 'description'}]
+});
+
+// 币种
+var currencyStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+       type: 'ajax',
+       reader: 'json',
+       url: homePath+'/public/erp/setting_currency/getcurrency/option/list'
+    },
+    autoLoad: true
+});
+
+// 仓库
+var warehouseStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/erp/warehouse_index/getlist'
+    },
+    autoLoad: true
+});
+
+//仓库渲染
+var warehouseRender = function(val){
+	if(val != ''){
+		index = warehouseStore.findExact('code',val);
+        if (index != -1){
+            rs = warehouseStore.getAt(index).data;
+            return rs.name;
+        }
+        return val;
+	}else{
+		return '无';
+	}
+}
+
+// 数据模型
+Ext.define('Return', {
+    extend: 'Ext.data.Model',
+    fields: [{name: "id"},
+             {name: "number"},
+             {name: "date",type: 'date',dateFormat: 'Y-m-d'},
+             {name: "total"},
+             {name: "description"},
+             {name: "remark"},
+             {name: "create_time",type:'date',dateFormat: 'timestamp'},
+             {name: "update_time",type:'date',dateFormat: 'timestamp'},
+             {name: "creater"},
+             {name: "updater"}]
+});
+
+// 数据源
+var returnStore = Ext.create('Ext.data.Store', {
+    model: 'Return',
+    pageSize: 50,
+    proxy: {
+        type: 'ajax',
+        reader: {
+            type: 'json',
+            root: 'rows',
+            totalProperty: 'total'
+        },
+        url: homePath+'/public/erp/stock_return/getreturn'
+    },
+    listeners: {
+    	beforeload: loadReturn
+    }
+});
+
+function loadReturn(){
+	var key = Ext.getCmp('search_key').getValue();
+	var date_from = Ext.Date.format(Ext.getCmp('search_date_from').getValue(), 'Y-m-d');
+    var date_to = Ext.Date.format(Ext.getCmp('search_date_to').getValue(), 'Y-m-d');
+    
+	Ext.apply(returnStore.proxy.extraParams, {
+		type: '采购退货',
+		key: key,
+		date_from: date_from,
+		date_to: date_to
+    });
+};
+
+//获取货币符号
+function setMoney(val, currency){
+	var symbol = '';
+	
+    currencyStore.each(function(rec) {
+	    if (rec.get('name') == currency) {
+	    	symbol = rec.get('symbol');
+	    }
+	});
+    
+    return Ext.util.Format.currency(val, symbol, 2);
+}
+
+var required = '<span style="color:red;font-weight:bold" data-qtip="Required">*</span>';
+</script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/library/LodopFuncs.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/stock/return/js/order_list.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/stock/return/js/items.js"></script>
+<script type="text/javascript">
+
+// 显示查看窗口
+function openView(idx){
+	returnWin.show();
+	itemsForm.getForm().reset();
+    var record = returnStore.getAt(idx);
+    itemsForm.getForm().loadRecord(record);
+    returnWin.setTitle('采购退货');
+    Ext.getCmp('returnSaveBtn').disable();
+	Ext.getCmp('itemsSelectBtn').disable();
+	Ext.getCmp('itemsDeleteBtn').disable();
+	Ext.getCmp('print_preview').enable();
+
+	itemsStore.load({
+        params: {
+        	receive_id: record.get('id')
+        }
+    });
+}
+
+var totalColumn = Ext.create('Ext.grid.column.Column', {
+	text: '金额',
+    dataIndex: 'total',
+    renderer: function(value, meta, rec){
+        return setMoney(value, rec.get('currency'));
+    },
+    flex: 1
+});
+
+// 退货单列表
+var returnGrid = Ext.create('Ext.grid.Panel', {
+    border: 0,
+	store: returnStore,
+	id: 'returnGrid',
+    columnLines: true,
+    tbar: [{
+        xtype: 'datefield',
+        format: 'Y-m-d',
+        width: 100,
+        id: 'search_date_from',
+        emptyText: '日期从...'
+    }, {
+        xtype: 'datefield',
+        format: 'Y-m-d',
+        width: 100,
+        id: 'search_date_to',
+        emptyText: '日期至...'
+    }, {
+        xtype: 'textfield',
+        id: 'search_key',
+        emptyText: '关键字...',
+        listeners: {
+        	specialKey :function(field,e){
+                if (e.getKey() == Ext.EventObject.ENTER){
+                	returnStore.loadPage(1);
+                }
+            }
+        }
+    }, {
+        xtype: 'splitbutton',
+        text: '查询',
+        iconCls: 'icon-search',
+        handler: function(){
+        	returnStore.loadPage(1);
+        },
+        menu: [{
+            text: '导出',
+            iconCls: 'icon-export',
+            handler: function(){
+            	//window.open(homePath+'/public/admin/account/exportcsv');
+            }
+        }]
+    }, {
+        //xtype: 'splitbutton',
+        text: '采购退货',
+        iconCls: 'icon-doc',
+        handler: function(){
+        	returnWin.show();
+
+        	Ext.getCmp('returnSaveBtn').enable();
+        	Ext.getCmp('itemsSelectBtn').enable();
+        	Ext.getCmp('itemsDeleteBtn').enable();
+        	Ext.getCmp('print_preview').disable();
+
+        	itemsStore.loadData([],false);
+        	Ext.getCmp('itemsForm').getForm().reset();
+        	Ext.getCmp('operate').setValue('new');
+        }/* ,
+        menu: [{
+            text: '修改',
+            iconCls: 'icon-edit',
+            handler: function(){
+            	var selection = Ext.getCmp('returnGrid').getView().getSelectionModel().getSelection();
+
+                if(selection.length == 0){
+                    Ext.MessageBox.alert('错误', '没有选择修改对象！');
+                }else{
+                    var record = selection[0];
+                    returnForm.getForm().reset();
+                    returnForm.getForm().loadRecord(record);
+                    returnWin.show();
+
+                	itemsStore.load({
+                        params: {
+                        	receive_id: record.get('id')
+                        }
+                    });
+                }
+            }
+        }] */
+    }, '->', {
+        text: '刷新',
+        iconCls: 'icon-refresh',
+        handler: function(){
+        	returnStore.reload();
+        }
+    }],
+    columns: [{
+        xtype: 'rownumberer'
+    }, {
+        text: 'ID',
+        align: 'center',
+        hidden: true,
+        dataIndex: 'id'
+    }, {
+        text: '退货单号',
+        align: 'center',
+        dataIndex: 'number',
+        width: 120
+    }, {
+        text: '退货日期',
+        dataIndex: 'date',
+        align: 'center',
+        renderer: Ext.util.Format.dateRenderer('Y-m-d'),
+        flex: 1
+    }, /* {
+        text: '金额',
+        dataIndex: 'total',
+        renderer: function(value, meta, rec){
+            return setMoney(value, rec.get('currency'));
+        },
+        flex: 1
+    },  */{
+        text: '描述',
+        dataIndex: 'description',
+        flex: 4
+    }, {
+        text: '备注',
+        dataIndex: 'remark',
+        flex: 3
+    }, {
+        text: '退货人',
+        dataIndex: 'creater',
+        align: 'center',
+        flex: 1
+    }, {
+        text: '退货时间',
+        dataIndex: 'create_time',
+        align: 'center',
+        renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+        flex: 1.5
+    }, {
+        text: '更新人',
+        hidden: true,
+        dataIndex: 'updater',
+        align: 'center',
+        flex: 1
+    }, {
+        text: '更新时间',
+        hidden: true,
+        dataIndex: 'update_time',
+        align: 'center',
+        renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+        flex: 1.5
+    }],
+    listeners: {
+        itemdblclick: function( grid, record, item, index, e, eOpts ) {
+        	openView(index);
+        }
+    },
+    bbar: Ext.create('Ext.PagingToolbar', {
+    	border: 0,
+        store: returnStore,
+        displayInfo: true,
+        displayMsg: '显示 {0} - {1} 共 {2}',
+        emptyMsg: "没有数据"
+    })
+});
+
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+    
+    Ext.create('Ext.Viewport', {
+        layout: 'border',
+        items: [{
+            region: 'center',
+            layout: 'fit',
+            border: 0,
+            items: [returnGrid]
+        }]
+    });
+
+    /* if(accessViewTotal){
+    	Ext.getCmp('returnGrid').getView().headerCt.insert(4, totalColumn);
+    } */
+
+    returnStore.loadPage(1);
+});
+</script>
+</head>
+<body>
+</body>
+</html>

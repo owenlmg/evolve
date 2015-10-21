@@ -1,0 +1,776 @@
+<html>
+    <head>
+        <?php echo SYS_HEAD; ?>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/common.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/models.js"></script>.js
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/comboxtree.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/MaterielCodeSelect.js"></script>
+        <style type="text/css">
+            .x-fieldset{border:1px solid #B5B8C8;display:block;}
+            .x-fieldset-none{border:0;display:block;padding:0;}
+            .x-grid-cell.myreview
+            {
+                background-color: #9fc;
+            }
+        </style>
+        <script type="text/javascript">
+            Ext.require([
+                'Ext.*'
+            ]);
+            Ext.define('Ext.ux.CustomTrigger', {
+                extend: 'Ext.form.field.Trigger',
+                alias: 'widget.customtrigger',
+                // override onTriggerClick
+                onTriggerClick: function() {
+                    Ext.Msg.alert('Status', 'You clicked my trigger!');
+                }
+            });
+
+            Ext.onReady(function() {
+                Ext.QuickTips.init();
+
+                Ext.define('materiel', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [{name: "id"},
+                        {name: "code"},
+                        {name: "type"},
+                        {name: "description"},
+                        {name: "remark"},
+                        {name: "ver"},
+                        {name: "unit"},
+                        {name: "state"},
+                        {name: "manufacturers"},
+                        {name: "supply1"},
+                        {name: "supply2"},
+                        {name: "mpq"},
+                        {name: "moq"},
+                        {name: "tod"},
+                        {name: "supply_code1"},
+                        {name: "supply_cname1"},
+                        {name: "supply_ename1"},
+                        {name: "supply_code2"},
+                        {name: "supply_cname2"},
+                        {name: "supply_ename2"},
+                        {name: "type_name"},
+                        {name: "unit_name"},
+                        {name: "creater"},
+                        {name: "create_time", type: 'date', dateFormat: 'timestamp'},
+                        {name: "archive_time", type: 'date', dateFormat: 'timestamp'},
+                        {name: "step_name"},
+                        {name: "review_state"},
+                        {name: "mytype"},
+                        {name: "auto"},
+                        {name: "data_file"},
+                        {name: "data_file_id"},
+                        {name: "first_report"},
+                        {name: "first_report_id"}
+                    ]
+                });
+
+                Ext.define('transfer', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [{name: "id"},
+                        {name: "mid"},
+                        {name: "code"},
+                        {name: "type"},
+                        {name: "type_name"},
+                        {name: "description"},
+                        {name: "state_before"},
+                        {name: "state_after"},
+                        {name: "transfer_reason"},
+                        {name: "remark"},
+                        {name: "state"},
+                        {name: "step_name"},
+                        {name: "review_state"},
+                        {name: "mytype"},
+                        {name: "creater"},
+                        {name: "create_time", type: 'date', dateFormat: 'timestamp'},
+                        {name: "archive_time", type: 'date', dateFormat: 'timestamp'},
+                        {name: "step_name"},
+                        {name: "review_state"},
+                        {name: "record"}
+                    ]
+                });
+
+                var store = Ext.create('Ext.data.Store', {
+                    model: 'materiel',
+                    proxy: {
+                        type: 'ajax',
+                        reader: 'json',
+                        url: '<?php echo HOME_PATH; ?>/public/product/list/getlistnopage?model=transfer'
+                    },
+                    autoLoad: false
+                });
+
+                var personal = "<?php if (isset($_GET['personal'])) echo 3 ?>";
+                var transferStore = Ext.create('Ext.data.Store', {
+                    model: 'transfer',
+                    proxy: {
+                        type: 'ajax',
+                        reader: 'json',
+                        url: '<?php echo HOME_PATH; ?>/public/product/transfer/getlist/mytype/' + personal
+                    },
+                    autoLoad: true
+                });
+
+                var treeStore = Ext.create('Ext.data.TreeStore', {
+                    proxy: {
+                        type: 'ajax',
+                        url: '<?php echo HOME_PATH; ?>/public/product/type/gettypetree',
+                        actionMethods: 'post'
+                    },
+                    sorters: [{
+                            property: 'leaf',
+                            direction: 'ASC'
+                        },
+                        {
+                            property: 'text',
+                            direction: 'ASC'
+                        }]
+                });
+
+                var uploadStore = Ext.create('Ext.data.Store', {
+                    model: 'upload',
+                    proxy: {
+                        type: 'ajax',
+                        reader: 'json',
+                        url: getRootPath() + '/public/dcc/upload/getfiles/type/1'
+                    },
+                    autoLoad: false
+                });
+                var employeeTreeStore = Ext.create('Ext.data.TreeStore', {
+                    proxy: {
+                        type: 'ajax',
+                        url: '<?php echo HOME_PATH; ?>/public/dcc/upload/gettree',
+                        actionMethods: 'post'
+                    },
+                    sorters: [{
+                            property: 'leaf',
+                            direction: 'ASC'
+                        },
+                        {
+                            property: 'text',
+                            direction: 'ASC'
+                        }]
+                });
+
+                var rowEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+                    clicksToEdit: 1
+                });
+
+                var required = '<span style="color:red;font-weight:bold" data-qtip="Required">*</span>';
+
+                var form = new Ext.form.Panel({
+                    width: 650,
+                    bodyPadding: 2,
+                    layout: 'form',
+                    waitMsgTarget: true,
+                    fieldDefaults: {
+                        labelAlign: 'right',
+                        labelWidth: 85,
+                        msgTarget: 'side'
+                    },
+                    items: [{
+                            layout: 'column',
+                            border: 0,
+                            items: [{
+                                    columnWidth: 0.5,
+                                    border: 0,
+                                    layout: 'form',
+                                    items: [{
+                                            xtype: 'textfield',
+                                            id: 'id',
+                                            name: 'id',
+                                            hidden: true
+                                        }, {
+                                            xtype: 'textfield',
+                                            id: 'mid',
+                                            name: 'mid',
+                                            hidden: true
+                                        }, {
+                                            xtype: 'triggerfield',
+                                            fieldLabel: '物料编码',
+                                            afterLabelTextTpl: required,
+                                            id: 'code',
+                                            editable: false,
+                                            name: 'code',
+                                            flex: 1.3,
+                                            allowBlank: false,
+                                            triggerCls: 'x-form-search-trigger',
+                                            onTriggerClick: function() {
+                                                store.removeAll();
+                                                var params = new Array();
+                                                params["mid"] = "id";
+                                                params["code"] = "code";
+                                                params["description"] = "description";
+                                                params["state_before"] = "state";
+
+                                                var winCodeSelect = createCodeSelect(store, params);
+                                                winCodeSelect.show();
+                                            }
+                                        }]
+                                }, {
+                                    columnWidth: 0.5,
+                                    border: 0,
+                                    layout: 'form',
+                                    items: [{
+                                            xtype: 'displayfield',
+                                            fieldLabel: '描述',
+                                            name: 'description'
+                                        }]
+                                }]
+                        }, {
+                            layout: 'column',
+                            border: 0,
+                            items: [{
+                                    columnWidth: 0.5,
+                                    border: 0,
+                                    layout: 'form',
+                                    items: [{
+                                            xtype: 'textfield',
+                                            fieldLabel: '状态(转化前)',
+                                            readOnly: true,
+                                            id: 'state_before',
+                                            name: 'state_before'
+                                        }]
+                                }, {
+                                    columnWidth: 0.5,
+                                    border: 0,
+                                    layout: 'form',
+                                    items: [{
+                                            fieldLabel: '状态(转化后)',
+                                            xtype: "combo",
+                                            afterLabelTextTpl: required,
+                                            name: 'state_after',
+                                            id: 'state_after',
+                                            editable: false,
+                                            store: [['APL', ' APL'], ['Active', 'Active'], ['Preliminary', 'Preliminary'], ['Pre-Obsolete', 'Pre-Obsolete'], ['Obsolete', 'Obsolete']],
+                                            forceSelection: true,
+                                            selectOnFocus: true,
+                                            typeAhead: true,
+                                            triggerAction: 'all',
+                                            emptyText: '请选择...',
+                                            mode: 'local',
+                                            allowBlank: false,
+                                            listeners: {
+                                                change: function(obj, newValue, oldValue, e) {
+                                                    if (Ext.getCmp("state_before").getValue() == newValue) {
+                                                        Ext.MessageBox.alert('提示', "转化前后状态不能相同");
+                                                        this.setValue("");
+                                                    }
+                                                }
+                                            }
+                                        }]
+                                }]
+                        }, {
+                            layout: 'column',
+                            border: 0,
+                            items: [{
+                                    columnWidth: 0.5,
+                                    border: 0,
+                                    layout: 'form',
+                                    items: [{
+                                            xtype: 'textarea',
+                                            fieldLabel: '原因',
+                                            afterLabelTextTpl: required,
+                                            allowBlank: false,
+                                            rows: 2,
+                                            id: 'transfer_reason',
+                                            name: 'transfer_reason'
+                                        }]
+                                }, {
+                                    columnWidth: 0.5,
+                                    border: 0,
+                                    layout: 'form',
+                                    items: [{
+                                            xtype: 'textarea',
+                                            fieldLabel: '备注',
+                                            rows: 2,
+                                            id: 'remark',
+                                            name: 'remark'
+                                        }]
+                                }]
+                        }
+                    ]
+                });
+
+                // 转审
+                var trans = {
+                        xtype : 'employeebobox',
+                        fieldLabel: '转审给',
+                        itemId: 'transfer',
+                        id: 'transfer',
+                        name: 'transfer',
+                        width: 460,
+                        hidden: true,
+                        allowBlank: false,
+                    };
+
+                var reviewForm = new Ext.form.Panel({
+                    width: 400,
+                    bodyPadding: 2,
+                    layout: 'form',
+                    waitMsgTarget: true,
+                    fieldDefaults: {
+                        labelAlign: 'right',
+                        labelWidth: 95,
+                        msgTarget: 'side'
+                    },
+                    items: [{
+                            xtype: 'textfield',
+                            name: 'id',
+                            hidden: true
+                        },{
+                            xtype: 'textfield',
+                            id: 'ids',
+                            name: 'ids',
+                            hidden: true
+                        }, {
+                            xtype: 'textfield',
+                            name: 'final',
+                            id: 'final',
+                            value: 0,
+                            hidden: true
+                        }, {
+                            xtype: 'textfield',
+                            name: 'transfer_id',
+                            id: 'transfer_id',
+                            hidden: true
+                        }, {
+                            xtype: 'radiogroup',
+                            fieldLabel: '审批结果',
+                            allowBlank: false,
+                            cls: 'x-check-group-alt',
+                            width: 300,
+                            items: [
+                                {boxLabel: '批准', name: 'review_result', inputValue: 1},
+                                {boxLabel: '拒绝', name: 'review_result', inputValue: 2},
+                                {boxLabel: '转审', name: 'review_result', inputValue: 3}
+                            ],
+                            listeners: {
+                                change: function(obj, newValue, oldValue, e) {
+                                    var transfer = Ext.getCmp('transfer');
+                                    if (newValue.review_result === 3) {
+                                        transfer.setVisible(true);
+                                        transfer.setDisabled(false);
+                                    } else {
+                                        transfer.setVisible(false);
+                                        transfer.setDisabled(true);
+                                    }
+                                }
+                            }
+                        }, trans, {
+                            xtype: 'textarea',
+                            fieldLabel: '备注',
+                            rows: 2,
+                            name: 'remark1'
+                        }
+                    ]
+                });
+
+                var win = new Ext.Window({
+                    xtype: "window",
+                    border:0,
+                    title: '物料转化申请',
+                    modal: true,
+                    x: 300,
+                    y: 60,
+                    layout: 'fit',
+                    closeAction: 'hide',
+                    items: [form],
+                    buttons: [{
+                            text: '提交',
+                            formBind: true,
+                            handler: function() {
+                                var window = this.up('window');
+                                var form = window.down('form').getForm();
+                                if (form.isValid()) {
+                                    form.submit({
+                                        clientValidation: true,
+                                        url: '<?php echo HOME_PATH; ?>/public/product/transfer/save',
+                                        submitEmptyText: false,
+                                        waitMsg: '提交中，请稍后...',
+                                        method: 'POST',
+                                        success: function(form, action) {
+                                            Ext.MessageBox.alert('提示', action.result.info);
+                                            if (action.result.success) {
+                                                transferStore.reload();
+                                                form.reset();
+                                                window.hide();
+                                            } else {
+                                                Ext.MessageBox.alert('错误', action.result.info);
+                                            }
+                                        },
+                                        failure: function(form, action) {
+                                            Ext.MessageBox.alert('错误', action.result.info);
+                                        }
+                                    });
+                                }
+                            }
+                        }, {
+                            text: '取消',
+                            handler: function() {
+                                form.getForm().reset();
+                                win.hide();
+                            }
+                        }]
+                });
+
+                var reviewWin = new Ext.Window({
+                    xtype: "window",
+                    border:0,
+                    title: '审批',
+                    modal: true,
+                    layout: 'fit',
+                    closeAction: 'hide',
+                    items: [reviewForm],
+                    buttons: [{
+                            text: '提交',
+                            formBind: true,
+                            handler: function() {
+                                var thisForm = reviewForm;
+                                var form = thisForm.getForm();
+                                if (form.isValid()) {
+                                    form.submit({
+                                        submitEmptyText: false,
+                                        url: '<?php echo HOME_PATH; ?>/public/product/transfer/review/',
+                                        waitMsg: '提交中，请稍后...',
+                                        params: {review_id: form.getRecord().get('review_id')},
+                                        success: function(form, action) {
+                                            if (action.result.success) {
+                                                Ext.MessageBox.alert('提示', action.result.info);
+
+                                                transferStore.reload();
+                                                form.reset();
+                                                reviewWin.hide();
+                                            } else {
+                                                Ext.MessageBox.alert('错误', action.result.info);
+                                            }
+                                        },
+                                        failure: function(form, action) {
+                                            Ext.MessageBox.alert('错误', action.result.info);
+                                        }
+                                    });
+                                }
+                            }
+                        }, {
+                            text: '取消',
+                            handler: function() {
+                                reviewWin.hide();
+                            }
+                        }]
+                });
+
+                var grid = Ext.create('Ext.grid.Panel', {
+                    store: transferStore,
+                    selType: 'checkboxmodel',
+                    border:0,
+                    columnLines: true,
+                    viewConfig: {
+                        stripeRows: false
+                    },
+                    tbar: [{
+                            xtype: 'textfield',
+                            id: 'search_code',
+                            width: 120,
+                            emptyText: '物料代码...',
+                            listeners: {
+                                specialKey: function(field, e) {
+                                    if (e.getKey() == Ext.EventObject.ENTER) {
+                                        transferStore.loadPage(1);
+                                    }
+                                }
+                            }
+                        }, {
+                            xtype: 'textfield',
+                            id: 'search_description',
+                            width: 120,
+                            emptyText: '物料描述...',
+                            listeners: {
+                                specialKey: function(field, e) {
+                                    if (e.getKey() == Ext.EventObject.ENTER) {
+                                        transferStore.loadPage(1);
+                                    }
+                                }
+                            }
+                        }, {
+                            xtype: 'textfield',
+                            id: 'search_tag',
+                            width: 120,
+                            emptyText: '模糊查询...',
+                            listeners: {
+                                specialKey: function(field, e) {
+                                    if (e.getKey() == Ext.EventObject.ENTER) {
+                                        transferStore.loadPage(1);
+                                    }
+                                }
+                            }
+                        }, {
+                            xtype: 'combobox',
+                            id: 'search_state',
+                            emptyText: '状态...',
+                            width: 100,
+                            store: [['Active', '审核完毕'], ['Reviewing', '审核中'], ['Return', '被退回']]
+                        }, {
+                            text: '查询',
+                            iconCls: 'icon-search',
+                            handler: function() {
+                                var search_code = Ext.getCmp('search_code').getValue();
+                                var search_description = Ext.getCmp('search_description').getValue();
+                                var search_tag = Ext.getCmp('search_tag').getValue();
+                                var search_state = Ext.getCmp('search_state').getValue();
+                                transferStore.baseParams = {
+                                    search_description: search_description,
+                                    search_code: search_code,
+                                    search_tag: search_tag,
+                                    search_state: search_state
+                                }
+                                transferStore.loadPage(1);
+                            }
+                        }, {
+                            text: '转化申请',
+                            scope: this,
+                            handler: function() {
+                                form.getForm().reset();
+                                win.show();
+                            }
+                        }, {
+                            text: '编辑',
+                            scope: this,
+                            handler: function() {
+                                var selection = grid.getView().getSelectionModel().getSelection();
+                                if (selection.length <= 0) {
+                                    Ext.MessageBox.alert('请注意', '请您选择要编辑的记录！');
+                                    return false;
+                                } else if (selection.length >= 2) {
+                                    Ext.MessageBox.alert('请注意', '不能同时编辑多个数据！');
+                                    return false;
+                                }
+
+                                var record = selection[0];
+                                if (record.get('state') !== 'Return') {
+                                    Ext.MessageBox.alert('请注意', '不能编辑此记录！');
+                                } else if (("" + record.get('mytype')).indexOf('1') === -1) {
+                                    Ext.MessageBox.alert('请注意', '您没有权限编辑此记录！');
+                                } else {
+                                    var record = selection[0];
+                                    treeStore.load();
+
+                                    form.getForm().reset();
+                                    form.getForm().loadRecord(record);
+                                    win.show();
+                                }
+                            }
+                        }, {
+                            text: '删除',
+                            scope: this,
+                            handler: function() {
+                                var selection = grid.getView().getSelectionModel().getSelection();
+                                if (selection.length > 0) {
+                                    // 检查是否有数据不能删除
+                                    for (var i = 0; i < selection.length; i++) {
+                                        var record = selection[i];
+                                        if (("" + record.get('mytype')).indexOf('1') === -1 || record.get('state') !== 'Return') {
+                                            Ext.MessageBox.alert('请注意', '物料代码:' + record.data.code + '的数据不能删除！');
+                                            return;
+                                        }
+                                    }
+
+                                    // 格式正确则提交修改数据
+                                    Ext.MessageBox.confirm('确认', '确定删除所选内容？', function(button, text) {
+                                        if (button == 'yes') {
+                                            transferStore.remove(selection);
+                                            var deleteRecords = transferStore.getRemovedRecords();
+                                            var changeRows = {
+                                                deleted: []
+                                            }
+
+                                            for (var i = 0; i < deleteRecords.length; i++) {
+                                                changeRows.deleted.push(deleteRecords[i].data)
+                                            }
+
+                                            var json = Ext.JSON.encode(changeRows);
+                                            Ext.Msg.wait('提交中，请稍后...', '提示');
+                                            Ext.Ajax.request({
+                                                url: '<?php echo HOME_PATH; ?>/public/product/transfer/remove',
+                                                params: {json: json},
+                                                method: 'POST',
+                                                success: function(response, options) {
+                                                    var data = Ext.JSON.decode(response.responseText);
+                                                    if (data.success) {
+                                                        Ext.MessageBox.alert('提示', data.info);
+                                                        transferStore.reload();
+                                                    } else {
+                                                        Ext.MessageBox.alert('错误', data.info);
+                                                    }
+                                                },
+                                                failure: function(form, action) {
+                                                    Ext.MessageBox.alert('错误', action.result.info);
+                                                }
+                                            });
+                                        }
+                                    });
+                                } else {
+                                    Ext.MessageBox.alert('错误', '没有选择删除对象！');
+                                }
+                            }
+                        }, {
+                            text: '审批',
+                            scope: this,
+                            handler: function() {
+                                var selection = grid.getView().getSelectionModel().getSelection();
+                                if (selection.length <= 0) {
+                                    Ext.MessageBox.alert('请注意', '请选择要审批的记录！');
+                                    return false;
+                                }
+                                var ids = '';
+                                for (var i = 0; i < selection.length; i++) {
+                                    var record = selection[i];
+                                    if (record.get('state') !== 'Reviewing') {
+                                       Ext.MessageBox.alert('请注意', '物料代码' + record.get('code') + '不能审批！');
+                                       return false;
+                                    } else if (("" + record.get('mytype')).indexOf('3') === -1) {
+                                       Ext.MessageBox.alert('请注意', '物料代码' + record.get('code') + '您没有权限审批！');
+                                       return false;
+                                    }
+                                    if(ids) ids += ",";
+                                    ids += record.data.id;
+                                }
+                                reviewForm.getForm().reset();
+                                reviewForm.getForm().loadRecord(record);
+                                Ext.getCmp("ids").setValue(ids);
+                                reviewWin.show();
+                            }
+                        }],
+                    plugins: rowEditing,
+                    columns: [{
+                            text: 'ID',
+                            width: 40,
+                            hidden: true,
+                            locked: true,
+                            dataIndex: 'id'
+                        }, {
+                            text: '物料代码',
+                            width: 140,
+                            sortable: true,
+                            dataIndex: 'code'
+                        }, {
+                            text: '物料描述',
+                            width: 200,
+                            dataIndex: 'description',
+                            renderer: showTitle
+                        }, {
+                            text: '转化状态',
+                            width: 180,
+                            dataIndex: 'state_before',
+                            renderer: function(value, p, record) {
+                                if (value && record.data.state_after) {
+                                    return value + " → " + record.data.state_after;
+                                }
+                                ;
+
+                            }
+                        }, {
+                            text: '状态',
+                            width: 80,
+                            dataIndex: 'state',
+                            renderer: function(value) {
+                                if (value == 'Reviewing')
+                                    return '审核中';
+                                else if (value == 'Obsolete')
+                                    return '作废';
+                                else if (value == 'Return')
+                                    return '被退回';
+                                else
+                                    return '审核完毕';
+                            }
+                        }, {
+                            text: '审核阶段',
+                            width: 200,
+                            dataIndex: 'step_name',
+                            renderer: showTitle
+                        }, {
+                            text: '审核情况',
+                            width: 120,
+                            dataIndex: 'review_state',
+                            renderer: function(value, p, record) {
+                                if (String(record.get('mytype')).indexOf('3') !== -1) {
+                                    p.css = "myreview";
+                                }
+                                var tip = value.replace(/,/g, '<br />');
+                                p.tdAttr = 'data-qtip="' + tip + '"';
+                                return value;
+                            }
+                        }, {
+                            text: '转化原因',
+                            width: 240,
+                            dataIndex: 'transfer_reason',
+                            renderer: showTitle
+                        }, {
+                            text: '备注',
+                            width: 180,
+                            dataIndex: 'remark',
+                            renderer: showTitle
+                        }, {
+                            text: '转化完成时间',
+                            width: 120,
+                            dataIndex: 'archive_time',
+                            renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+                        }, {
+                            text: '申请人',
+                            width: 80,
+                            hidden: true,
+                            dataIndex: 'creater'
+                        }, {
+                            text: '审批记录',
+                            width: 180,
+                            dataIndex: 'record',
+                            renderer: showTitle
+                        }, {
+                            text: '申请时间',
+                            width: 80,
+                            hidden: true,
+                            dataIndex: 'create_time',
+                            renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+                        }],
+                    listeners: {
+                        itemdblclick: function(grid) {
+        //                viewAction(grid);
+                        }
+                    }
+                });
+
+                transferStore.on("beforeload", function() {
+                    var search_code = Ext.getCmp('search_code').getValue();
+                    var search_description = Ext.getCmp('search_description').getValue();
+                    var search_tag = Ext.getCmp('search_tag').getValue();
+                    var search_state = Ext.getCmp('search_state').getValue();
+
+                    Ext.apply(transferStore.proxy.extraParams, {
+                        search_description: search_description,
+                        search_code: search_code,
+                        search_tag: search_tag,
+                        search_state: search_state
+                    });
+                });
+
+                Ext.create('Ext.container.Viewport', {
+                    layout: 'border',
+                    border:0,
+                    rtl: true,
+                    items: [{
+                            region: 'center',
+                            border:0,
+                            layout: 'fit',
+                            plain: true,
+                            items: [grid]
+                        }]
+                });
+            });
+        </script>
+    </head>
+    <body>
+    </body>
+</html>

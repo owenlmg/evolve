@@ -1,0 +1,383 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+var newsPublic = 0;
+Ext.Loader.setConfig({enabled: true});
+Ext.Loader.setPath('Ext.ux', homePath+'/library/ext/examples/ux');
+Ext.require(['*']);
+
+Ext.Loader.setConfig({
+	enabled:true,
+	disableCaching:false,
+	paths:{
+		'Tree': homePath+'/library/ext/plugins/Tree'
+	}
+});
+
+Ext.define('Selection', {
+    extend: 'Ext.data.Model',
+    fields: [{name: 'id', type: 'int'}, {name: 'name'}]
+});
+
+//渲染新纪录图标
+var newRender = function(val){
+	if(val){
+		return '<img src="' + homePath + '/public/images/icons/new.png"></img>';
+	}
+};
+</script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/home/views/scripts/index/js/latestnews.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/home/views/scripts/index/js/backlog.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/home/views/scripts/index/js/msg.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/home/views/scripts/index/js/contact/index.js"></script>
+<script type="text/javascript">
+// 异步添加菜单工具栏按钮
+SetToolButtons = function(toolbar) {
+	Ext.Msg.wait('加载中，请稍后...', '提示');
+    Ext.Ajax.request({
+        url: homePath + '/public/home/index/getmenus',
+        params: '',
+        method: 'POST',
+        success: function(response, options) {
+            var data = Ext.JSON.decode(response.responseText);
+            var total = data.length;
+            var btnArr = new Array(total);
+            for (var i = 0; i < total; i++) {
+                btnArr[i] = new Ext.Button(data[i]);
+            }
+            toolbar.add(btnArr);
+            
+            toolbar.add({
+                xtype: 'button',
+                text: '通讯录',
+                iconCls: 'icon-user',
+                handler: function(){
+                    
+                    
+                    contactsWin.show();
+
+                    if(deptListStore.getCount() == 0){
+                    	deptListStore.load();
+                    }
+                }
+            });
+            
+            Ext.Msg.hide();
+        },
+        failure: function(response){
+            Ext.MessageBox.alert('错误', '菜单获取失败');
+            Ext.Msg.hide();
+        }
+    });
+};
+
+// 菜单
+var menuArea = Ext.create('Ext.toolbar.Toolbar', {
+    region: 'south',
+    style : 'background:#ECF5FF',
+    margin: '0 0 2 0',
+    split: false,
+    collapsible: false,
+    align:'stretch'
+});
+
+// 工作区
+var workingArea = Ext.create('Ext.tab.Panel', {
+    id: 'workingarea',
+    region: 'center',
+    renderTo: Ext.getBody(),
+    plugins: [Ext.create('Ext.ux.TabReorderer')],
+    //deferredRender: false,
+    plain: true,
+    border: 0,
+    activeTab: 0,
+    tabBar: {
+    	height: 30,
+    	defaults: {
+    		height: 28
+        }
+    },
+    items: [{
+        title: '工作台',
+        id: 'mainMenu_0',
+        iconCls: 'icon-home',
+        border: 0,
+        autoScroll: true,
+        layout: 'border',
+        items: [{
+            title: '待办事项',
+            border: 0,
+            region: 'west',
+            width: 350,
+            split: true,
+            collapsible: true,
+            layout: {
+                type: 'vbox',
+                align: 'center'
+            },
+            items: [{
+                xtype: 'hiddenfield',
+                id: 'activeNewsTab',
+                value: 0
+            }, {
+                xtype: 'hiddenfield',
+                id: 'activeMsgTab',
+                value: 0
+            }, {
+            	id: 'newsTab',
+            	border: 0,
+                plain: true,
+                width: 350,
+                layout: 'fit',
+                flex: 1,
+                activeTab: 0,
+                items: [backlogGrid]
+            }, {
+                id: 'msgTab',
+                border: 0,
+                plain: true,
+                width: 350,
+                layout: 'fit',
+                flex: 1,
+                activeTab: 0,
+                items: [msgGrid]
+            }]
+        }, {
+            region: 'center',
+            border: 0,
+            layout: {
+                type: 'vbox',
+                align:'stretch'
+            },
+            items: [{
+            	flex: 1,
+            	border: 0,
+            	layout: {
+                    type: 'hbox',
+                    align:'stretch'
+                },
+                items: [{
+                    plain: true,
+                    margin: '0 1 1 0',
+                    layout: 'fit',
+                    flex: 1,
+                    border: 0,
+                    items: [news01Grid]
+                }, {
+                    plain: true,
+                    margin: '0 0 1 0',
+                    layout: 'fit',
+                    flex: 1,
+                    border: 0,
+                    items: [news02Grid]
+                }]
+            }, {
+            	flex: 1,
+            	border: 0,
+            	layout: {
+                    type: 'hbox',
+                    align:'stretch'
+                },
+                items: [{
+                    plain: true,
+                    margin: '0 1 0 0',
+                    layout: 'fit',
+                    flex: 1,
+                    border: 0,
+                    items: [news03Grid]
+                }, {
+                    plain: true,
+                    margin: '0 0 0 0',
+                    layout: 'fit',
+                    flex: 1,
+                    border: 0,
+                    items: [news04Grid]
+                }/* , {
+                    plain: true,
+                    margin: '0 0 0 0',
+                    layout: 'fit',
+                    flex: 1,
+                    border: 0,
+                    style: {
+                        borderStyle: 'solid'
+                    },
+                    title: '备忘'
+                } */]
+            }]
+        }]
+    }]
+});
+
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+    Ext.apply(Ext.QuickTips.getQuickTip(), {showDelay: 100, dismissDelay: 15000});
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+
+    SetToolButtons(menuArea);
+    
+    var viewport = Ext.create('Ext.Viewport', {
+        layout: 'border',
+        margins: '0 0 0 0',
+        items: [{
+            region: 'north',
+            border: 0,
+            collapsible: false,
+            split: false,
+            height: 70,
+            layout: 'border',
+            items: [{
+                // Logo
+                id: 'top-logo-bg',
+                border: 0,
+                margins: '0 0 0 0',
+                region: 'center',
+                bodyStyle: 'border-bottom: 1px solid #999999;background-image: url(' + homePath + '/public/images/top_bg.jpg);',
+                html: '<img src="'+homePath+'/public/images/logo.png" onclick="window.open(\'' + homePath + '\');" style="cursor:pointer;"></img>'
+            }, {
+                region: 'east',
+                border: 0,
+                width: 800,
+                bodyStyle: 'text-align: right; border-bottom: 1px solid #999999;background-image: url(' + homePath + '/public/images/top_bg.jpg);',
+                html: '<div class="login-info"><div class="login-info-text"><a onclick="logout();" title="退出系统" style="cursor:pointer;"><img src="'+homePath+'/public/images/logout.png" style="vertical-align:middle;">注销</img></a></div><div class="sys-info" onclick="openMsgWin();">您有<span id="sys-msg" class="sys-msg">0</span>条未读消息</div><div class="login-info-text"><?php echo $this->loginInfo['user']; ?></div><div id="webjx" class="login-info-text"></div></div>'
+            }, 
+            menuArea// 菜单
+            ]
+        }, 
+        // 通讯录
+        //addressbookArea,
+        // 工作区
+        workingArea
+        ]
+    });
+
+    setInterval("refreshMsg();", 500);
+    setInterval("refreshInfo();", 600000);
+    //setInterval("changeNewsTab();changeMsgTab();", 3000);
+    refreshMsgNum();
+});
+
+function changeNewsTab(){
+	var i = parseInt(Ext.getCmp('activeNewsTab').getValue());
+
+	Ext.getCmp('newsTab').setActiveTab(i);
+	
+	i++;
+
+	if(i == 3){
+	    i = 0;
+	}
+
+	Ext.getCmp('activeNewsTab').setValue(i);
+}
+
+function changeMsgTab(){
+	var i = parseInt(Ext.getCmp('activeMsgTab').getValue());
+
+	Ext.getCmp('msgTab').setActiveTab(i);
+	
+	i++;
+
+	if(i == 2){
+	    i = 0;
+	}
+
+	Ext.getCmp('activeMsgTab').setValue(i);
+}
+
+function refreshMsgNum(){
+	Ext.Ajax.request({
+		url: homePath + '/public/user/msg/getNotReadNum',
+        params: '',
+        method: 'POST',
+        success: function(response, options) {
+        	var data = Ext.JSON.decode(response.responseText);
+
+        	document.getElementById('sys-msg').innerHTML = data.cnt;
+        },
+        failure: function(response){
+            //Ext.MessageBox.alert('错误', '新消息获取失败');
+        }
+    });
+}
+
+// 刷新公告、待办事项、消息
+function refreshInfo(){
+	news01Store.reload();
+	news02Store.reload();
+	news03Store.reload();
+	news04Store.reload();
+
+	backlogStore.reload();
+	msgStore.reload();
+
+	refreshMsgNum();
+}
+
+// 刷新显示时间
+function refreshMsg(){
+	webjx.innerHTML=new Date().toLocaleString()+' 星期'+'日一二三四五六'.charAt(new Date().getDay())
+}
+
+/**
+ * 注销
+ */
+function logout(){
+	Ext.MessageBox.confirm('确认', '确定退出系统？', function(button, text){
+        if(button == 'yes'){
+        	window.location.href = homePath+"/public/home/login/logout";
+        }
+    });
+}
+
+/**
+ * 菜单响应
+ */
+function menuClick(node){
+	if(node.params == 'new'){
+		window.open(homePath+'' + node.url);
+	}else{
+        var flag = true;
+        var getTabPage = null;
+    
+        // 判断将打开或跳转到指定标签
+        for(var i = 0; i < workingArea.items.getCount(); i++){
+            var item = Ext.getCmp(workingArea.id).items.items[i];
+            if(item.title == node.text){
+                flag = false;
+                getTabPage = item;
+                break;
+            }
+        }
+    
+        if(flag){
+        	/* var panel = new Ext.Component({
+        		title: node.text,
+        		iconCls: node.iconCls,
+        		closable: true,
+        		loader: {
+            		url: homePath + node.url, 
+            		loadMask: 'loading...', 
+            		autoLoad: true,
+            		scripts: true
+            	 }
+    		});
+        	workingArea.add(panel).show(); */
+            workingArea.add({
+                closable: true,
+                border: 0,
+                html: '<iframe style="height:100%;width:100%;border:none;" src="'+homePath + node.url + '"></iframe>',
+                title: node.text,
+                iconCls: node.iconCls
+            }).show();
+        }else{
+            workingArea.setActiveTab(getTabPage);
+        }
+	}
+}
+</script>
+</head>
+<body>
+</body>
+</html>

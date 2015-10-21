@@ -1,0 +1,715 @@
+<html>
+<head>
+<?php 
+// 印章管理员
+$sealAdminDisabled = 1;
+$sealAdmin = 0;
+
+if(Application_Model_User::checkPermissionByRoleName('印章管理员')){
+    $sealAdminDisabled = 0;
+    $sealAdmin = 1;
+}else if(Application_Model_User::checkPermissionByRoleName('系统管理员')){
+    $sealAdminDisabled = 0;
+    $sealAdmin = 1;
+}
+
+$user_session = new Zend_Session_Namespace('user');
+$user_id = $user_session->user_info['employee_id'];
+?>
+<?php echo SYS_HEAD; ?>
+<script>
+Ext.require(['*']);
+var user_id = <?php echo $user_id?>;
+var sealAdmin = <?php echo $sealAdmin?>;
+var currentMonthStart = '<?php echo date('Y-m-01')?>';
+var currentMonthEnd = '<?php echo date('Y-m-t')?>';
+</script>
+<script type="text/javascript" src="<?php echo HOME_PATH; ?>/public/js/function.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/hra/views/scripts/seal/js/use_log.js"></script>
+<script type="text/javascript">
+
+Ext.onReady(function() {
+    // 选项数据模型
+    Ext.define('Selection', {
+        extend: 'Ext.data.Model',
+        fields: ['id', 'name']
+    });
+    
+    // 印章数据模型
+    Ext.define('Seal', {
+        extend: 'Ext.data.Model',
+        fields: [{name: "id"}, 
+                 {name: "name"}, 
+                 {name: "description"}, 
+                 {name: "remark"}, 
+                 {name: "active"}, 
+                 {name: "administrator"}, 
+                 {name: "administrator_name"}, 
+                 {name: "create_time",type: 'date',dateFormat: 'timestamp'}, 
+                 {name: "update_time",type: 'date',dateFormat: 'timestamp'}, 
+                 {name: "creater"}, 
+                 {name: "updater"}]
+    });
+    
+    // 审核列表数据模型
+    Ext.define('Review', {
+        extend: 'Ext.data.Model',
+        fields: [{name: "id"}, 
+                 {name: "seal_name"}, 
+                 {name: "apply_reason"}, 
+                 {name: "apply_user"}, 
+                 {name: "review_user"}, 
+                 {name: "active"}, 
+                 {name: "apply_time"}]
+    });
+    
+    // 印章信息数据源
+    var sealStore = Ext.create('Ext.data.Store', {
+        model: 'Seal',
+        remoteSort: true,
+        proxy: {
+            type: 'ajax',
+            reader: {
+                type: 'json'
+            },
+            url: homePath + '/public/hra/seal/getseal/option/data'
+        }
+    });
+    
+    // 印章使用审核数据源
+    var reviewStore = Ext.create('Ext.data.Store', {
+        model: 'Review',
+        remoteSort: true,
+        proxy: {
+            type: 'ajax',
+            reader: {
+                type: 'json'
+            },
+            url: homePath + '/public/hra/seal/getreview'
+        }
+    });
+    
+    // 印章列表数据源
+    var sealListStore = Ext.create('Ext.data.Store', {
+        model: 'Selection',
+        remoteSort: true,
+        proxy: {
+            type: 'ajax',
+            reader: {
+                type: 'json'
+            },
+            url: homePath + '/public/hra/seal/getseal/option/list'
+        },
+        autoLoad: true
+    });
+    
+    // 审核人数据源
+    var reviewerListStore = Ext.create('Ext.data.Store', {
+        model: 'Selection',
+        remoteSort: true,
+        proxy: {
+            type: 'ajax',
+            reader: {
+                type: 'json'
+            },
+            url: homePath + '/public/admin/account/getuserlist/role_id/26'
+        },
+        autoLoad: true
+    });
+    
+    // 员工列表
+    var employeeListStore = Ext.create('Ext.data.ArrayStore', {
+    	model: 'Selection',
+        proxy: {
+            type: 'ajax',
+            url: homePath + '/public/admin/account/getuserlist',
+            reader: 'json'
+        },
+        autoLoad: true
+    });
+    
+    //必填提示
+    var required = '<span style="color:red;font-weight:bold" data-qtip="Required">*</span>';
+    
+    Ext.tip.QuickTipManager.init();
+
+    // 印章使用申请表单
+    var applyForm = Ext.widget({
+        xtype: 'form',
+        border: 0,
+        layout: 'form',
+        id: 'applyForm',
+        url: homePath + '/public/hra/seal/apply',
+        bodyPadding: '5 5 0',
+        fieldDefaults: {
+            msgTarget: 'side',
+            labelWidth: 75
+        },
+        defaultType: 'textfield',
+        items: [{
+        	xtype:'combobox',
+            displayField: 'name',
+            valueField: 'id',
+            triggerAction: 'all',
+            lazyRender: true,
+            store: sealListStore,
+            queryMode: 'local',
+            name: 'apply_seal_id',
+            fieldLabel: '印章',
+            afterLabelTextTpl: required,
+            editable: false,
+            allowBlank: false
+        }, {
+        	xtype:'combobox',
+            displayField: 'name',
+            valueField: 'id',
+            triggerAction: 'all',
+            lazyRender: true,
+            store: reviewerListStore,
+            queryMode: 'local',
+            name: 'review_user',
+            fieldLabel: '审核人',
+            afterLabelTextTpl: required,
+            editable: false,
+            allowBlank: false
+        }, {
+        	xtype: 'htmleditor',
+            fieldLabel: '事由',
+            name: 'apply_reason',
+            allowBlank: false
+        }],
+        buttons: [{
+            text: '提交',
+            handler: function() {
+                var form = this.up('form').getForm();
+                
+                if (form.isValid()) {
+                	Ext.MessageBox.confirm('确认', '确定提交？', function(button, text){
+                        if(button == 'yes'){
+                            form.submit({
+                                waitMsg: '提交中，请稍后...',
+                                success: function(form, action) {
+                                    var data = action.result;
+                                    
+                                    if(data.success){
+                                    	Ext.MessageBox.alert('提示', '申请成功');
+                                        form.reset();
+                                        applyWin.hide();
+                                        sealStore.reload();
+                                    }else{
+                                        Ext.MessageBox.alert('错误', data.info);
+                                    }
+                                },
+                                failure: function(response){
+                                    Ext.MessageBox.alert('错误', '保存提交失败');
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+        },{
+            text: '取消',
+            handler: function() {
+                this.up('form').getForm().reset();
+                applyWin.hide();
+            }
+        }]
+    });
+    
+    // 显示印章使用申请窗口
+    var applyWin = Ext.create('Ext.window.Window', {
+    	title: '印章使用申请',
+    	width: 400,
+    	modal: true,
+    	constrain: true,
+    	layout: 'fit',
+    	closeAction: 'hide',
+    	resizable: false,
+    	items: [{
+            region: 'center',
+            split: true,
+            items: [applyForm]
+    	}]
+    });
+
+    // 印章维护表单
+    var sealForm = Ext.widget({
+    	xtype: 'form',
+    	border: 0,
+        id: 'seal_form',
+        layout: {
+            type: 'vbox',
+            align: 'stretch'
+        },
+        url: homePath + '/public/hra/seal/editseal',
+        bodyPadding: '5 5 0',
+        fieldDefaults: {
+            msgTarget: 'side',
+            labelWidth: 50
+        },
+        
+        items: [{
+            xtype: 'hiddenfield',
+            name: 'edit_type',
+            id: 'edit_type',
+            value: 'new'
+        }, {
+            xtype: 'hiddenfield',
+            name: 'seal_id', 
+            id: 'seal_id',
+            value: 0
+        }, {
+            xtype: 'fieldcontainer',
+            layout: 'hbox',
+            defaultType: 'textfield',
+            items: [{
+                flex: 1,
+                name: 'name',
+                id: 'seal_name',
+                afterLabelTextTpl: required,
+                fieldLabel: '名称',
+                allowBlank: false
+            }, {
+            	xtype:'combobox',
+                typeAhead: true,
+                editable: false,
+                triggerAction: 'all',
+                displayField: 'text',
+                valueField: 'val',
+                store: Ext.create('Ext.data.Store', {
+                    fields: ['text', 'val'],
+                    data: [
+                        {"text": "是", "val": 1},
+                        {"text": "否", "val": 0}
+                    ]
+                }),
+                fieldLabel: '启用',
+                labelWidth: 40,
+                name: 'active',
+                afterLabelTextTpl: required,
+                allowBlank: false,
+                width: 100,
+                margins: '0 0 0 5'
+            }, {
+                xtype:'combobox',
+                displayField: 'name',
+                valueField: 'id',
+                triggerAction: 'all',
+                lazyRender: true,
+                store: employeeListStore,
+                queryMode: 'local',
+                name: 'administrator',
+                fieldLabel: '保管员',
+                width: 200,
+                afterLabelTextTpl: required,
+                editable: false,
+                allowBlank: false,
+                margins: '0 0 0 5'
+            }]
+        }, {
+            xtype: 'textfield',
+            fieldLabel: '描述',
+            name: 'description',
+            afterLabelTextTpl: required,
+            allowBlank: false
+        }, {
+            xtype: 'textareafield',
+            fieldLabel: '备注',
+            name: 'remark',
+            flex: 1
+        }],
+        buttons: [{
+            text: '提交',
+            disabled: <?php echo $sealAdminDisabled?>,
+            handler: function() {
+                var form = Ext.getCmp('seal_form').getForm();
+                
+                if (form.isValid()) {
+                    var chk = true;
+
+                    if(Ext.getCmp('edit_type').getValue() == 'new'){
+                        // 判断印章名称是否有空的情况
+                        sealStore.each(function(rec){
+                            if(Ext.getCmp('seal_name').getValue() == rec.get('name')){
+                                if(chk){
+                                    chk = false;
+                                }
+                            }
+                        });
+                    }
+
+                    if(chk){
+                    	Ext.MessageBox.confirm('确认', '确定提交？', function(button, text){
+                            if(button == 'yes'){
+                                form.submit({
+                                    waitMsg: '提交中，请稍后...',
+                                    success: function(form, action) {
+                                        var data = action.result;
+                                        
+                                        if(data.success){
+                                        	Ext.MessageBox.alert('提示', '保存成功');
+                                            form.reset();
+                                            sealWin.hide();
+                                            sealStore.reload();
+                                        }else{
+                                            Ext.MessageBox.alert('错误', data.info);
+                                        }
+                                    },
+                                    failure: function(response){
+                                        Ext.MessageBox.alert('错误', '保存提交失败');
+                                    }
+                                });
+                            }
+                        });
+                    }else{
+                    	Ext.MessageBox.alert('错误', '印章重名，请勿重复添加!');
+                    }
+                }
+            }
+        }, {
+        	text: '取消',
+            handler: function() {
+            	Ext.getCmp('seal_form').getForm().reset();
+            	sealWin.hide();
+            }
+        }]
+    });
+    
+    // 显示印章维护窗口
+    var sealWin = Ext.create('Ext.window.Window', {
+    	title: '维护印章',
+    	border: 0,
+    	width: 600,
+    	modal: true,
+    	constrain: true,
+    	layout: 'fit',
+    	closeAction: 'hide',
+    	resizable: false,
+    	items: [{
+            region: 'center',
+            split: true,
+            items: [sealForm]
+    	}]
+    });
+
+    function reviewSubmit(selection, operate){
+    	var ids = '';
+
+        for(var i = 0; i < selection.length; i++){
+            if(i == 0){
+            	ids = selection[i].get('id');
+            }else{
+            	ids += ',' + selection[i].get('id');
+            }
+        }
+
+        var opinion = Ext.getCmp('review_opinion').getValue();
+        
+        Ext.MessageBox.confirm('确认', '确定提交？', function(button, text){
+        	if(button == 'yes'){
+            	Ext.Msg.wait('提交中，请稍后...', '提示');
+                Ext.Ajax.request({
+                    url: homePath + '/public/hra/seal/review/operate/'+operate,
+                    params: {ids: ids, opinion: opinion},
+                    method: 'POST',
+                    success: function(response, options) {
+                        var data = Ext.JSON.decode(response.responseText);
+    
+                        if(data.success){
+                            Ext.MessageBox.alert('提示', data.info);
+                            reviewStore.reload();
+                        }else{
+                            Ext.MessageBox.alert('错误', data.info);
+                        }
+                    },
+                    failure: function(response){
+                        Ext.MessageBox.alert('错误', '保存提交失败');
+                    }
+                });
+        	}
+        });
+    }
+
+    // 显示印章使用审核窗口
+    var reviewWin = Ext.create('Ext.window.Window', {
+        title: '审核印章使用申请',
+        height: 400,
+        width: 800,
+        modal: true,
+        constrain: true,
+        closeAction: 'hide',
+        layout: 'fit',
+        tools: [{
+            type: 'refresh',
+            tooltip: 'Refresh',
+            scope: this,
+            handler: function(){reviewStore.reload();}
+        }],
+        items: [{
+            xtype: 'gridpanel',
+            id: 'reviewGrid',
+            columnLines: true,
+            store: reviewStore,
+            selType: 'checkboxmodel',
+            tbar: [{
+            	text: '批准',
+                iconCls: 'icon-accept',
+                handler: function(){
+                	var selection = Ext.getCmp('reviewGrid').getView().getSelectionModel().getSelection();
+
+                    if(selection.length > 0){
+                    	reviewSubmit(selection, 'approve');
+                    }else{
+                        Ext.MessageBox.alert('错误', '没有选择批准对象！');
+                    }
+                }
+            }, {
+            	text: '拒绝',
+                iconCls: 'icon-reject',
+                handler: function(){
+                	var selection = Ext.getCmp('reviewGrid').getView().getSelectionModel().getSelection();
+
+                    if(selection.length > 0){
+                    	reviewSubmit(selection, 'reject');
+                    }else{
+                        Ext.MessageBox.alert('错误', '没有选择拒绝对象！');
+                    }
+                }
+            }, {
+                xtype: 'textfield',
+                id: 'review_opinion',
+                width: 400,
+                emptyText: '审核意见...'
+            }, '->', {
+                text: '刷新',
+                iconCls: 'icon-refresh',
+                handler: function(){
+                    reviewStore.reload();
+                }
+            }],
+            columns: [{
+                text: 'ID',
+                dataIndex: 'id',
+                hidden: true,
+                flex: 0.5
+            }, {
+                text: '印章',
+                dataIndex: 'seal_name',
+                flex: 1
+            }, {
+                text: '事由',
+                dataIndex: 'apply_reason',
+                renderer: function(value,metaData,record,colIndex,store,view) {
+                    metaData.tdAttr = 'data-qtip="'+value+'"';
+                    return value;
+                },
+                flex: 4
+            }, {
+                text: '审核人',
+                dataIndex: 'review_user',
+                align: 'center',
+                flex: 1
+            }, {
+                text: '申请人',
+                dataIndex: 'apply_user',
+                align: 'center',
+                flex: 1
+            }, {
+                text: '申请时间',
+                dataIndex: 'apply_time',
+                align: 'center',
+                flex: 1.8
+            }]
+        }]
+    });
+    
+    // 印章列表
+    var sealGrid = Ext.create('Ext.grid.Panel', {
+    	store: sealStore,
+    	border: 0,
+    	enableTextSelection: true,
+        columnLines: true,
+        tbar: [{
+            text: '使用申请',
+            iconCls: 'icon-propose',
+            handler: function(){
+            	applyWin.show();
+            }
+        }, {
+            text: '审核',
+            iconCls: 'icon-accept',
+            handler: function(){
+            	reviewWin.show();
+            	reviewStore.load();
+            }
+        }, {
+            xtype: 'splitbutton',
+        	text: '添加印章',
+        	disabled: <?php echo $sealAdminDisabled?>,
+            iconCls: 'icon-add',
+            handler: function(){
+            	sealWin.show();
+            	employeeListStore.load();
+            	sealWin.setTitle('添加印章');
+            	Ext.getCmp('seal_id').setValue(0);
+            	Ext.getCmp('edit_type').setValue('new');
+            	Ext.getCmp('seal_form').getForm().reset();
+            },
+            menu: [{
+                text: '编辑印章',
+                iconCls: 'icon-edit',
+                handler: function(){
+                	var selection = sealGrid.getSelectionModel().getSelection();
+                	
+                	if(selection.length > 0){
+                		sealWin.show();
+                    	sealWin.setTitle('修改印章');
+                    	Ext.getCmp('seal_form').loadRecord(selection[0]);
+                    	
+                    	var id = selection[0].get('id');
+                    	Ext.getCmp('edit_type').setValue('edit');
+                    	Ext.getCmp('seal_id').setValue(id);
+                	}else{
+                        Ext.MessageBox.alert('错误', '没有选择印章！');
+                    }
+                	
+                }
+            }, {
+                text: '删除印章',
+                iconCls: 'icon-delete',
+                handler: function(){
+                	var selection = sealGrid.getView().getSelectionModel().getSelection();
+    
+                    if(selection.length > 0){
+                    	Ext.MessageBox.confirm('确认', '确定删除印章？', function(button, text){
+                            if(button == 'yes'){
+                            	Ext.Msg.wait('提交中，请稍后...', '提示');
+                                Ext.Ajax.request({
+                                    url: homePath + '/public/hra/seal/editseal/edit_type/delete',
+                                    params: {seal_id: selection[0].data['id']},
+                                    method: 'POST',
+                                    success: function(response, options) {
+                                        var data = Ext.JSON.decode(response.responseText);
+    
+                                        if(data.success){
+                                            Ext.MessageBox.alert('提示', data.info);
+                                            sealStore.reload();
+                                        }else{
+                                            Ext.MessageBox.alert('错误', data.info);
+                                        }
+                                    },
+                                    failure: function(response){
+                                        Ext.MessageBox.alert('错误', '删除失败');
+                                    }
+                                });
+                            }
+                        });
+                    }else{
+                        Ext.MessageBox.alert('错误', '没有选择删除对象！');
+                    }
+                }
+            }]
+        }, {
+        	text: '印章使用申请记录',
+            iconCls: 'icon-log',
+            handler: function(){
+                logWin.show();
+            }
+        }, '->', {
+            text: '刷新',
+            iconCls: 'icon-refresh',
+            handler: function(){
+                sealStore.reload();
+            }
+        }],
+        viewConfig: {
+            stripeRows: false,// 取消偶数行背景色
+            getRowClass: function(record) {
+                if(!record.get('active')){
+                    return 'gray-row';
+                }
+            }
+        },
+        columns: [{
+            xtype: 'rownumberer'
+        }, {
+            text: '启用',
+            align: 'center',
+            dataIndex: 'active',
+            renderer: function(val){
+            	if(val == 'true' || val == 1){
+            		return '<img src="'+ homePath + '/public/images/icons/ok.png"></img>';
+            	}else{
+            		return '<img src="' + homePath + '/public/images/icons/cross.gif"></img>';
+            	}
+            },
+            flex: 0.5
+        }, {
+            text: '名称',
+            dataIndex: 'name',
+            flex: 1
+        }, {
+            text: '描述',
+            dataIndex: 'description',
+            flex: 1
+        }, {
+            text: '备注',
+            dataIndex: 'remark',
+            flex: 2
+        }, {
+            text: '保管员',
+            align: 'center',
+            dataIndex: 'administrator_name',
+            flex: 0.5
+        }, {
+            text: '创建人',
+            hidden: true,
+            dataIndex: 'creater',
+            align: 'center',
+            flex: 1
+        }, {
+            text: '创建时间',
+            hidden: true,
+            dataIndex: 'create_time',
+            align: 'center',
+            renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+            flex: 1.5
+        }, {
+            text: '更新人',
+            hidden: true,
+            dataIndex: 'updater',
+            align: 'center',
+            flex: 1
+        }, {
+            text: '更新时间',
+            hidden: true,
+            dataIndex: 'update_time',
+            align: 'center',
+            renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+            flex: 1.5
+        }]
+    });
+
+    Ext.QuickTips.init();
+
+    sealStore.load();
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+    
+    Ext.create('Ext.Viewport', {
+        layout: 'border',
+        items: [{
+            region: 'center',
+            border: 0,
+            layout: 'fit',
+            plain: true,
+            items: [sealGrid]
+        }]
+    });
+});
+</script>
+</head>
+<body>
+</body>
+</html>

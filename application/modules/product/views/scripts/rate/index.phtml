@@ -1,0 +1,336 @@
+<html>
+    <head>
+        <?php echo SYS_HEAD; ?>
+
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/common.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/models.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/comboxtree.js"></script>
+        <style type="text/css">
+            .x-fieldset{border:1px solid #B5B8C8;display:block;}
+            .x-fieldset-none{border:0;display:block;padding:0;}
+            .x-grid-cell.myreview
+            {
+                background-color: #9fc;
+            }
+        </style>
+        <script type="text/javascript">
+            Ext.require([
+                'Ext.*'
+            ]);
+            Ext.define('Ext.ux.CustomTrigger', {
+                extend: 'Ext.form.field.Trigger',
+                alias: 'widget.customtrigger',
+                // override onTriggerClick
+                onTriggerClick: function() {
+                    Ext.Msg.alert('Status', 'You clicked my trigger!');
+                }
+            });
+
+            Ext.onReady(function() {
+                Ext.QuickTips.init();
+
+                Ext.define('rate', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [{name: "id"},
+                        {name: "currency"},
+                        {name: "rate"},
+                        {name: "start_time", type: 'date', dateFormat: 'timestamp'},
+                        {name: "end_time", type: 'date', dateFormat: 'timestamp'},
+                        {name: "update_time", type: 'date', dateFormat: 'timestamp'},
+                        {name: "updater"},
+                        {name: "currency_name"},
+                        {name: "symbol"}
+                    ]
+                });
+                Ext.define('currency', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'code',
+                    fields: [{name: "code"},
+                        {name: "symbol"},
+                        {name: 'name'}
+                    ]
+                });
+
+                var store = Ext.create('Ext.data.Store', {
+                    pageSize: 100,
+                    model: 'rate',
+                    proxy: {
+                        type: 'ajax',
+                        reader: {
+                            root: 'topics',
+                            totalProperty: 'totalCount'
+                        },
+                        url: '<?php echo HOME_PATH; ?>/public/product/rate/getlist'
+                    },
+                    autoLoad: true
+                });
+
+                var currencyStore = Ext.create('Ext.data.Store', {
+                    model: 'currency',
+                    proxy: {
+                        type: 'ajax',
+                        reader: 'json',
+                        url: '<?php echo HOME_PATH; ?>/public/product/price/getcurrency'
+                    },
+                    autoLoad: true
+                });
+
+                var rowEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+                    clicksToEdit: 1
+                });
+
+                var grid = Ext.create('Ext.grid.Panel', {
+                    store: store,
+                    columnLines: true,
+                    viewConfig: {
+                        stripeRows: false
+                    },
+                    tbar: [{
+                            text: '添加',
+                            scope: this,
+                            iconCls: 'icon-add',
+                            handler: function() {
+                                rowEditing.cancelEdit();
+
+                                var r = Ext.create('rate', {
+                                	start_time: Ext.Date.format(new Date(), 'Y-m-d H:i:s')
+                                });
+
+                                store.insert(0, r);
+
+                                rowEditing.startEdit(0, 2);
+                            }
+                        }, {
+                            text: '删除',
+                            iconCls: 'icon-delete',
+                            scope: this,
+                            handler: function() {
+                                var selection = grid.getView().getSelectionModel().getSelection();
+
+                                if (selection.length > 0) {
+                                    store.remove(selection);
+                                } else {
+                                    Ext.MessageBox.alert('错误', '没有选择删除对象！');
+                                }
+                            }
+                        }, {
+                            text: '保存',
+                            scope: this,
+                            iconCls: 'icon-save',
+                            handler: function() {
+                                var updateRecords = store.getUpdatedRecords();
+                                var insertRecords = store.getNewRecords();
+                                var deleteRecords = store.getRemovedRecords();
+
+                                // 判断是否有修改数据
+                                if (updateRecords.length + insertRecords.length + deleteRecords.length > 0) {
+                                    var changeRows = {
+                                        updated: [],
+                                        inserted: [],
+                                        deleted: []
+                                    }
+
+                                    // 判断是否有为空的情况
+                                    var valueCheck = true;
+
+                                    for (var i = 0; i < updateRecords.length; i++) {
+                                        var data = updateRecords[i].data;
+
+                                        if (data['currency'] == '' || data['rate'] == '') {
+                                            valueCheck = false;
+                                            break;
+                                        }
+                                        changeRows.updated.push(data)
+                                    }
+
+                                    for (var i = 0; i < insertRecords.length; i++) {
+                                        var data = insertRecords[i].data;
+
+                                        if (data['currency'] == '' || data['rate'] == '') {
+                                            valueCheck = false;
+
+                                            break;
+                                        }
+                                        changeRows.inserted.push(data)
+                                    }
+
+                                    for (var i = 0; i < deleteRecords.length; i++) {
+                                        changeRows.deleted.push(deleteRecords[i].data)
+                                    }
+
+                                    // 格式正确则提交修改数据
+                                    if (valueCheck) {
+                                        var json = Ext.JSON.encode(changeRows);
+                                        Ext.Msg.wait('提交中，请稍后...', '提示');
+                                        Ext.Ajax.request({
+                                            url: '<?php echo HOME_PATH; ?>/public/product/rate/save',
+                                            params: {json: json},
+                                            method: 'POST',
+                                            success: function(response, options) {
+                                                var data = Ext.JSON.decode(response.responseText);
+
+                                                if (data.success) {
+                                                    Ext.MessageBox.alert('提示', data.info);
+                                                    store.reload();
+                                                } else {
+                                                    Ext.MessageBox.alert('错误', data.info);
+                                                }
+                                            },
+                                            failure: function(form, action) {
+                                                Ext.MessageBox.alert('错误', action.result.info);
+                                            }
+                                        });
+                                    } else {
+                                        Ext.MessageBox.alert('错误', '币种和汇率不能为空！');
+                                    }
+                                } else {
+                                    Ext.MessageBox.alert('提示', '没有修改任何数据！');
+                                }
+                            }
+                        }, {
+                            text: '币种管理',
+                            tooltip: '采购维护',
+                            hidden: true,
+                            scope: this,
+                            handler: function() {
+                            }
+                        }, {
+                            text: '汇率刷新',
+                            tooltip: '刷新汇率',
+                            scope: this,
+                            handler: function() {
+                                Ext.Msg.wait('汇率获取中，请稍后...', '提示');
+                                var codes = [];
+                                store.each(function(r) {
+                                	codes.push(r.get('currency'));
+                                });
+                                Ext.Ajax.request({
+                                    url: '<?php echo HOME_PATH; ?>/public/product/rate/getrate',
+                                    params: {json: Ext.JSON.encode(codes)},
+                                    method: 'POST',
+                                    success: function(response, options) {
+                                        var data = Ext.JSON.decode(response.responseText);
+                                        for (var k in data) {
+									        if(data[k]) {
+									        	store.each(function(r) {
+									        		if(r.get('currency') == k) {
+									        			r.set('rate', data[k]);
+									        		}
+									        	})
+									        }
+									    }
+									    Ext.Msg.hide();
+                                    },
+                                    failure: function(form, action) {
+                                        Ext.MessageBox.alert('错误', '获取失败，请手动更新');
+                                    }
+                                });
+                            }
+                        }, '->', {
+                            text: '刷新',
+                            tooltip: '刷新表格数据',
+                            scope: this,
+                            handler: function() {
+                                store.reload();
+                            }
+                        }],
+                    plugins: rowEditing,
+                    columns: [{
+                            xtype: 'rownumberer'
+                        }, {
+                            text: 'ID',
+                            flex: 1,
+                            hidden: true,
+                            dataIndex: 'id'
+                        }, {
+                            text: '币种',
+                            flex: 2,
+                            sortable: true,
+                            dataIndex: 'currency',
+				            editor: new Ext.form.field.ComboBox({
+				                editable: false,
+				                displayField: 'code',
+				                valueField: 'code',
+				                allowBlank: false,
+                                triggerAction: 'all',
+                                forceSelection: true,
+                                selectOnFocus:true,
+                                lazyRender: true,
+				                store: currencyStore,
+						        queryMode: 'local',
+						        listeners: {
+						        	change: function(obj, newValue, oldValue) {
+						        	    currencyStore.each(function(r) {
+						        	    	if(newValue == r.get('code')) {
+						        	    		var sel = grid.getView().getSelectionModel().getSelection();
+					                	    	var s = sel[0];
+					                	    	s.set("currency_name", r.get('name'));
+						        	    	}
+						        	    })
+						        	}
+						        }
+				            })
+                        }, {
+                            text: '名称',
+                            flex: 2,
+                            sortable: true,
+                            dataIndex: 'currency_name'
+                        }, {
+                            text: '汇率',
+                            flex: 2.5,
+                            dataIndex: 'rate',
+                            editor: {
+				                xtype: 'numberfield',
+				                allowBlank: false,
+				                minValue: 0.0001,
+				                maxValue: 9999.9999,
+                                allowDecimals: true,
+                                decimalPrecision: 4
+				            },
+                            renderer: function(value, p, record) {
+                                if(value && record.get('currency_name')) {
+                                	return "1" + record.get('currency_name') + " = " + value + "人名币";
+                                }
+                                return value;
+                            }
+                        }, {
+                            text: '开始执行时间',
+                            flex: 2,
+                            hidden: true,
+                            dataIndex: 'start_time',
+                            renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+				            editor: {
+				                xtype: 'datefield',
+				                format: 'Y-m-d H:i:s'
+				            }
+                        }, {
+                            text: '更新人',
+                            flex: 2,
+                            hidden: true,
+                            dataIndex: 'updater'
+                        }, {
+                            text: '更新时间',
+                            flex: 2,
+                            hidden: true,
+                            dataIndex: 'update_time',
+                            renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+                        }]
+                });
+
+                Ext.create('Ext.container.Viewport', {
+                    layout: 'border',
+                    rtl: true,
+                    items: [{
+                            region: 'center',
+                            layout: 'fit',
+                            plain: true,
+                            items: [grid]
+                        }]
+                });
+            });
+        </script>
+    </head>
+    <body>
+    </body>
+</html>

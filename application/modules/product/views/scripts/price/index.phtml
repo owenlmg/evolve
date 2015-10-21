@@ -1,0 +1,562 @@
+<html>
+    <head>
+        <?php echo SYS_HEAD; ?>
+        <?php
+        $user = new Application_Model_User();
+        $btnDisabled = $user->checkPermissionByRoleName('物料号管理-供应链') || Application_Model_User::checkPermissionByRoleName('系统管理员');
+        $btnDisabled = $btnDisabled ? 0 : 1;
+        $exportable = 1;
+        if (Application_Model_User::checkPermissionByRoleName('物料管理员') || Application_Model_User::checkPermissionByRoleName('系统管理员')) {
+            $delable = 1;
+            $exportable = 0;
+        }
+        ?>
+
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/common.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/models.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/comboxtree.js"></script>
+        <style type="text/css">
+            .x-fieldset{border:1px solid #B5B8C8;display:block;}
+            .x-fieldset-none{border:0;display:block;padding:0;}
+            .x-grid-cell.myreview
+            {
+                background-color: #9fc;
+            }
+        </style>
+        <script type="text/javascript">
+            Ext.require([
+                'Ext.*'
+            ]);
+            Ext.define('Ext.ux.CustomTrigger', {
+                extend: 'Ext.form.field.Trigger',
+                alias: 'widget.customtrigger',
+                // override onTriggerClick
+                onTriggerClick: function() {
+                    Ext.Msg.alert('Status', 'You clicked my trigger!');
+                }
+            });
+
+            Ext.onReady(function() {
+                Ext.QuickTips.init();
+
+                Ext.define('price', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [{name: "id"},
+                        {name: "code"},
+                        {name: "type"},
+                        {name: "description"},
+                        {name: "name"},
+                        {name: "supply"},
+                        {name: "supply_code"},
+                        {name: "supply_name"},
+                        {name: "type_name"},
+                        {name: "updater"},
+                        {name: "update_time", type: 'date', dateFormat: 'timestamp'},
+                        {name: "min_num"},
+                        {name: "max_num"},
+                        {name: "currency"},
+                        {name: "currency_name"},
+                        {name: "price"},
+                        {name: "rate"},
+                        {name: "symbol"},
+                        {name: "bank_currency"}
+                    ]
+                });
+
+                Ext.define('materiel', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [{name: "id"},
+                        {name: "code"},
+                        {name: "description"},
+                        {name: "name"},
+                        {name: "supply_code"},
+                        {name: "supply_name"},
+                        {name: "type_name"}
+                    ]
+                });
+                Ext.define('supply', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'supply_code',
+                    fields: [{name: "supply_code"},
+                        {name: "supply_name"},
+                        {name: "supply"},
+                        {name: "currency"}
+                    ]
+                });
+                Ext.define('currency', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'code',
+                    fields: [{name: "code"},
+                        {name: "symbol"},
+                        {name: 'name'}
+                    ]
+                });
+
+                var store = Ext.create('Ext.data.Store', {
+                    pageSize: 100,
+                    model: 'price',
+                    proxy: {
+                        type: 'ajax',
+                        reader: {
+                            root: 'topics',
+                            totalProperty: 'totalCount'
+                        },
+                        url: '<?php echo HOME_PATH; ?>/public/product/price/getlist'
+                    },
+                    autoLoad: true
+                });
+
+                var materielStore = Ext.create('Ext.data.Store', {
+                    pageSize: 50,
+                    model: 'materiel',
+                    proxy: {
+                        type: 'ajax',
+                        reader: {
+                            root: 'topics',
+                            totalProperty: 'totalCount'
+                        },
+                        url: '<?php echo HOME_PATH; ?>/public/product/price/getmateriel'
+                    },
+                    autoLoad: false
+                });
+
+                var supplyStore = Ext.create('Ext.data.Store', {
+                    model: 'supply',
+                    proxy: {
+                        type: 'ajax',
+                        reader: 'json',
+                        url: '<?php echo HOME_PATH; ?>/public/product/price/getsupply'
+                    },
+                    autoLoad: false
+                });
+
+                var currencyStore = Ext.create('Ext.data.Store', {
+                    model: 'currency',
+                    proxy: {
+                        type: 'ajax',
+                        reader: 'json',
+                        url: '<?php echo HOME_PATH; ?>/public/product/price/getcurrency'
+                    },
+                    autoLoad: true
+                });
+
+                var rowEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+                    clicksToEdit: 1
+                });
+
+                var grid = Ext.create('Ext.grid.Panel', {
+                    store: store,
+                    columnLines: true,
+                    viewConfig: {
+                        stripeRows: false
+                    },
+                    tbar: [{
+                            xtype: 'textfield',
+                            id: 'search_tag',
+                            width: 300,
+                            emptyText: '料号/名称/描述/供应商...',
+                            listeners: {
+                            	specialKey :function(field,e){
+                                    if (e.getKey() == Ext.EventObject.ENTER){
+                                    	store.loadPage(1);
+                                    }
+                                }
+                            }
+                        }, {
+                            xtype: 'button',
+                            text: '查询',
+                            iconCls: 'icon-search',
+                            handler: function() {
+                                var search_tag = Ext.getCmp('search_tag').getValue();
+                                store.baseParams = {
+                                    search_tag: search_tag
+                                }
+                                store.loadPage(1);
+                            }
+                        }, {
+                            text: '添加',
+                            scope: this,
+                            iconCls: 'icon-add',
+                            handler: function() {
+                                rowEditing.cancelEdit();
+
+                                var r = Ext.create('price', {
+                                    currency: 'CNY',
+                                    min_num: 1,
+                                    max_num: 99999999
+                                });
+
+                                store.insert(0, r);
+
+                                rowEditing.startEdit(0, 2);
+                            }
+                        }, {
+                            text: '删除',
+                            iconCls: 'icon-delete',
+                            scope: this,
+                            handler: function() {
+                                var selection = grid.getView().getSelectionModel().getSelection();
+
+                                if (selection.length > 0) {
+                                    store.remove(selection);
+                                } else {
+                                    Ext.MessageBox.alert('错误', '没有选择删除对象！');
+                                }
+                            }
+                        }, {
+                            text: '保存',
+                            scope: this,
+                            iconCls: 'icon-save',
+                            handler: function() {
+                                var updateRecords = store.getUpdatedRecords();
+                                var insertRecords = store.getNewRecords();
+                                var deleteRecords = store.getRemovedRecords();
+
+                                // 判断是否有修改数据
+                                if (updateRecords.length + insertRecords.length + deleteRecords.length > 0) {
+                                    var changeRows = {
+                                        updated: [],
+                                        inserted: [],
+                                        deleted: []
+                                    }
+
+                                    // 判断是否有为空的情况
+                                    var valueCheck = true;
+
+                                    for (var i = 0; i < updateRecords.length; i++) {
+                                        var data = updateRecords[i].data;
+
+                                        if (data['code'] == '' || data['price'] == '') {
+                                            valueCheck = false;
+                                            break;
+                                        }
+                                        changeRows.updated.push(data)
+                                    }
+
+                                    for (var i = 0; i < insertRecords.length; i++) {
+                                        var data = insertRecords[i].data;
+
+                                        if (data['code'] == '' || data['price'] == '') {
+                                            valueCheck = false;
+
+                                            break;
+                                        }
+                                        changeRows.inserted.push(data)
+                                    }
+
+                                    for (var i = 0; i < deleteRecords.length; i++) {
+                                        changeRows.deleted.push(deleteRecords[i].data)
+                                    }
+
+                                    // 格式正确则提交修改数据
+                                    if (valueCheck) {
+                                        var json = Ext.JSON.encode(changeRows);
+                                        Ext.Msg.wait('提交中，请稍后...', '提示');
+                                        Ext.Ajax.request({
+                                            url: '<?php echo HOME_PATH; ?>/public/product/price/save',
+                                            params: {json: json},
+                                            method: 'POST',
+                                            success: function(response, options) {
+                                                var data = Ext.JSON.decode(response.responseText);
+
+                                                if (data.success) {
+                                                    Ext.MessageBox.alert('提示', data.info);
+                                                    store.reload();
+                                                } else {
+                                                    Ext.MessageBox.alert('错误', data.info);
+                                                }
+                                            },
+                                            failure: function(form, action) {
+                                                Ext.MessageBox.alert('错误', action.result.info);
+                                            }
+                                        });
+                                    } else {
+                                        Ext.MessageBox.alert('错误', '物料代码和价格不能为空！');
+                                    }
+                                } else {
+                                    Ext.MessageBox.alert('提示', '没有修改任何数据！');
+                                }
+                            }
+                        }, {
+                            text: '汇率管理',
+                            tooltip: '采购维护',
+                            scope: this,
+                            handler: function() {
+                                Ext.create('Ext.window.Window', {
+							        title: '人名币汇率管理',
+							        maximizable: true,
+                                    height: 300,
+                                    width: 600,
+							        layout: 'fit',
+							        html: "<iframe src='" + getRootPath() + "/public/product/rate' frameborder=0 width=100% height=100%></iframe>"
+							    }).show();
+                            }
+                        }],
+                    plugins: rowEditing,
+                    columns: [{
+                            xtype: 'rownumberer'
+                        }, {
+                            text: 'ID',
+                            flex: 1,
+                            hidden: true,
+                            dataIndex: 'id'
+                        }, {
+                            text: '物料代码',
+                            flex: 2.5,
+                            sortable: true,
+                            dataIndex: 'code',
+				            editor: new Ext.form.field.ComboBox({
+				                editable: true,
+				                displayField: 'code',
+				                valueField: 'code',
+				                allowBlank: false,
+                                triggerAction: 'all',
+                                forceSelection: true,
+                                selectOnFocus:true,
+                                lazyRender: true,
+				                store: materielStore,
+						        queryParam: 'q',
+						        minChars: 2,
+						        queryMode: 'remote',
+				                listeners: {
+				                	change:function(obj, newValue, oldValue, e) {
+				                	    var name = "";
+				                	    var description = "";
+				                	    var type_name = "";
+				                	    materielStore.each(function(r) {
+				                	    	if(r.get('code') == newValue) {
+				                	    		name = r.get('name');
+				                	    		description = r.get('description');
+				                	    		type_name = r.get('type_name');
+				                	    	}
+				                	    });
+				                	    if(description) {
+				                	    	var sel = grid.getView().getSelectionModel().getSelection();
+				                	    	var s = sel[0];
+				                	    	s.set("name", name);
+				                	    	s.set("description", description);
+				                	    	s.set("type_name", type_name);
+				                	    }
+				                	}
+				                }
+				            })
+                        }, {
+                            text: '物料类别',
+                            flex: 2.5,
+                            hidden: true,
+                            dataIndex: 'type_name',
+                            renderer: showTitle
+                        }, {
+                            text: '物料名称',
+                            flex: 3,
+                            dataIndex: 'name',
+                            renderer: showTitle
+                        }, {
+                            text: '物料描述',
+                            flex: 4,
+                            dataIndex: 'description',
+                            renderer: showTitle
+                        }, {
+                            text: '供应商',
+                            flex: 5,
+                            dataIndex: 'supply_code',
+				            editor: new Ext.form.field.ComboBox({
+				                editable: true,
+				                displayField: 'supply',
+				                valueField: 'supply_code',
+				                allowBlank: false,
+                                triggerAction: 'all',
+                                forceSelection: true,
+                                selectOnFocus:true,
+                                lazyRender: true,
+				                store: supplyStore,
+						        queryParam: 'q',
+						        minChars: 2,
+				                queryMode: 'remote',
+				                listeners: {
+				                	change:function(obj, newValue, oldValue, e) {
+				                	    supplyStore.each(function(r) {
+				                	    	if(newValue == r.get('supply_code')) {
+				                	    		var sel = grid.getView().getSelectionModel().getSelection();
+					                	    	var s = sel[0];
+					                	    	s.set("supply_name", r.get('supply_name'));
+					                	    	s.set("currency", r.get('currency'));
+				                	    	}
+				                	    })
+				                	}
+				                }
+				            }),
+				            renderer: function(value, p, record) {
+				            	if(record.get('supply_code')) {
+				            	    return record.get('supply_code') + record.get('supply_name');
+				            	}
+				            	return "无";
+				            }
+                        }, {
+                            xtype: 'templatecolumn',
+                            tpl: '{min_num} ~ {max_num}',
+                            text: '数量',
+                            flex: 2.5,
+                            dataIndex: 'min_num',
+                            editable: true
+                        }, {
+                            text: '币种',
+                            flex: 1.5,
+                            dataIndex: 'currency',
+                            editable: false
+//				            editor: new Ext.form.field.ComboBox({
+//				                editable: false,
+//				                displayField: 'code',
+//				                valueField: 'code',
+//				                triggerAction: 'all',
+//				                lazyRender: true,
+//				                store: currencyStore,
+//				                queryMode: 'local'
+//				            })
+                        }, {
+                            xtype: 'numbercolumn',
+                            text: '价格',
+                            flex: 2,
+                            id: 'price',
+                            format: '0,0.00',
+                            dataIndex: 'price',
+                            editor: {
+				                xtype: 'numberfield',
+				                allowBlank: false,
+				                minValue: 0.01,
+				                maxValue: 9999999.99
+				            },
+				            renderer: function(value, p, record) {
+				            	if(value && record.get('symbol')) {
+				            		return record.get('symbol') + value;
+				            	}
+				            	return value;
+				            }
+                        }, {
+                            text: '更新人',
+                            flex: 3,
+                            hidden: true,
+                            dataIndex: 'updater'
+                        }, {
+                            text: '更新时间',
+                            flex: 3,
+                            hidden: true,
+                            dataIndex: 'update_time',
+                            renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+                        }],
+			        listeners: {
+			            'celldblclick': function(obj, td, cellIndex, record, tr, rowIndex, e, eOpts ) {
+			            	if(cellIndex == 5) {
+			            	    new Ext.create('Ext.window.Window', {
+								    title: '数量范围',
+								    modal: true,
+								    layout: 'fit',
+								    autoWidth: true,
+								    closeAction: 'destroy',
+								    padding: 5,
+								    items: [{
+				                        xtype: 'fieldcontainer',
+				                        layout: 'hbox',
+				                        combineErrors: false,
+				                        defaults: {
+				                            hideLabel: true
+				                        },
+				                        items: [{
+				                               id : 'min_num',
+				                               name : 'min_num',
+				                               xtype: 'numberfield',
+				                               value: record.get('min_num'),
+				                               width: 120,
+								               minValue: 1,
+								               maxValue: 9999999,
+				                               allowBlank: false,
+					                           listeners: {
+					                                afterrender: function(obj) {
+				                                    	obj.focus();
+					                                },
+					                            	specialKey :function(field,e){
+					                                    if (e.getKey() == Ext.EventObject.ENTER){
+					                                        var max = Ext.getCmp('max_num');
+					                                    	max.focus();
+					                                    	max.select();
+					                                    }
+					                                }
+					                           }
+				                           }, {
+				                               xtype: 'displayfield',
+				                               width: 20,
+				                               value: '到'
+				                           }, {
+				                               id : 'max_num',
+				                               name : 'max_num',
+				                               value: record.get('max_num'),
+				                               xtype: 'numberfield',
+				                               width: 120,
+								               minValue: 1,
+								               maxValue: 9999999,
+				                               allowBlank: false,
+					                           listeners: {
+					                            	specialKey :function(field,e){
+					                                    if (e.getKey() == Ext.EventObject.ENTER){
+					                                    	Ext.getCmp('numBtn').fireEvent('click');
+					                                    }
+					                                }
+					                           }
+				                           }, {
+				                            xtype: 'button',
+				                            text: '确定',
+				                            id: 'numBtn',
+				                            listeners: {
+					                            'click': function() {
+					                                var min = Ext.getCmp('min_num').getValue();
+					                                var max = Ext.getCmp('max_num').getValue();
+					                                if(!min || !max || min > max || !/^[1-9][0-9]*$/.test(min) || !/^[1-9][0-9]*$/.test(max)) {
+					                                	Ext.MessageBox.alert('错误', '请填写正确范围');
+					                                	return false;
+					                                }
+					                                var window = this.up('window');
+					                                record.set('min_num', min);
+					                                record.set('max_num', max);
+					                                window.close();
+					                            }
+				                            }
+				                        }]
+				                    }]
+								}).show();
+			            	}
+			            }
+			        },
+                    bbar: Ext.create('Ext.PagingToolbar', {
+                        store: store,
+                        displayInfo: true,
+                        displayMsg: '显示 {0} - {1} 共 {2}',
+                        emptyMsg: "没有数据"
+                    })
+                });
+
+                store.on("beforeload", function() {
+                    var search_tag = Ext.getCmp('search_tag').getValue();
+                    Ext.apply(store.proxy.extraParams, {
+                        search_tag: search_tag
+                    });
+                });
+
+
+                Ext.create('Ext.container.Viewport', {
+                    layout: 'border',
+                    rtl: true,
+                    items: [{
+                            region: 'center',
+                            layout: 'fit',
+                            plain: true,
+                            items: [grid]
+                        }]
+                });
+            });
+        </script>
+    </head>
+    <body>
+    </body>
+</html>

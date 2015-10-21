@@ -1,0 +1,105 @@
+<html>
+    <head>
+        <?php echo SYS_HEAD; ?>
+        <script type="text/javascript">
+            Ext.require([
+                'Ext.*'
+            ]);
+            function rMenu1Fn() {
+                alert(123);
+            }
+
+            Ext.onReady(function() {
+                Ext.QuickTips.init();
+
+                Ext.define('backlog', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [{
+                            name: "id"
+                        }, {
+                            name: "type"
+                        }, {
+                            name: "count"
+                        }]
+                });
+                var backlogStore = Ext.create('Ext.data.Store', {
+                    model: 'backlog',
+                    proxy: {
+                        type: 'ajax',
+                        reader: 'json',
+                        url: '<?php echo HOME_PATH; ?>/public/admin/backlog/getlist'
+                    },
+                    autoLoad: true
+                });
+
+
+                var panel = Ext.create('Ext.grid.Panel', {
+                    store: backlogStore,
+                    sortableColumns: false, // 禁止排序
+                    columnLines: true,
+                    columns: [{
+                            text: '类别',
+                            flex: 2,
+                            dataIndex: 'type',
+                            renderer: function(value) {
+                                switch (value) {
+                                    case 'files':
+                                        return '文件发布审批';
+                                    case 'materiel':
+                                        return '物料代码申请审批'
+                                    default:
+                                        return value;
+                                }
+                            }
+                        }, {
+                            text: '数量',
+                            flex: 1,
+                            dataIndex: 'count'
+                        }, {
+                            text: '处理',
+                            flex: 1,
+                            renderer: function(value, p, record) {
+                                switch (record.data.type) {
+                                    case 'files':
+                                        url = "<?php echo HOME_PATH; ?>/public/dcc/mine?personal=1";
+                                        r = "<a href='" + url + "' onclick='javascript:window.parent.location.href=" + url + "'>跳转</a>";
+                                        return "<button type='button' onclick='rMenu1Fn'>查看</button>";
+                                    case 'materiel':
+                                        url = "<?php echo HOME_PATH; ?>/public/product/apply";
+                                        r = "<a href='" + url + "' onclick='javascript:window.parent.location.href=" + url + "'>跳转</a>";
+                                        return "<button type='button' onclick='rMenu1Fn'>查看</button>";
+                                    default:
+                                        return "";
+                                }
+                            }
+                        }], listeners: {
+                        cellClick: function(grid, rowIdx, colIdx, evt) {
+                                Ext.create('Ext.window.Window', {
+                                    title: '文件审批',
+                                    height: 400,
+                                    width: 900,
+                                    layout: 'fit',
+                                    html: "<iframe src='<?php echo HOME_PATH; ?>/public/dcc/mine' frameborder=0 width=100% height=100%></iframe>"
+                                }).show();
+                        }
+                    }
+                });
+
+
+                Ext.create('Ext.container.Viewport', {
+                    layout: 'border',
+                    rtl: true,
+                    plain: true,
+                    items: [{
+                            region: 'center',
+                            layout: 'fit',
+                            items: [panel]
+                        }]
+                });
+            });
+        </script>
+    </head>
+    <body>
+    </body>
+</html>

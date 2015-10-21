@@ -1,0 +1,257 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+Ext.require([
+    'Ext.*'
+]);
+
+Ext.onReady(function() {
+    Ext.define('Selection', {
+        extend: 'Ext.data.Model',
+        fields: ['type']
+    });
+
+    var mailTypeStore = Ext.create('Ext.data.Store', {
+        model: 'Selection',
+        proxy: {
+            type: 'ajax',
+            reader: 'json',
+            url: homePath+'/public/admin/maillog/gettype'
+        },
+        autoLoad: true
+    });
+    
+    // 数据模型
+    Ext.define('Mail', {
+        extend: 'Ext.data.Model',
+        fields: [{name: "id"}, 
+                 {name: "user"}, 
+                 {name: "type"}, 
+                 {name: "subject"}, 
+                 {name: "to"}, 
+                 {name: "cc"}, 
+                 {name: "content"}, 
+                 {name: "attachment_name"}, 
+                 {name: "attachment_path"}, 
+                 {name: "send_time"}, 
+                 {name: "err_info"}, 
+                 {name: "remark"}, 
+                 {name: "state"}, 
+                 {name: "add_date"}, 
+                 {name: "key"}, 
+                 {name: "user_id"}]
+    });
+    
+    // 数据源
+    var mailStore = Ext.create('Ext.data.ArrayStore', {
+        model: 'Mail',
+        pageSize: 50,
+        remoteSort: true,
+        proxy: {
+            type: 'ajax',
+            reader: {
+                type: 'json',
+                root: 'rows',
+                totalProperty: 'total'
+            },
+            url: homePath+'/public/admin/maillog/getdata'
+        },
+        listeners: {
+        	beforeload: function(){
+        		var key = Ext.getCmp('search_key').getValue();
+                var search_date_from = Ext.Date.format(Ext.getCmp('search_date_from').getValue(), 'Y-m-d');
+                var search_date_to = Ext.Date.format(Ext.getCmp('search_date_to').getValue(), 'Y-m-d');
+                var search_type = Ext.JSON.encode(Ext.getCmp('search_type').getValue());
+                
+        		Ext.apply(mailStore.proxy.extraParams, {
+        			key: key,
+        			date_from: search_date_from,
+        			date_to: search_date_to,
+        			type: search_type
+                });
+            }
+        }
+    });
+    
+    Ext.tip.QuickTipManager.init();
+
+    var titleRender = function(val, cellmeta, record){
+    	cellmeta.tdAttr = 'data-qtip="' + val + '"';
+    	console.log(record);
+    	return val;
+    };
+    
+    // 邮件任务列表
+    var mailGrid = Ext.create('Ext.grid.Panel', {
+        store: mailStore,
+        border: 0,
+        columnLines: true,
+        tbar: [{
+            xtype: 'combobox',
+            id: 'search_type',
+            emptyText: '类别...',
+            displayField: 'type',
+            valueField: 'type',
+            width: 120,
+            store: mailTypeStore,
+            queryMode: 'local',
+            editable: false,
+            multiSelect: true
+        }, {
+            xtype: 'textfield',
+            id: 'search_key',
+            width: 150,
+            emptyText: '关键字...',
+            listeners: {
+            	specialKey :function(field,e){
+                    if (e.getKey() == Ext.EventObject.ENTER){
+                    	mailStore.loadPage(1);
+                    }
+                }
+            }
+        }, {
+            xtype: 'datefield',
+            format: 'Y-m-d',
+            width: 120,
+            value: '<?php echo date('Y-m-01')?>',
+            id: 'search_date_from',
+            emptyText: '日期从...'
+        }, {
+            xtype: 'datefield',
+            format: 'Y-m-d',
+            width: 120,
+            value: '<?php echo date('Y-m-t')?>',
+            id: 'search_date_to',
+            emptyText: '日期至...'
+        }, {
+            xtype: 'splitbutton',
+            text: '查询',
+            iconCls: 'icon-search',
+            handler: function(){
+            	if(Ext.getCmp('search_date_from').isValid() && Ext.getCmp('search_date_to').isValid()){
+            		mailStore.loadPage(1);
+            	}
+            },
+            menu: [{
+            	text: '导出',
+                iconCls: 'icon-export',
+                handler: function(){
+                	window.open(homePath+'/public/admin/maillog/getdata/option/csv');
+                }
+            }]
+        }, {
+            text: '导出',
+            iconCls: 'icon-export',
+            handler: function(){
+                Ext.MessageBox.alert('提示', '导出！');
+            }
+        }],
+        columns: [{
+            xtype: 'rownumberer'
+        }, {
+            text: 'ID',
+            hidden: true,
+            locked: true,
+            align: 'center',
+            dataIndex: 'id',
+            width: 50
+        }, {
+            text: '添加日期',
+            locked: true,
+            align: 'center',
+            dataIndex: 'add_date',
+            width: 100
+        }, {
+            text: '用户',
+            locked: true,
+            align: 'center',
+            dataIndex: 'user',
+            width: 150
+        }, {
+            text: '类别',
+            locked: true,
+            align: 'center',
+            dataIndex: 'type',
+            width: 100
+        }, {
+            text: '发送状态',
+            locked: true,
+            align: 'center',
+            dataIndex: 'state',
+            renderer: function(value, metaData, record, colIndex, store, view) {
+                if(value == 1){
+                    return '<img src="'+homePath+'/public/images/icons/ok.png"></img>';
+                }else{
+                	return '<img src="'+homePath+'/public/images/icons/cross.gif"></img>';
+                }
+            },
+            width: 80
+        }, {
+            text: '主题',
+            dataIndex: 'subject',
+            renderer: titleRender,
+            width: 200
+        }, {
+            text: '收件人',
+            dataIndex: 'to',
+            renderer: titleRender,
+            width: 200
+        }, {
+            text: '抄送',
+            dataIndex: 'cc',
+            renderer: titleRender,
+            width: 200
+        }, {
+            text: '附件',
+            dataIndex: 'attachment',
+            width: 300
+        }, {
+            text: '发送时间',
+            dataIndex: 'send_time',
+            renderer: titleRender,
+            width: 150
+        }, {
+            text: '错误信息',
+            dataIndex: 'err_info',
+            renderer: titleRender,
+            width: 200
+        }, {
+            text: 'Key',
+            dataIndex: 'key',
+            width: 150
+        }, {
+            text: '备注',
+            dataIndex: 'remark',
+            renderer: titleRender,
+            width: 300
+        }],
+        bbar: Ext.create('Ext.PagingToolbar', {
+        	border: 0,
+            store: mailStore,
+            displayInfo: true,
+            displayMsg: '显示 {0} - {1} 共 {2}',
+            emptyMsg: "没有数据"
+        })
+    });
+
+    Ext.QuickTips.init();
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+    
+    Ext.create('Ext.Viewport', {
+        layout: 'border',
+        items: [{
+            region: 'center',
+            border: 0,
+            layout: 'fit',
+            plain: true,
+            items: [mailGrid]
+        }]
+    });
+});
+</script>
+</head>
+<body>
+</body>
+</html>

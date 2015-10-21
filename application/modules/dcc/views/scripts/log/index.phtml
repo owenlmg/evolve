@@ -1,0 +1,253 @@
+<html>
+    <head>
+        <?php echo SYS_HEAD; ?>
+        <?php
+        $user_session = new Zend_Session_Namespace('user');
+        $user = $user_session->user_info['employee_id'];
+        ?>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/common.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/comboxtree.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/downloadFile.js"></script>
+        <script type="text/javascript">
+            Ext.require([
+                'Ext.data.*',
+                'Ext.grid.*',
+                'Ext.form.*',
+                'Ext.window.MessageBox'
+            ]);
+
+            Ext.onReady(function() {
+                Ext.QuickTips.init();
+
+                Ext.define('record', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [{
+                            name: "id"
+                        }, {
+                            name: "type"
+                        }, {
+                            name: "table_name"
+                        }, {
+                            name: "table_id"
+                        }, {
+                            name: "handler"
+                        }, {
+                            name: "action"
+                        }, {
+                            name: "result"
+                        }, {
+                            name: "ip"
+                        }, {
+                            name: "remark"
+                        }, {
+                            name: "name"
+                        }, {
+                            name: "description"
+                        }, {
+                            name: "path"
+                        }, {
+                            name: "view_path"
+                        }, {
+                            name: "handle_time",
+                            type: 'date',
+                            dateFormat: 'timestamp'
+                        }, {
+                            name: "source"
+                        }]
+                });
+
+                var recordStore = Ext.create('Ext.data.Store', {
+                    pageSize: 100,
+                    model: 'record',
+                    proxy: {
+                        type: 'ajax',
+                        reader: {
+                            root: 'topics',
+                            totalProperty: 'totalCount'
+                        },
+                        url: '<?php echo HOME_PATH; ?>/public/dcc/log/getlist'
+                    },
+                    autoLoad: true
+                });
+
+
+                var grid = Ext.create('Ext.grid.Panel', {
+                    store: recordStore,
+                    border:0,
+                    selType: 'checkboxmodel',
+                    columnLines: true,
+                    viewConfig: {
+                        stripeRows: false
+                    },
+                    tbar: [{
+                            xtype: 'textfield',
+                            id: 'search_name',
+                            width: 120,
+                            emptyText: '文件名...',
+                            listeners: {
+                            	specialKey :function(field,e){
+                                    if (e.getKey() == Ext.EventObject.ENTER){
+                                    	recordStore.loadPage(1);
+                                    }
+                                }
+                            }
+                        }, {
+                            xtype: 'textfield',
+                            id: 'search_description',
+                            width: 120,
+                            emptyText: '文件描述...',
+                            listeners: {
+                            	specialKey :function(field,e){
+                                    if (e.getKey() == Ext.EventObject.ENTER){
+                                    	recordStore.loadPage(1);
+                                    }
+                                }
+                            }
+                        }, {
+                            xtype: 'datefield',
+                            format: 'Y-m-d',
+                            width: 100,
+                            id: 'search_date_from',
+                            emptyText: '日期从...'
+                        }, {
+                            xtype: 'datefield',
+                            format: 'Y-m-j',
+                            width: 100,
+                            id: 'search_date_to',
+                            emptyText: '日期至...'
+                        }, {
+                            xtype: 'combobox',
+                            id: 'search_type',
+                            emptyText: '操作类型...',
+                            width: 100,
+                            store: [['下载', '下载'], ['在线浏览', '在线浏览']]
+                        }, {
+                            xtype: 'textfield',
+                            id: 'search_handle_user',
+                            width: 120,
+                            emptyText: '操作者...'
+                        }, {
+                            text: '查询',
+                            iconCls: 'icon-search',
+                            handler: function() {
+                                var search_name = Ext.getCmp('search_name').getValue();
+                                var search_description = Ext.getCmp('search_description').getValue();
+                                var search_date_from = Ext.getCmp('search_date_from').getValue();
+                                var search_date_to = Ext.getCmp('search_date_to').getValue();
+                                var search_type = Ext.getCmp('search_type').getValue();
+                                var search_handle_user = Ext.getCmp('search_handle_user').getValue();
+                                recordStore.baseParams = {
+                                    search_name: search_name,
+                                    search_description: search_description,
+                                    search_date_from: search_date_from,
+                                    search_date_to: search_date_to,
+                                    search_type: search_type,
+                                    search_handle_user: search_handle_user
+                                };
+                                recordStore.loadPage(1);
+                            }
+                        }],
+                    columns: [{
+                            xtype: 'rownumberer'
+                        }, {
+                            text: 'ID',
+                            flex: .5,
+                            hidden: true,
+                            dataIndex: 'id'
+                        }, {
+                            text: '文件名',
+                            flex: 1.5,
+                            sortable: true,
+                            dataIndex: 'name',
+                            renderer: function(val, p, record) {
+//                                var id = record.data.table_id;
+//                                if (record.data.view_path) {
+//                                    url = "<?php echo HOME_PATH; ?>/public/dcc/online/?id=" + id;
+//                                    val = "<a href='javascript:void(0)' onclick='javascript:window.open(\"" + url + "\")'>" + val + "</a>";
+//                                }
+//
+//                                icon = "";
+//                                if (record.data.path) {
+//                                    icon += '<img src="<?php echo HOME_PATH; ?>/public/images/icons/download.png" onclick="download(' + id + ', \'文件日志\')" style="cursor:pointer;"></img>';
+//                                }
+//
+//                                return icon + " " + val;
+                                  return val;
+                            }
+                        }, {
+                            text: '文件描述',
+                            flex: 1.5,
+                            sortable: true,
+                            dataIndex: 'description',
+                            renderer: showTitle
+                        }, {
+                            text: '用户',
+                            flex: 0.8,
+                            sortable: true,
+                            dataIndex: 'handler'
+                        }, {
+                            text: '来源模块',
+                            flex: 1.5,
+                            dataIndex: 'source',
+                            renderer: function(value) {
+                            	if(value == "undefined") {
+                            		return "";
+                            	}
+                            	return value;
+                            }
+                        }, {
+                            text: '操作类型',
+                            flex: 1.5,
+                            dataIndex: 'action'
+                        }, {
+                            text: '操作时间',
+                            flex: 1,
+                            dataIndex: 'handle_time',
+                            renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+                        }],
+                    // paging bar on the bottom
+                    bbar: Ext.create('Ext.PagingToolbar', {
+                        store: recordStore,
+                        displayInfo: true,
+                        displayMsg: '显示 {0} - {1} 共 {2}',
+                        emptyMsg: "没有数据"
+                    })
+                });
+
+                recordStore.on("beforeload", function() {
+                    var search_name = Ext.getCmp('search_name').getValue();
+                    var search_description = Ext.getCmp('search_description').getValue();
+                    var search_date_from = Ext.getCmp('search_date_from').getValue();
+                    var search_date_to = Ext.getCmp('search_date_to').getValue();
+                    var search_type = Ext.getCmp('search_type').getValue();
+                    var search_handle_user = Ext.getCmp('search_handle_user').getValue();
+                    Ext.apply(recordStore.proxy.extraParams, {
+                        search_name: search_name,
+                        search_description: search_description,
+                        search_date_from: search_date_from,
+                        search_date_to: search_date_to,
+                        search_type: search_type,
+                        search_handle_user: search_handle_user
+                    });
+                });
+
+
+                Ext.create('Ext.container.Viewport', {
+                    layout: 'border',
+                    border:0,
+                    rtl: true,
+                    items: [{
+                            region: 'center',
+                            border:0,
+                            layout: 'fit',
+                            plain: true,
+                            items: [grid]
+                        }]
+                });
+            });
+        </script>
+    </head>
+    <body>
+    </body>
+</html>

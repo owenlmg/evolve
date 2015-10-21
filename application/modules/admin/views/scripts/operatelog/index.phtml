@@ -1,0 +1,201 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+Ext.require([
+    'Ext.*'
+]);
+
+Ext.onReady(function() {
+    Ext.define('Selection', {
+        extend: 'Ext.data.Model',
+        fields: ['type']
+    });
+
+    var operateTypeStore = Ext.create('Ext.data.Store', {
+        model: 'Selection',
+        proxy: {
+            type: 'ajax',
+            reader: 'json',
+            url: homePath+'/public/admin/operatelog/gettype'
+        },
+        autoLoad: true
+    });
+    
+    // 数据模型
+    Ext.define('Operate', {
+        extend: 'Ext.data.Model',
+        fields: [{name: "id"}, 
+                 {name: "user"}, 
+                 {name: "operate"}, 
+                 {name: "target"}, 
+                 {name: "time", type: 'date', dateFormat: 'timestamp'}, 
+                 {name: "ip"}, 
+                 {name: "computer_name"}, 
+                 {name: "remark"}]
+    });
+    
+    // 数据源
+    var operateStore = Ext.create('Ext.data.ArrayStore', {
+        model: 'Operate',
+        pageSize: 50,
+        remoteSort: true,
+        proxy: {
+            type: 'ajax',
+            reader: {
+                type: 'json',
+                root: 'rows',
+                totalProperty: 'total'
+            },
+            url: homePath+'/public/admin/operatelog/getdata'
+        },
+        listeners: {
+        	beforeload: function(){
+        		var key = Ext.getCmp('search_key').getValue();
+                var search_date_from = Ext.Date.format(Ext.getCmp('search_date_from').getValue(), 'Y-m-d');
+                var search_date_to = Ext.Date.format(Ext.getCmp('search_date_to').getValue(), 'Y-m-d');
+                var search_operate = Ext.JSON.encode(Ext.getCmp('search_operate').getValue());
+                
+        		Ext.apply(operateStore.proxy.extraParams, {
+        			key: key,
+        			date_from: search_date_from,
+        			date_to: search_date_to,
+        			operate: search_operate
+                });
+            }
+        }
+    });
+    
+    Ext.tip.QuickTipManager.init();
+    
+    // 操作列表
+    var operateGrid = Ext.create('Ext.grid.Panel', {
+        store: operateStore,
+        border: 0,
+        columnLines: true,
+        tbar: [{
+            xtype: 'combobox',
+            id: 'search_operate',
+            emptyText: '操作类别...',
+            displayField: 'type',
+            valueField: 'type',
+            width: 120,
+            store: operateTypeStore,
+            queryMode: 'local',
+            editable: false,
+            multiSelect: true
+        }, {
+            xtype: 'textfield',
+            id: 'search_key',
+            width: 150,
+            emptyText: '工号/中文名/英文名...',
+            listeners: {
+            	specialKey :function(field,e){
+                    if (e.getKey() == Ext.EventObject.ENTER){
+                    	operateStore.loadPage(1);
+                    }
+                }
+            }
+        }, {
+            xtype: 'datefield',
+            format: 'Y-m-d',
+            width: 120,
+            value: '<?php echo date('Y-m-01')?>',
+            id: 'search_date_from',
+            emptyText: '操作日期从...'
+        }, {
+            xtype: 'datefield',
+            format: 'Y-m-d',
+            width: 120,
+            value: '<?php echo date('Y-m-t')?>',
+            id: 'search_date_to',
+            emptyText: '操作日期至...'
+        }, {
+            xtype: 'splitbutton',
+            text: '查询',
+            iconCls: 'icon-search',
+            handler: function(){
+            	if(Ext.getCmp('search_date_from').isValid() && Ext.getCmp('search_date_to').isValid()){
+         		   operateStore.loadPage(1);
+            	}
+            },
+            menu: [{
+            	text: '导出',
+                iconCls: 'icon-export',
+                handler: function(){
+                	window.open(homePath+'/public/admin/operatelog/getdata/option/csv');
+                }
+            }]
+        }, {
+            text: '导出',
+            iconCls: 'icon-export',
+            handler: function(){
+                Ext.MessageBox.alert('提示', '导出！');
+            }
+        }],
+        columns: [{
+            xtype: 'rownumberer'
+        }, {
+            text: '时间',
+            align: 'center',
+            dataIndex: 'time',
+            renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+            flex: 1.6
+        }, {
+            text: '用户',
+            align: 'center',
+            dataIndex: 'user',
+            flex: 1.5
+        }, {
+            text: '操作',
+            align: 'center',
+            dataIndex: 'operate',
+            flex: 1
+        }, {
+            text: '目标地址',
+            dataIndex: 'target',
+            flex: 1.5
+        }, {
+            text: 'IP',
+            align: 'center',
+            dataIndex: 'ip',
+            flex: 1.5
+        }, {
+            text: '计算机名',
+            dataIndex: 'computer_name',
+            flex: 1.5
+        }, {
+            text: '备注',
+            dataIndex: 'remark',
+            flex: 3
+        }],
+        bbar: Ext.create('Ext.PagingToolbar', {
+        	border: 0,
+            store: operateStore,
+            displayInfo: true,
+            displayMsg: '显示 {0} - {1} 共 {2}',
+            emptyMsg: "没有数据"
+        })
+    });
+
+    Ext.QuickTips.init();
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+    
+    Ext.create('Ext.Viewport', {
+    	border: 0,
+        layout: 'border',
+        items: [{
+            region: 'center',
+            border: 0,
+            layout: 'fit',
+            plain: true,
+            items: [operateGrid]
+        }]
+    });
+});
+</script>
+</head>
+<body>
+</body>
+</html>

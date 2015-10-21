@@ -1,0 +1,468 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <?php echo SYS_HEAD; ?>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/common.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/models.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/createField.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/FileView.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/downloadFile.js"></script>
+        <style type="text/css">
+            .x-fieldset{border:1px solid #B5B8C8;display:block;}
+            .x-fieldset-none{border:0;display:block;padding:0;}
+        </style>
+        <script type="text/javascript">
+            Ext.require([
+                'Ext.data.*',
+                'Ext.grid.*',
+                'Ext.form.*'
+            ]);
+
+            // 扩展display，使其支持dataFormat和numberFormat
+            Ext.override(Ext.form.field.Display, {
+                getValue: function() {
+                    return this.value;
+                },
+                setValue: function(v) {
+                    this.value = v;
+                    this.setRawValue(this.formatValue(v));
+                    return this;
+                },
+                formatValue: function(v) {
+                    if (this.dateFormat && Ext.isDate(v)) {
+                        return Ext.util.Format.date(v, this.dateFormat);
+                    }
+                    if (this.numberFormat && typeof v === 'number') {
+                        return Ext.util.Format.number(v, this.numberFormat);
+                    }
+                    return v;
+                }
+            });
+
+            Ext.onReady(function() {
+                Ext.QuickTips.init();
+
+                var filesStore = Ext.create('Ext.data.Store', {
+                    pageSize: 100,
+                    model: 'files',
+                    //        remoteSort: true,
+                    proxy: {
+                        type: 'ajax',
+                        reader: {
+                            root: 'topics',
+                            totalProperty: 'totalCount'
+                        },
+                        url: '<?php echo HOME_PATH; ?>/public/dcc/files/getfiles'
+                    },
+                    autoLoad: false
+                });
+
+                var categoryStore = Ext.create('Ext.data.Store', {
+                    model: 'codemaster',
+                    proxy: {
+                        type: 'ajax',
+                        reader: 'json',
+                        url: '<?php echo HOME_PATH; ?>/public/dcc/type/getcodemaster/type/category'
+                    },
+                    autoLoad: true
+                });
+
+                // 查看详情
+                var viewForm = new Ext.form.Panel({
+                    width: 800,
+                    border:0,
+                    bodyPadding: 5,
+                    layout: 'form',
+                    autoScroll: true,
+                    waitMsgTarget: true,
+                    fieldDefaults: {
+                        labelAlign: 'right',
+                        labelWidth: 85,
+                        msgTarget: 'side'
+                    },
+                    items: [{
+                            xtype: 'fieldset',
+                            title: '基本信息',
+                            baseCls: 'x-fieldset',
+                            items: [{
+                                    xtype: 'textfield',
+                                    hidden: true,
+                                    name: 'id'
+                                }, {
+                                    xtype: 'displayfield',
+                                    fieldLabel: '文件编码',
+                                    editable: false,
+                                    name: 'code',
+                                    width: 100
+                                }, {
+                                    id: 'fileField',
+                                    baseCls: 'x-fieldset-none',
+                                    xtype: 'fieldset',
+                                    items: []
+                                }, {
+                                    xtype: 'displayfield',
+                                    fieldLabel: '描述',
+                                    name: 'description'
+                                }, {
+                                    xtype: 'displayfield',
+                                    fieldLabel: '备注',
+                                    name: 'remark'
+                                }, {
+                                    xtype: 'displayfield',
+                                    fieldLabel: '关键字',
+                                    name: 'tag'
+                                }, {
+                                    id: 'baseinfo',
+                                    baseCls: 'x-fieldset-none',
+                                    xtype: 'fieldset',
+                                    items: []
+                                }]
+                        }, {
+                            id: 'reviewForm_ownerField',
+                            xtype: 'fieldset',
+                            title: '自定义信息',
+                            hidden: true,
+                            items: []
+                        }, {
+                            id: 'reviewField',
+                            xtype: 'fieldset',
+                            title: '审批信息',
+                            hidden: true,
+                            items: []
+                        }]
+                });
+
+                var winView = new Ext.Window({
+                    xtype: "window",
+                    border:0,
+                    height: 500,
+                    title: '查看记录',
+                    layout: 'fit',
+                    closable: true,
+                    closeAction: 'hide',
+                    items: [viewForm]
+                });
+
+                var viewAction = function(codePanel) {
+                    var selection = codePanel.getSelectionModel().getSelection();
+                    if (selection.length <= 0) {
+                        Ext.MessageBox.alert('请注意', '请您选择要查看的记录！');
+                    } else if (selection.length >= 2) {
+                        Ext.MessageBox.alert('请注意', '不能同时查看多个数据！');
+                    } else {
+                        var grid = selection[0];
+                        var fileView = lib.dcc.FileView({grid: grid, model: 'files'});
+                        fileView.show();
+                    }
+                };
+
+                var codePanel = Ext.create('Ext.grid.Panel', {
+                    store: filesStore,
+                    selType: 'checkboxmodel',
+                    border:0,
+                    stateful: true, //true为启用cookie保存grid状态
+                    stateId: "dcc-mine-index-cookie-grid", //这将被用于生成cookie的id
+                    columnLines: true,
+                    viewConfig: {
+                        stripeRows: false, // 取消偶数行背景色
+                        getRowClass: function(record) {
+                            if ("Obsolete" == record.get('state')) {
+                                // 当分类启用状态为false时，设置背景色
+                                return 'dark-row';
+                            }
+                        }
+                    },
+                    tbar: [{
+                            xtype: 'textfield',
+                            id: 'search_tag',
+                            width: 200,
+                            emptyText: '模糊查询，多个关键字以空格隔开',
+                            listeners: {
+                            	specialKey :function(field,e){
+                                    if (e.getKey() == Ext.EventObject.ENTER){
+                                    	filesStore.loadPage(1);
+                                    }
+                                }
+                            }
+                        }, {
+                            xtype: 'datefield',
+                            format: 'Y-m-d',
+                            width: 100,
+                            id: 'search_archive_date_from',
+                            emptyText: '归档日期从...'
+                        }, {
+                            xtype: 'datefield',
+                            format: 'Y-m-j',
+                            width: 100,
+                            id: 'search_archive_date_to',
+                            emptyText: '归档日期至...'
+                        }, {
+                            xtype: 'combobox',
+                            emptyText: '文件类别...',
+                            id: 'search_category',
+                            name: 'search_category',
+                            editable: true,
+                            displayField: 'text',
+                            valueField: 'id',
+                            triggerAction: 'all',
+                            lazyRender: true,
+                            store: categoryStore,
+                            queryMode: 'local',
+                            width: 100
+                        }, {
+                            xtype: 'combobox',
+                            id: 'search_state',
+                            emptyText: '状态...',
+                            width: 100,
+                            store: [['Active', 'Active'], ['Obsolete', 'Obsolete']]
+                        }, {
+                            text: '查询',
+                            iconCls: 'icon-search',
+                            handler: function() {
+                                var search_tag = Ext.getCmp('search_tag').getValue();
+                                var search_state = Ext.getCmp('search_state').getValue();
+                                var search_archive_date_from = Ext.getCmp('search_archive_date_from').getValue();
+                                var search_archive_date_to = Ext.getCmp('search_archive_date_to').getValue();
+                                var search_category = Ext.getCmp('search_category').getValue();
+
+                                filesStore.baseParams = {
+                                    search_tag: search_tag,
+                                    search_state: search_state,
+                                    search_archive_date_from: search_archive_date_from,
+                                    search_archive_date_to: search_archive_date_to,
+                                    search_category: search_category
+                                }
+                                filesStore.loadPage(1);
+                            }
+                        }, {
+                            text: '导出',
+                            hidden: true,
+                            handler: function() {
+                                var datas = Array();
+                                var rows = Array();
+                                filesStore.each(function(d) {
+                                    rows = [d.data.code, d.data.ver, d.data.name, d.data.state, d.data.key, d.data.description, d.data.reason, d.data.remark, d.data.archive_time, d.data.creater, d.data.create_time];
+                                    datas.push(rows);
+                                })
+                                var store = Ext.JSON.encode(datas);
+//                                window.open(getRootPath() + '/public/dcc/download/download/id/' + id + '/source/' + source);
+                                Ext.Msg.wait('加载中，请稍后...', '提示');
+                                Ext.Ajax.request({
+                                    url: '<?php echo HOME_PATH; ?>/public/dcc/download/exportcsv',
+                                    params: {data: store},
+                                    method: 'POST',
+                                    success: function(response, options) {
+                                        var url = '<?php echo HOME_PATH; ?>/public/dcc/download/downcsv/path/' + response.responseText;
+                                        Ext.Msg.hide();
+                                        window.open(url);
+                                    }
+                                });
+                            }
+                        }, {
+                            text: '批量下载',
+                            hidden: true,
+                            handler: function() {
+                            	var selection = codePanel.getView().getSelectionModel().getSelection();
+                                if (selection.length <= 0) {
+                                    Ext.MessageBox.alert('请注意', '请您选择要编辑的记录！');
+                                } else {
+                                	var ids = new Array();
+                                    for (var i = 0; i < selection.length; i++) {
+                                           ids.push(selection[i].data.id);
+                                    }
+                                    var url = '<?php echo HOME_PATH; ?>/public/dcc/files/downloadall/ids/' + ids.join(',');
+                                    window.open(url);
+                                }
+                            }
+                        }],
+                    columns: [{
+                            xtype: 'rownumberer'
+                        }, {
+                            text: 'ID',
+                            flex: .5,
+                            hidden: true,
+                            dataIndex: 'id'
+                        }, {
+                            text: '文件号',
+                            width: 130,
+                            locked: true,
+                            sortable: true,
+                            dataIndex: 'code'
+                        }, {
+                            text: '版本',
+                            width: 60,
+                            sortable: true,
+                            dataIndex: 'ver',
+                            renderer: function(val) {
+                                if (val)
+                                    return "V" + val;
+                            }
+                        }, {
+                            text: '文件名称',
+                            width: 260,
+                            sortable: true,
+                            dataIndex: 'name',
+                            renderer: function(val, p, record) {
+                        	    if(!val) return "";
+                                var tip = val.replace(/,/g, '<br />');
+                                p.tdAttr = 'data-qtip="' + tip + '"';
+                                return val;
+                                var id = record.data.id;
+                                icon = "";
+                                if (record.data.path) {
+                                    icon += '<img src="<?php echo HOME_PATH; ?>/public/images/icons/download.png" onclick="download(' + id + ', \'文件日志\')" style="cursor:pointer;"></img>';
+                                }
+                                if (checkFileType(val.substr(1+val.lastIndexOf(".")))) {
+                                    url = "<?php echo HOME_PATH; ?>/public/dcc/online/?id=" + id;
+                                    icon += '  <img src="<?php echo HOME_PATH; ?>/public/images/icons/text-preview.png" onclick="javascript:window.open(\'' + url + '\')" style="cursor:pointer;"></img>';
+                                } else {
+                                	icon += ' <img src="<?php echo HOME_PATH; ?>/public/images/icons/text-preview-gray.png">'
+                                }
+                                return icon + " " + val;
+                            }
+                        }, {
+                            text: '状态',
+                            width: 80,
+                            dataIndex: 'state',
+                            renderer: function(value, p, record) {
+                                if ("Reviewing" == value) {
+                                    return "审核中";
+                                }
+                                if ("Return" == value) {
+                                    return "退回";
+                                }
+                                if ("Active" == value) {
+                                    return "已归档";
+                                }
+                                if("Obsolete" === value) {
+                                	return "旧版作废";
+                                }
+                                return value;
+                            }
+                        }, {
+                            text: '文件类别',
+                            width: 180,
+                            dataIndex: 'category_name',
+                            renderer: showTitle
+                        }, {
+                            text: '分类名称',
+                            width: 180,
+                            dataIndex: 'type_name',
+                            renderer: showTitle
+                        }, {
+                            text: '产品型号',
+                            width: 100,
+                            dataIndex: 'project_name',
+                            renderer: showTitle
+                        }, {
+                            text: '项目信息',
+                            width: 140,
+                            hidden: true,
+                            dataIndex: 'project_info',
+                            renderer: showTitle
+                        }, {
+                            text: '关键字',
+                            width: 140,
+                            hidden: true,
+                            dataIndex: 'tag',
+                            renderer: showTitle
+                        }, {
+                            text: '文件描述',
+                            width: 180,
+                            dataIndex: 'description',
+                            renderer: showTitle
+                        }, {
+                            text: '更改原因类型',
+                            width: 160,
+                            dataIndex: 'reason_type_name',
+                            renderer: showTitle
+                        }, {
+                            text: '更改原因描述',
+                            width: 140,
+                            dataIndex: 'reason',
+                            renderer: showTitle
+                        }, {
+                            text: '备注',
+                            width: 120,
+                            dataIndex: 'remark',
+                            renderer: showTitle
+                        }, {
+                            text: '归档时间',
+                            width: 120,
+                            dataIndex: 'archive_time',
+                            renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+                        }, {
+                            text: '申请人',
+                            width: 100,
+                            dataIndex: 'creater'
+                        }, {
+                            text: '申请时间',
+                            width: 100,
+                            dataIndex: 'create_time',
+                            renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+                        }],
+                    listeners: {
+                        itemdblclick: function(grid) {
+                            viewAction(grid);
+                        }
+                    },
+                    // paging bar on the bottom
+                    bbar: Ext.create('Ext.PagingToolbar', {
+                        store: filesStore,
+                        displayInfo: true,
+                        displayMsg: '显示 {0} - {1} 共 {2}',
+                        emptyMsg: "没有数据",
+                        items: [{
+                            xtype: 'numberfield',
+                            id: 'page_size_set',
+                            value: 50,
+                            width: 150,
+                            hideTrigger: true,
+                            labelAlign: 'right',
+                            fieldLabel: '每页显示',
+                            listeners: {
+                            	specialKey :function(field,e){
+                                    if (e.getKey() == Ext.EventObject.ENTER){
+                                        var thisStore = this.up('pagingtoolbar').getStore();
+                                        thisStore.pageSize = Ext.getCmp('page_size_set').getValue();
+                                        thisStore.loadPage(1);
+                                    }
+                                }
+                            }
+                        }]
+                    })
+                });
+
+                filesStore.on("beforeload", function() {
+                    var search_tag = Ext.getCmp('search_tag').getValue();
+                    var search_state = Ext.getCmp('search_state').getValue();
+                    var search_archive_date_from = Ext.getCmp('search_archive_date_from').getValue();
+                    var search_archive_date_to = Ext.getCmp('search_archive_date_to').getValue();
+                    var search_category = Ext.getCmp('search_category').getValue();
+
+                    Ext.apply(filesStore.proxy.extraParams, {
+                        search_tag: search_tag,
+                        search_state: search_state,
+                        search_archive_date_from: search_archive_date_from,
+                        search_archive_date_to: search_archive_date_to,
+                        search_category: search_category
+                    });
+                });
+
+                Ext.create('Ext.container.Viewport', {
+                    layout: 'border',
+                    border:0,
+                    rtl: true,
+                    items: [{
+                            region: 'center',
+                            border:0,
+                            layout: 'fit',
+                            plain: true,
+                            items: [codePanel]
+                        }]
+                });
+            });
+        </script>
+    </head>
+    <body></body>
+</html>

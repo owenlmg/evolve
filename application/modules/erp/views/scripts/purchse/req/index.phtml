@@ -1,0 +1,918 @@
+<!doctype html><html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+var user_id = <?php echo $this->user_id?>;
+var typeEditDisable = <?php echo $this->typeEditDisable;?>;
+var defaultCurrency = '<?php echo $this->defaultCurrency;?>';
+var accessViewOrder = '<?php echo $this->accessViewOrder;?>';
+
+Ext.require([
+     'Ext.*',
+     'Ext.grid.*'
+]);
+
+Ext.define('Selection', {
+     extend: 'Ext.data.Model',
+     fields: [{name: 'id', type: 'int'},
+                 {name: 'currency_id', type: 'int'},
+                 {name: 'currency'},
+                 {name: 'mpq', type: 'int'},
+                 {name: 'moq', type: 'int'},
+                 {name: 'unit'},
+                 {name: 'code'},
+                 {name: 'name'},
+                 {name: 'symbol'},
+                 {name: 'text'},
+                 {name: 'rate'},
+                 {name: 'dept_id'},
+                 {name: 'description'}]
+});
+
+var employeeListStore = Ext.create('Ext.data.Store', {
+     model: 'Selection',
+     proxy: {
+          type: 'ajax',
+          reader: 'json',
+          url: homePath+'/public/admin/account/getuserlist'
+     },
+     autoLoad: true
+});
+
+// 部门
+var deptStore = Ext.create('Ext.data.Store', {
+     model: 'Selection',
+     proxy: {
+          type: 'ajax',
+          reader: 'json',
+          url: homePath+'/public/hra/dept/getdept/option/list'
+     },
+     autoLoad: true
+});
+
+// 有效部门
+var activeDeptStore = Ext.create('Ext.data.Store', {
+     model: 'Selection',
+     proxy: {
+          type: 'ajax',
+          reader: 'json',
+          url: homePath+'/public/hra/dept/getdept/option/list/active/1'
+     },
+     autoLoad: true
+});
+
+// 流程列表
+var flowStore = Ext.create('Ext.data.Store', {
+     model: 'Selection',
+     proxy: {
+          type: 'ajax',
+          reader: 'json',
+          url: homePath+'/public/erp/purchse_req/getflowlist'
+     },
+     autoLoad: true
+});
+
+// 物料代码
+var codeStore = Ext.create('Ext.data.Store', {
+     model: 'Selection',
+     proxy: {
+         type: 'ajax',
+         reader: 'json',
+         url: homePath+'/public/erp/warehouse_pricelist/getcodeList/option/list'
+     },
+     autoLoad: true
+});
+
+//币种
+var currencyStore = Ext.create('Ext.data.Store', {
+     model: 'Selection',
+     proxy: {
+         type: 'ajax',
+         reader: 'json',
+         url: homePath+'/public/erp/setting_currency/getcurrency/option/list'
+     },
+     autoLoad: true
+});
+
+//数据模型
+Ext.define('Req', {
+     extend: 'Ext.data.Model',
+     fields: [{name: "id"},
+                 {name: "active"},
+                 {name: "submit_type"},
+                 {name: "transfer_id"},
+                 {name: "state"},
+                 {name: "review_state"},
+                 {name: "current_step"},
+                 {name: "last_step"},
+                 {name: "next_step"},
+                 {name: "to_finish"},
+                 {name: "can_review"},
+                 {name: "is_reviewer"},
+                 {name: "number"},
+                 {name: "dept"},
+                 {name: "dept_id", type: "int"},
+                 {name: "type"},
+                 {name: "type_id", type: "int"},
+                 {name: "total"},
+                 {name: "reason"},
+                 {name: "transfer_type"},
+                 {name: "transfer_description"},
+                 {name: "reviewer"},
+                 {name: "review_info"},
+                 {name: "review_info_tip"},
+                 {name: "remark"},
+                 {name: "release_time",type: 'date',dateFormat: 'timestamp'},
+                 {name: "create_time",type: 'date',dateFormat: 'timestamp'},
+                 {name: "update_time",type: 'date',dateFormat: 'timestamp'},
+                 {name: "approver"},
+                 {name: "apply_user", type: 'int'},
+                 {name: "apply_user_name"},
+                 {name: "create_user"},
+                 {name: "creater"},
+                 {name: "updater"}]
+});
+
+// 数据源
+var reqStore = Ext.create('Ext.data.Store', {
+     model: 'Req',
+     pageSize: 50,
+     proxy: {
+          type: 'ajax',
+          reader: {
+                type: 'json',
+                root: 'rows',
+                totalProperty: 'total'
+          },
+          url: homePath+'/public/erp/purchse_req/getreq'
+     },
+     listeners: {
+         beforeload: loadReq
+     }
+});
+
+function loadReq(){
+    var key = Ext.getCmp('search_key').getValue();
+    var applier = Ext.getCmp('search_applier').getValue();
+    var active = Ext.JSON.encode(Ext.getCmp('search_active').getValue());
+    var state = Ext.JSON.encode(Ext.getCmp('search_state').getValue());
+    var type = Ext.JSON.encode(Ext.getCmp('search_type').getValue());
+    var dept = Ext.JSON.encode(Ext.getCmp('search_dept').getValue());
+    var date_from = Ext.Date.format(Ext.getCmp('search_date_from').getValue(), 'Y-m-d');
+    var date_to = Ext.Date.format(Ext.getCmp('search_date_to').getValue(), 'Y-m-d');
+     
+    Ext.apply(reqStore.proxy.extraParams, {
+        key: key,
+        applier: applier,
+        active: active,
+        state: state,
+        date_from: date_from,
+        date_to: date_to,
+        type: type,
+        dept: dept
+     });
+};
+
+var deptRender = function (val){
+    if(val > 0){
+        index = deptStore.findExact('id',val); 
+          if (index != -1){
+                rs = deptStore.getAt(index).data; 
+                return rs.name; 
+          }
+          return val;
+    }else{
+        return '无';
+    }
+};
+
+var flowRender = function (val){
+    if(val > 0){
+        index = flowStore.findExact('id',val); 
+          if (index != -1){
+                rs = flowStore.getAt(index).data; 
+                return rs.name; 
+          }
+          return val;
+    }else{
+        return '无';
+    }
+};
+
+var activeRender = function(value, metaData, record, colIndex, store, view) {
+    if(value == 1){
+         return '<img src="'+homePath+'/public/images/icons/ok.png"></img>';
+    }else{
+         return '<img src="'+homePath+'/public/images/icons/cross.gif"></img>';
+    }
+};
+
+var required = '<span style="color:red;font-weight:bold" data-qtip="Required">*</span>';
+
+var reviewInfoWin = Ext.create('Ext.window.Window', {
+     title: '审核日志',
+     border: 0,
+     width: 400,
+     modal: true,
+     constrain: true,
+     id: 'reviewInfoWin',
+     layout: 'fit',
+     maximizable: true,
+     resizable: true,
+     closeAction: 'hide',
+     resizable: true,
+     padding: 10,
+     items: [{
+          xtype: 'displayfield',
+          id: 'reviewInfoView'
+     }]
+});
+
+var transferInfoWin = Ext.create('Ext.window.Window', {
+     title: '变更日志',
+     border: 0,
+     width: 1000,
+     height: 400,
+     maxHeight: 500,
+     modal: true,
+     constrain: true,
+     id: 'transferInfoWin',
+     layout: 'fit',
+     maximizable: true,
+     resizable: true,
+     closeAction: 'hide',
+     resizable: true,
+     padding: 10
+});
+
+// 查看审核日志
+function viewReviewInfo(info)
+{
+    reviewInfoWin.show();
+    var regS = new RegExp(">","gi");
+    Ext.getCmp('reviewInfoView').setValue(info.replace(regS, '<br>'));
+}
+
+// 查看变更日志
+function viewTransferInfo(id)
+{
+    transferInfoWin.update('<iframe style="height:100%;width:100%;border:none;" src="'+homePath + '/public/erp/purchse_req/gettransferinfo/id/' + id + '"></iframe>');
+    
+    transferInfoWin.show();
+}
+
+var moneyRenderer = function(value, meta){
+    return Ext.util.Format.currency(value, '￥', 2);
+}
+
+var activeRender = function(value, metaData, record, colIndex, store, view) {
+	if(value == 1){
+	    return '<img src="'+homePath+'/public/images/icons/ok.png"></img>';
+	}else{
+	    return '<img src="'+homePath+'/public/images/icons/cross.gif"></img>';
+	}
+};
+
+function reviewReq(){
+	Ext.getCmp('reviewReqWin').show();
+
+	var form = Ext.getCmp('req_form').getForm();
+	
+	// 设置是否为变更申请审核
+	if(Ext.getCmp('req_transfer_id').getValue() == ''){
+		Ext.getCmp('review_transfer').setValue(0);
+	}else{
+		Ext.getCmp('review_transfer').setValue(1);
+	}
+	
+	Ext.getCmp('review_id').setValue(form.findField('id').getValue());
+	Ext.getCmp('review_type_id').setValue(form.findField('type_id').getValue());
+	Ext.getCmp('review_current_step').setValue(form.findField('current_step').getValue());
+	Ext.getCmp('review_last_step').setValue(form.findField('last_step').getValue());
+	Ext.getCmp('review_to_finish').setValue(form.findField('to_finish').getValue());
+	Ext.getCmp('review_next_step').setValue(form.findField('next_step').getValue());
+}
+</script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/library/LodopFuncs.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/purchse/req/js/tpl.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/purchse/req/js/review.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/purchse/req/js/type.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/purchse/req/js/req.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/purchse/req/js/transfer.js"></script>
+<script type="text/javascript">
+// 显示查看窗口
+function openView(idx){
+     reqWin.show();
+     reqForm.getForm().reset();
+     var record = reqStore.getAt(idx);
+     var title = record.get('title');
+     reqForm.getForm().loadRecord(record);
+     reqWin.setTitle('采购申请');
+	Ext.getCmp('reqSaveBtn').disable();
+    Ext.getCmp('itemsAddBtn').disable();
+    Ext.getCmp('itemsDeleteBtn').disable();
+    Ext.getCmp('itemsImportBtn').disable();
+    Ext.getCmp('print_preview').enable();
+    Ext.getCmp('hand').hide();
+    //Ext.getCmp('change_reason_container').hide();
+    
+    itemsStore.load({
+          params: {
+              req_id: record.get('id')
+          }
+     });
+
+    if(record.get('can_review') == 1){
+         Ext.getCmp('reviewBtn').enable();
+    }else{
+        Ext.getCmp('reqReviewBtn').disable();
+     }
+
+    var type = record.get('type');
+    
+    if(type == '物料原材料'){
+        // 隐藏列
+        itemsGrid.columns[14].show();
+        itemsGrid.columns[15].show();
+        itemsGrid.columns[16].show();
+        itemsGrid.columns[17].show();
+    }else{
+        itemsGrid.columns[14].hide();
+        itemsGrid.columns[15].hide();
+        itemsGrid.columns[16].hide();
+        itemsGrid.columns[17].hide();
+    }
+    
+    if(type != '办公用品'){
+        itemsGrid.columns[11].hide();
+        itemsGrid.columns[12].hide();
+        itemsGrid.columns[13].hide();
+    }else{
+        itemsGrid.columns[11].show();
+        itemsGrid.columns[12].show();
+        itemsGrid.columns[13].show();
+    }
+
+    if(record.get('transfer_description') == '' || record.get('transfer_description') == null){
+        Ext.getCmp('transfer').hide();
+    }else{
+        Ext.getCmp('transfer').show();
+
+        if(record.get('can_review') == 1){
+            Ext.getCmp('transferReviewBtn').enable();
+       }else{
+           Ext.getCmp('transferReviewBtn').disable();
+        }
+    }
+}
+
+//申购单列表
+var reqGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
+    extend: 'Ext.grid.Panel',
+     xtype: 'locking-grid',
+     border: 0,
+    store: reqStore,
+    id: 'reqGrid',
+     columnLines: true,
+     tbar: [{
+         xtype: 'combobox',
+          id: 'search_active',
+          value: 1,
+          editable: false,
+          displayField: 'text',
+          valueField: 'val',
+          width: 70,
+          store: Ext.create('Ext.data.Store', {
+                fields: ['text', 'val'],
+                data: [
+                     {"text": "启用", "val": 1},
+                     {"text": "取消", "val": 0}
+                ]
+          }),
+          listeners: {
+                change: function(){
+                    reqStore.loadPage(1);
+                }
+          }
+     }, {
+          xtype: 'combobox',
+          id: 'search_dept',
+          emptyText: '申请部门...',
+          displayField: 'name',
+          valueField: 'id',
+          width: 100,
+          store: deptStore,
+          queryMode: 'local',
+          multiSelect: true
+     }, {
+          xtype: 'combobox',
+          id: 'search_type',
+          emptyText: '采购类别...',
+          displayField: 'name',
+          valueField: 'id',
+          width: 100,
+          store: typeListStore,
+          queryMode: 'local',
+          multiSelect: true
+     }, {
+          xtype: 'datefield',
+          format: 'Y-m-d',
+          width: 100,
+          id: 'search_date_from',
+          emptyText: '创建从...'
+     }, {
+          xtype: 'datefield',
+          format: 'Y-m-d',
+          width: 100,
+          id: 'search_date_to',
+          emptyText: '创建至...'
+     }, {
+          xtype: 'textfield',
+          id: 'search_applier',
+          emptyText: '申请人...',
+          width: 100,
+          listeners: {
+              specialKey :function(field,e){
+                     if (e.getKey() == Ext.EventObject.ENTER){
+                         reqStore.loadPage(1);
+                     }
+                }
+          }
+     }, {
+        xtype: 'combobox',
+        id: 'search_state',
+        value: null,
+        editable: false,
+        displayField: 'text',
+        valueField: 'val',
+        width: 70,
+        store: Ext.create('Ext.data.Store', {
+            fields: ['text', 'val'],
+            data: [
+                {"text": "审核中", "val": 0},
+                {"text": "拒绝", "val": 1},
+                {"text": "已发布", "val": 2}
+            ]
+        }),
+        listeners: {
+            change: function(){
+                reqStore.loadPage(1);
+            }
+        }
+    }, {
+          xtype: 'textfield',
+          id: 'search_key',
+          emptyText: '关键字...',
+          width: 100,
+          listeners: {
+              specialKey :function(field,e){
+                     if (e.getKey() == Ext.EventObject.ENTER){
+                         reqStore.loadPage(1);
+                     }
+                }
+          }
+     }, {
+          xtype: 'splitbutton',
+          text: '查询',
+          iconCls: 'icon-search',
+          handler: function(){
+                reqStore.loadPage(1);
+          },
+          menu: [{
+                text: '导出',
+                iconCls: 'icon-export',
+                handler: function(){
+                    //window.open(homePath+'/public/admin/account/exportcsv');
+                }
+          }]
+     }, {
+          xtype: 'splitbutton',
+          text: '新申请',
+          iconCls: 'icon-doc',
+          handler: function(){
+              Ext.getCmp('reqReviewBtn').disable();
+              Ext.getCmp('itemsImportBtn').disable();
+              Ext.getCmp('reqSaveBtn').enable();
+              Ext.getCmp('itemsAddBtn').enable();
+              Ext.getCmp('itemsDeleteBtn').enable();
+                Ext.getCmp('reqSaveBtn').setText('提交');
+                itemsStore.loadData([],false);
+                Ext.getCmp('print_preview').disable();
+              //Ext.getCmp('req_id').setValue(0);
+                Ext.getCmp('hand').show();
+                reqWin.show();
+                reqForm.getForm().reset();
+                Ext.getCmp('operate').setValue('new');
+                //reqWin.maximize();
+                Ext.getCmp('transfer').hide();
+          },
+          menu: [{
+            text: '复制',
+            iconCls:'icon-copy',
+            handler: function(){
+                var selection = Ext.getCmp('reqGrid').getView().getSelectionModel().getSelection();
+
+                     if(selection.length == 0){
+                          Ext.MessageBox.alert('错误', '请选择需要复制的申请！');
+                     }else{
+                          var record = selection[0];
+                         reqForm.getForm().reset();
+                         //reqForm.getForm().loadRecord(record);
+                         Ext.getCmp('reqSaveBtn').enable();
+                         Ext.getCmp('itemsAddBtn').enable();
+                         Ext.getCmp('itemsDeleteBtn').enable();
+                         Ext.getCmp('reqReviewBtn').disable();
+                         Ext.getCmp('reqSaveBtn').setText('提交');
+                         Ext.getCmp('operate').setValue('new');
+                         Ext.getCmp('hand').show();
+                         reqWin.show();
+                         Ext.getCmp('transfer').hide();
+                    
+                         itemsStore.load({
+                                params: {
+                                    req_id: record.get('id')
+                                }
+                          });
+                     }
+              }
+          }, {
+                text: '修改',
+                iconCls: 'icon-edit',
+                handler: function(){
+                    var selection = Ext.getCmp('reqGrid').getView().getSelectionModel().getSelection();
+
+                     if(selection.length == 0){
+                          Ext.MessageBox.alert('错误', '没有选择修改对象！');
+                     }else if(selection[0].get('state') != 1){
+                         Ext.MessageBox.alert('错误', '只允许编辑被拒绝的申请！');
+                     }else if(typeEditDisable == 1 && selection[0].get('create_user') != user_id){
+                         Ext.MessageBox.alert('错误', '没有权限修改当前申请！');
+                     }else{
+                          var record = selection[0];
+                         reqForm.getForm().reset();
+                         reqForm.getForm().loadRecord(record);
+                         Ext.getCmp('reqSaveBtn').enable();
+                         Ext.getCmp('itemsAddBtn').enable();
+                         Ext.getCmp('itemsDeleteBtn').enable();
+                         Ext.getCmp('reqReviewBtn').disable();
+                         Ext.getCmp('reqSaveBtn').setText('保存');
+                         
+                         Ext.getCmp('hand').show();
+                         reqWin.show();
+
+                         if(record.get('transfer_id') != '' && record.get('transfer_id') != null){
+                        	 Ext.getCmp('transfer').show();
+                        	 Ext.getCmp('operate').setValue('transfer');
+                         }else{
+                        	 Ext.getCmp('transfer').hide();
+                        	 Ext.getCmp('operate').setValue('edit');
+                         }
+                         
+                         //reqWin.maximize();
+
+                         itemsStore.load({
+                                params: {
+                                    req_id: record.get('id')
+                                }
+                          });
+                     }
+                }
+          }, {
+              text: '删除',
+                iconCls: 'icon-delete',
+                handler: function(){
+                    var selection = Ext.getCmp('reqGrid').getView().getSelectionModel().getSelection();
+
+                     if(selection.length == 0){
+                          Ext.MessageBox.alert('错误', '没有选择对象！');
+                     }else if(selection[0].get('state') != 1){
+                         Ext.MessageBox.alert('错误', '只能删除被拒绝申请！');
+                     }else{
+                         var id = selection[0].get('id');
+                         
+                         Ext.MessageBox.confirm('确认', '确定删除当前申请？', function(button, text){
+                                if(button == 'yes'){
+                                    Ext.Msg.wait('提交中，请稍后...', '提示');
+                                     Ext.Ajax.request({
+                                          url: homePath+'/public/erp/purchse_req/delete',
+                                          params: {id: id},
+                                          method: 'POST',
+                                          success: function(response, options) {
+                                                var data = Ext.JSON.decode(response.responseText);
+                          
+                                                if(data.success){
+                                                     Ext.MessageBox.alert('提示', data.info);
+                                                     reqStore.loadPage(1);
+                                                }else{
+                                                     Ext.MessageBox.alert('错误', data.info);
+                                                }
+                                          },
+                                          failure: function(response){
+                                                Ext.MessageBox.alert('错误', '提交失败');
+                                          }
+                                     });
+                                }
+                         });
+                     }
+                }
+          }, {
+            text: '变更',
+            //disabled: true,
+            iconCls: 'icon-transfer',
+            handler: function(){
+                var selection = Ext.getCmp('reqGrid').getView().getSelectionModel().getSelection();
+
+                 if(selection.length == 0){
+                     Ext.MessageBox.alert('错误', '没有选择申请！');
+                 }else if(selection[0].get('state') != 2){
+                     Ext.MessageBox.alert('错误', '只允许变更已批准的申请！');
+                 /* }else if(typeEditDisable == 1 && selection[0].get('create_user') != user_id){
+                     Ext.MessageBox.alert('错误', '没有权限修改当前申请！'); */
+                 }else{
+                     var record = selection[0];
+                     reqForm.getForm().reset();
+                     reqForm.getForm().loadRecord(record);
+                     Ext.getCmp('reqSaveBtn').enable();
+                     Ext.getCmp('itemsAddBtn').enable();
+                     Ext.getCmp('itemsDeleteBtn').enable();
+                     Ext.getCmp('itemsImportBtn').enable();
+                     Ext.getCmp('reqReviewBtn').disable();
+                     Ext.getCmp('reqSaveBtn').setText('提交');
+                     Ext.getCmp('operate').setValue('transfer');
+                     Ext.getCmp('hand').hide();
+                     reqWin.show();
+
+                     Ext.getCmp('transfer').show();
+
+                     itemsStore.load({
+                            params: {
+                                req_id: record.get('id')
+                            }
+                      });
+                 }
+            }
+          }]
+     }, {
+          text: '审核',
+          disabled: true,
+          id: 'reviewBtn',
+          iconCls: 'icon-accept',
+          handler: function(){
+              var selection = Ext.getCmp('reqGrid').getView().getSelectionModel().getSelection();
+
+                if(selection.length == 0){
+                     Ext.MessageBox.alert('错误', '没有选择审核对象！');
+                }else if(selection[0].get('state') != 0){
+                    Ext.MessageBox.alert('错误', '当前记录不允许审核！');
+                }else{
+                    var record = selection[0];
+                    reqForm.getForm().reset();
+                    reqForm.getForm().loadRecord(record);
+                    //Ext.getCmp('change_reason_container').hide();
+                    
+                    reviewForm.getForm().reset();
+                    Ext.getCmp('reqSaveBtn').disable();
+                    Ext.getCmp('itemsAddBtn').disable();
+                    Ext.getCmp('itemsDeleteBtn').disable();
+                    Ext.getCmp('reqReviewBtn').enable();
+                    Ext.getCmp('operate').setValue('review');
+                    Ext.getCmp('print_preview').enable();
+                    Ext.getCmp('hand').show();
+                    reqWin.show();
+                    reqWin.restore();
+
+                    /* if(record.get('transfer_description') == '' || record.get('transfer_description') == null){
+                        Ext.getCmp('transfer').hide();
+                    }else{
+                        Ext.getCmp('transfer').show();
+                    } */
+
+                    itemsStore.load({
+                          params: {
+                              req_id: record.get('id')
+                          }
+                    });
+
+                    if(record.get('submit_type') == 'transfer'){
+                    	viewTransferContent(record.get('transfer_id'), record.get('transfer_type'), record.get('transfer_description'));
+                    }
+                }
+          }
+     }, {
+          xtype: 'splitbutton',
+          text: '采购类别',
+          disabled: typeEditDisable,
+          iconCls: 'icon-form-edit',
+          handler: function(){
+              typeWin.show();
+              typeStore.load();
+          },
+          menu: [{
+                text: '模板管理',
+                iconCls: 'icon-doc-edit',
+                handler: function(){
+                    tplWin.show();
+                    tplStore.load();
+                    tplListStore.load();
+                }
+          }]
+     }, '->', {
+          text: '刷新',
+          iconCls: 'icon-refresh',
+          handler: function(){
+              reqStore.reload();
+          }
+     }],
+     viewConfig: {
+          stripeRows: false,// 取消偶数行背景色
+          getRowClass: function(record) {
+                if(!record.get('active')){
+                     return 'gray-row';
+                }
+          }
+     },
+     columns: [{
+          xtype: 'rownumberer'
+     }, {
+          text: 'ID',
+          align: 'center',
+          hidden: true,
+          locked: true,
+          dataIndex: 'id'
+     }, {
+          text: '申购单号',
+          align: 'center',
+          dataIndex: 'number',
+          locked: true,
+          width: 120
+     }, {
+          text: '类别',
+          align: 'center',
+          dataIndex: 'type',
+          width: 80
+     }, {
+          text: '申请部门',
+          dataIndex: 'dept',
+          width: 100
+     }, {
+          text: '提交类别',
+          align: 'center',
+          dataIndex: 'submit_type',
+          renderer: function(val, meta){
+      	     if(val == 'new'){
+       	    	 meta.style = 'font-weight: bold;background-color: #CEFFCE';
+          	     return '新建';
+      	     }else if(val == 'edit'){
+       	    	 meta.style = 'font-weight: bold;background-color: #FFEEDD';
+          	     return '修改';
+      	     }else if(val == 'transfer'){
+        	     meta.style = 'font-weight: bold;background-color: #FFF8D7';
+          	     return '变更';
+      	     }
+          },
+          width: 80
+     }, {
+          text: '状态',
+          align: 'center',
+          dataIndex: 'state',
+          renderer: function(val, meta, record){
+                if(val == 0){
+                    meta.style = 'background-color: #ffe2e2';
+                    return record.get('reviewer') + '：未审核';
+                }else if(val == 1){
+                    meta.style = 'background-color: #FF4500';
+                     return '拒绝';
+                }else{
+                    meta.style = 'background-color: #DFFFDF';
+                    return '已审核';
+                }
+          },
+          width: 160
+     }, {
+          text: '审核阶段',
+          dataIndex: 'review_state',/* 
+          renderer: function(val, cellmeta, record){
+              //cellmeta.tdAttr = 'data-qtip="' + record.get('review_info_tip') + '"';
+              return '<span style="cursor:pointer;" onclick="viewReviewInfo(\''+record.get('review_info')+'\');">'+val+'</span>';
+          }, */
+          width: 260
+     }, /* {
+          text: '金额',
+          dataIndex: 'total',
+          renderer: moneyRenderer,
+          width: 80
+     },  */{
+          text: '申请人',
+          dataIndex: 'apply_user_name',
+          width: 80
+     }, {
+          text: '事由',
+          dataIndex: 'reason',
+          width: 200
+     }, {
+          text: '备注',
+          dataIndex: 'remark',
+          width: 300
+     }, {
+          text: '制单人',
+          dataIndex: 'creater',
+          align: 'center',
+          width: 80
+     }, {
+          text: '制单时间',
+          dataIndex: 'create_time',
+          align: 'center',
+          renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+          width: 140
+     }, {
+          text: '发布时间',
+          dataIndex: 'release_time',
+          align: 'center',
+          renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+          width: 140
+     }, {
+          text: '审核日志',
+          dataIndex: 'review_info',
+          renderer: function(val, cellmeta, record){
+              cellmeta.tdAttr = 'data-qtip="' + record.get('review_info_tip') + '"';
+              return '<span style="cursor:pointer;" onclick="viewReviewInfo(\''+val+'\');">'+val+'</span>';
+          },
+          width: 300
+     }, {
+          text: '更新人',
+          hidden: true,
+          dataIndex: 'updater',
+          align: 'center',
+          width: 120
+     }, {
+          text: '更新时间',
+          hidden: true,
+          dataIndex: 'update_time',
+          align: 'center',
+          renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+          width: 140
+     }],
+     listeners: {
+         selectionchange: function( sel, selected, eOpts ){
+             if(selected.length > 0){
+                  if(selected[0].get('can_review') == 1){
+                       Ext.getCmp('reviewBtn').enable();
+                    }else{
+                        Ext.getCmp('reviewBtn').disable();
+                     }
+              }
+          },
+          itemdblclick: function( grid, record, item, index, e, eOpts ) {
+                if(accessViewOrder == 1 || record.get('can_review') == 1 || record.get('is_reviewer') == 1 ||　record.get('create_user') == user_id){
+                     openView(index);
+                }
+          }
+     },
+     bbar: Ext.create('Ext.PagingToolbar', {
+         border: 0,
+          store: reqStore,
+          displayInfo: true,
+          displayMsg: '显示 {0} - {1} 共 {2}',
+          emptyMsg: "没有数据",
+          items: [{
+                xtype: 'numberfield',
+                id: 'page_size_set',
+                value: 50,
+                width: 150,
+                hideTrigger: true,
+                labelAlign: 'right',
+                fieldLabel: '每页显示',
+                listeners: {
+                    specialKey :function(field,e){
+                          if (e.getKey() == Ext.EventObject.ENTER){
+                              reqStore.pageSize = Ext.getCmp('page_size_set').getValue();
+                              reqStore.loadPage(1);
+                          }
+                     }
+                }
+          }]
+     })
+});
+
+Ext.onReady(function() {
+     Ext.QuickTips.init();
+     Ext.Ajax.timeout = 600000;
+     Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+     
+     Ext.create('Ext.Viewport', {
+          layout: 'border',
+          items: [{
+                region: 'center',
+                layout: 'fit',
+                border: 0,
+                items: [reqGrid]
+          }]
+     });
+
+     reqStore.loadPage(1);
+});
+</script>
+</head>
+<body>
+</body>
+</html>

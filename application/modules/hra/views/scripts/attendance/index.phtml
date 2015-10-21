@@ -1,0 +1,252 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+var user_id = <?php echo $this->user_id?>;
+var hraAdmin = <?php echo $this->hraAdmin?>;
+var default_manager_id = 0;
+var default_leader_id = 0;
+var vacation_qty_left = 0;
+
+var hraBtnHidden = true;
+
+if(hraAdmin == 1){
+	hraBtnHidden = false;
+}
+
+Ext.require([
+    'Ext.*'
+]);
+
+Ext.Loader.setConfig({
+	enabled:true,
+	disableCaching:false,
+	paths:{
+		'Go':homePath+'/library/ext/plugins/Go'
+	}
+});
+
+//必填提示
+var required = '<span style="color:red;font-weight:bold" data-qtip="Required">*</span>';
+
+//选项数据模型
+Ext.define('Selection', {
+    extend: 'Ext.data.Model',
+    fields: [{name: 'id', type: 'int'}, {name: 'name'}]
+});
+
+//审核人数据源
+var employeeListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+       type: 'ajax',
+       reader: 'json',
+       url: homePath+'/public/admin/account/getuserlist'
+    },
+    autoLoad: true
+});
+
+// 用工形式
+var typeListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/hra/employee/gettype/option/list'
+    },
+    autoLoad: true
+});
+
+var typeRender = function (val){
+	if(val > 0){
+		index = typeListStore.findExact('id',val); 
+        if (index != -1){
+            rs = typeListStore.getAt(index).data; 
+            return rs.name; 
+        }
+        return val;
+	}else{
+		return '无';
+	}
+};
+
+//部门主管数据源
+var managerListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+       type: 'ajax',
+       reader: 'json',
+       url: homePath+'/public/admin/account/getmanageruserlist'
+    },
+    autoLoad: true
+});
+
+//公司领导数据源
+var leaderListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/admin/account/getleaderuserlist'
+    },
+    autoLoad: true
+});
+
+//申请人数据源（可以给自己或下属请假）
+var applyUserListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+       type: 'ajax',
+       reader: 'json',
+       url: homePath+'/public/admin/account/getrelateduserlist'
+    },
+    autoLoad: true
+});
+
+// 部门数据源
+var deptListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/hra/dept/getdept/option/list'
+    },
+    autoLoad: true
+});
+
+// 职位数据源
+var postListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/hra/employee/getpost/option/list'
+    },
+    autoLoad: true
+});
+
+// 部门渲染
+var deptRender = function (val){
+    if(val > 0){
+        var idx = 0;
+
+        if(isNaN(val)){
+            // Not Number
+            idx = deptListStore.find('name', val);
+        }else{
+            // Number
+            idx = deptListStore.find('id', val);
+        }
+
+        if(idx >= 0){
+            var rec = deptListStore.getAt(idx);
+            return rec.get('name');
+        }
+
+        return val;
+    }else{
+        return '无';
+    }
+};
+
+// 职位渲染
+var postRender = function (val){
+    if(val > 0){
+        var idx = 0;
+
+        if(isNaN(val)){
+            // Not Number
+            idx = postListStore.find('name', val);
+        }else{
+            // Number
+            idx = postListStore.find('id', val);
+        }
+
+        if(idx >= 0){
+            var rec = postListStore.getAt(idx);
+            return rec.get('name');
+        }
+
+        return val;
+    }else{
+        return '无';
+    }
+};
+</script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/public/js/function.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/hra/views/scripts/attendance/js/setting/param.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/hra/views/scripts/attendance/js/setting/workday.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/hra/views/scripts/attendance/js/setting/worktime.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/hra/views/scripts/attendance/js/import.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/user/views/scripts/attendance/js/vacation.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/user/views/scripts/attendance/js/overtime.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/hra/views/scripts/attendance/js/attendance.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/hra/views/scripts/attendance/js/statistics.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/hra/views/scripts/attendance/js/vacationstorage.js"></script>
+<script type="text/javascript">
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+
+    Ext.create('Ext.container.Viewport', {
+    	layout: 'fit',
+    	border: 0,
+        items: [{
+            region: 'center',
+            border: 0,
+            deferredRender: false,
+            activeTab: 0,
+            layout: 'fit',
+            items: [{
+                xtype: 'tabpanel',
+                layout: 'fit',
+                border: 0,
+                plain: true,
+                margin: '2 0 0 0',
+                items: [attendanceGrid, statisticsGrid, vacationGrid, overtimeGrid, vstorageGrid],
+                tabBar:{
+                	height: 24,
+                	defaults: {
+                		height: 22
+                    },
+                	items:[{
+                	    xtype: 'tbfill'
+                	}, {
+                	    text:'系统设置',
+                	    xtype: 'button',
+                	    iconCls: 'icon-admin',
+                	    menu: [{
+                            text: '工作日',
+                            handler: function(){
+                                workdayStore.load();
+
+                                workdayWin.show();
+                            }
+                        }, {
+                            text: '工作时间',
+                            handler: function(){
+                                worktimeStore.load();
+
+                                worktimeWin.show();
+                            }
+                        }, {
+                            text: '参数管理',
+                            handler: function(){
+                                paramWin.show();
+                                paramStore.load();
+                            }
+                        }]
+                	}]
+                }
+            }]
+        }]
+    });
+
+    // attendanceStore.loadPage(1);
+});
+</script>
+</head>
+<body>
+</body>
+</html>

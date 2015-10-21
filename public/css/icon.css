@@ -1,0 +1,333 @@
+@CHARSET "UTF-8";
+/* Buttons */
+.icon-money-out {
+    background-image:url(../images/icons/money-out.png);
+}
+.icon-copy {
+    background-image:url(../images/icons/copy.png);
+}
+.icon-transfer {
+    background-image:url(../images/icons/transfer.png);
+}
+.icon-csv {
+    background-image:url(../images/icons/csv.png);
+}
+.icon-list {
+    background-image:url(../images/icons/list.png);
+}
+.icon-attach {
+    background-image:url(../images/icons/attach.png);
+}
+.icon-ok {
+    background-image:url(../images/icons/ok.png);
+}
+.icon-printer {
+    background-image:url(../images/icons/printer.png);
+}
+.icon-preview {
+    background-image:url(../images/icons/preview.png);
+}
+.icon-statistics {
+    background-image:url(../images/icons/statistics.png);
+}
+.icon-chart-bar {
+    background-image:url(../images/icons/chart_bar.png);
+}
+.icon-chart-curve {
+    background-image:url(../images/icons/chart_curve.png);
+}
+.icon-chart-pie {
+    background-image:url(../images/icons/chart_pie.png);
+}
+.icon-time {
+    background-image:url(../images/icons/time.png);
+}
+.icon-mantis {
+    background-image:url(../images/icons/mantis.png);
+}
+.icon-accept {
+	background-image:url(../images/icons/accept.png);
+}
+.icon-reject {
+	background-image:url(../images/icons/reject.png);
+}
+.icon-edit {
+	background-image:url(../images/icons/edit.png);
+}
+.icon-rar {
+    background-image:url(../images/icons/rar.png);
+}
+.icon-grid {
+    background-image:url(../images/icons/grid.png);
+}
+.icon-setting {
+    background-image:url(../images/icons/setting.png);
+}
+.icon-form-add {
+    background-image:url(../images/icons/form_add.png);
+}
+.icon-form-delete {
+    background-image:url(../images/icons/form_delete.png);
+}
+.icon-form-edit {
+    background-image:url(../images/icons/form_edit.png);
+}
+.icon-home {
+    background-image:url(../images/icons/home.png);
+}
+.icon-user {
+    background-image:url(../images/icons/user.png);
+}
+.icon-dcc {
+    background-image:url(../images/icons/dcc.png);
+}
+.icon-product {
+    background-image:url(../images/icons/product.png);
+}
+.icon-prj {
+    background-image:url(../images/icons/project.png);
+}
+.icon-erp {
+    background-image:url(../images/icons/erp.png);
+}
+.icon-erp-partner {
+    background-image:url(../images/icons/partner.png);
+}
+.icon-qcc {
+    background-image:url(../images/icons/qcc.png);
+}
+.icon-res {
+    background-image:url(../images/icons/res.png);
+}
+.icon-propose {
+    background-image:url(../images/icons/propose.png);
+}
+.icon-hra {
+    background-image:url(../images/icons/users.png);
+}
+.icon-hra-seal {
+    background-image:url(../images/icons/seal.png);
+}
+.icon-admin {
+    background-image:url(../images/icons/config.png);
+}
+.icon-bbs {
+    background-image:url(../images/icons/bbs.png);
+}
+.icon-help {
+    background-image:url(../images/icons/help.png);
+}
+.icon-user-account {
+    background-image:url(../images/icons/user_account.png);
+}
+.icon-user-msg {
+    background-image:url(../images/icons/msg.png);
+}
+.icon-user-email {
+    background-image:url(../images/icons/email.png);
+}
+.icon-user-wrokreport {
+    background-image:url(../images/icons/report.png);
+}
+.icon-user-attendance {
+    background-image:url(../images/icons/attendance.png);
+}
+.icon-dcc-search {
+    background-image:url(../images/icons/dcc_search.png);
+}
+.icon-dcc-type {
+    background-image:url(../images/icons/dcc_type.png);
+}
+.icon-dcc-document {
+    background-image:url(../images/icons/document.png);
+}
+.icon-dcc-send {
+    background-image:url(../images/icons/dcc_send.png);
+}
+.icon-dcc-edit {
+    background-image:url(../images/icons/dcc_edit.png);
+}
+.icon-dcc-report {
+    background-image:url(../images/icons/dcc_report.png);
+}
+.icon-dcc-log {
+    background-image:url(../images/icons/page_white_find.png);
+}
+.icon-dcc-mine {
+    background-image:url(../images/icons/page_white_star.png);
+}
+.icon-dcc-upload {
+    background-image:url(../images/icons/page_white_get.png);
+}
+.icon-dcc-apply {
+    background-image:url(../images/icons/page_white.png);
+}
+.icon-prj-app {
+    background-image:url(../images/icons/prj_app.png);
+}
+.icon-prj-man {
+    background-image:url(../images/icons/prj_man.png);
+}
+.icon-prj-change {
+    background-image:url(../images/icons/prj_change.png);
+}
+.icon-prj-report {
+    background-image:url(../images/icons/prj_report.png);
+}
+.icon-hra-dept {
+    background-image:url(../images/icons/hra_dept.png);
+}
+.icon-hra-employee {
+    background-image:url(../images/icons/hra_employee.png);
+}
+.icon-notice {
+    background-image:url(../images/icons/notice.png);
+}
+.icon-message {
+    background-image:url(../images/icons/message.png);
+}
+.icon-news {
+    background-image:url(../images/icons/news.png);
+}
+.icon-calendar {
+    background-image:url(../images/icons/calendar.png);
+}
+.icon-info {
+    background-image:url(../images/icons/info.png);
+}
+.icon-group {
+    background-image:url(../images/icons/group.png);
+}
+.icon-accountset {
+    background-image:url(../images/icons/user_edit.png);
+}
+.icon-table {
+    background-image:url(../images/icons/table.png);
+}
+.icon-report {
+    background-image:url(../images/icons/report.png);
+}
+.icon-attendance {
+    background-image:url(../images/icons/attendance.png);
+}
+.icon-log {
+    background-image:url(../images/icons/log.png);
+}
+.icon-admin-log {
+    background-image:url(../images/icons/admin_log.png);
+}
+.icon-operate-log {
+    background-image:url(../images/icons/operate_log.png);
+}
+.icon-email-log {
+    background-image:url(../images/icons/email_log.png);
+}
+.icon-upload {
+    background-image:url(../images/icons/upload.png);
+}
+.icon-search {
+    background-image:url(../images/icons/search.png);
+}
+.icon-save {
+    background-image:url(../images/icons/save.png);
+}
+.icon-add {
+    background-image:url(../images/icons/add.png);
+}
+.icon-delete {
+    background-image:url(../images/icons/delete.gif);
+}
+.icon-user-add {
+    background-image:url(../images/icons/user_add.png);
+}
+.icon-user-edit {
+    background-image:url(../images/icons/user_edit.png);
+}
+.icon-user-delete {
+    background-image:url(../images/icons/user_delete.png);
+}
+.icon-export {
+    background-image:url(../images/icons/export.png);
+}
+.icon-import {
+    background-image:url(../images/icons/import.png);
+}
+.icon-doc-add {
+    background-image:url(../images/icons/doc_add.png);
+}
+.icon-doc-delete {
+    background-image:url(../images/icons/doc_delete.png);
+}
+.icon-doc-edit {
+    background-image:url(../images/icons/doc_edit.png);
+}
+.icon-doc {
+    background-image:url(../images/icons/doc.png);
+}
+.icon-admin-system {
+    background-image:url(../images/icons/admin_system.png);
+}
+.icon-admin-account {
+    background-image:url(../images/icons/admin_account.png);
+}
+.icon-admin-right {
+    background-image:url(../images/icons/admin_right.png);
+}
+.icon-admin-form {
+    background-image:url(../images/icons/admin_form.png);
+}
+.icon-admin-flow {
+    background-image:url(../images/icons/admin_flow.png);
+}
+.icon-admin-task {
+    background-image:url(../images/icons/admin_task.png);
+}
+.icon-refresh {
+    background-image:url(../images/icons/refresh.png);
+}
+.icon-view-collapse {
+    background-image:url(../images/icons/view_collapse.png);
+	background-position: center center;	
+}
+.icon-view-expand {
+    background-image:url(../images/icons/view_expand.png);
+	background-position: center center;
+}
+.icon-record-last {
+    background-image:url(../images/icons/record_last.png);
+}
+.icon-record-next {
+    background-image:url(../images/icons/record_next.png);
+}
+.icon-next {
+    background-image:url(../images/icons/next.png);
+}
+.icon-previous {
+    background-image:url(../images/icons/previous.png);
+}
+
+/* Styles used by Ext.ux.form.ItemSelector */
+.x-form-multiselect-body .x-boundlist .x-mask {
+    background: none;
+}
+.x-form-itemselector-body .x-form-item {
+    margin: 0;
+}
+.x-form-itemselector-top {
+    background-image: url(images/top2.gif);
+}
+.x-form-itemselector-up {
+    background-image: url(images/up2.gif);
+}
+.x-form-itemselector-add {
+    background-image: url(images/right2.gif);
+}
+.x-form-itemselector-remove {
+    background-image: url(images/left2.gif);
+}
+.x-form-itemselector-down {
+    background-image: url(images/down2.gif);
+}
+.x-form-itemselector-bottom {
+    background-image: url(images/bottom2.gif);
+}

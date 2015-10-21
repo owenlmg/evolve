@@ -1,0 +1,351 @@
+<html>
+    <head>
+        <?php echo SYS_HEAD; ?>
+        <?php
+        $user_session = new Zend_Session_Namespace('user');
+        $user = $user_session->user_info['employee_id'];
+        ?>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/common.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/comboxtree.js"></script>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/downloadFile.js"></script>
+        <script type="text/javascript">
+            Ext.require([
+                'Ext.data.*',
+                'Ext.grid.*',
+                'Ext.form.*',
+                'Ext.window.MessageBox'
+            ]);
+
+            Ext.onReady(function() {
+                Ext.QuickTips.init();
+
+                Ext.define('send', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [{
+                            name: "id"
+                        }, {
+                            name: "to"
+                        }, {
+                            name: "cc"
+                        }, {
+                            name: "subject"
+                        }, {
+                            name: "content"
+                        }, {
+                            name: "doc_ids"
+                        }, {
+                            name: "file_ids"
+                        }, {
+                            name: "send_date"
+                        }, {
+                            name: "handle_user"
+                        }, {
+                            name: "result"
+                        }, {
+                            name: "error_info"
+                        }, {
+                            name: "doc_names"
+                        }, {
+                            name: "file_names"
+                        }, {
+                            name: "handle_time",
+                            type: 'date',
+                            dateFormat: 'timestamp'
+                        }, {
+                            name: "handler"
+                        }, {
+                            name: "remark"
+                        }, {
+                            name: "code"
+                        }, {
+                            name: "sendtype"
+                        }, {
+                            name: "outsendtype"
+                        }, {
+                            name: "partner"
+                        }, {
+                            name: "partner_name"
+                        }, {
+                            name: "linkman"
+                        }, {
+                            name: "partner_name"
+                        }, {
+                            name: "partner_name"
+                        }, {
+                            name: "model"
+                        }]
+                });
+
+                var recordStore = Ext.create('Ext.data.Store', {
+                    pageSize: 100,
+                    model: 'send',
+                    proxy: {
+                        type: 'ajax',
+                        reader: {
+                            root: 'topics',
+                            totalProperty: 'totalCount'
+                        },
+                        url: '<?php echo HOME_PATH; ?>/public/dcc/send/getlist'
+                    },
+                    autoLoad: true
+                });
+
+                var grid = Ext.create('Ext.grid.Panel', {
+                    store: recordStore,
+                    border: 0,
+                    selType: 'checkboxmodel',
+                    columnLines: true,
+                    viewConfig: {
+                        stripeRows: false
+                    },
+                    tbar: [{
+	                        xtype: 'textfield',
+	                        id: 'search_key',
+	                        width: 180,
+	                        emptyText: '文件编码/文件名/主题...',
+	                        listeners: {
+	                        	specialKey :function(field,e){
+	                                if (e.getKey() == Ext.EventObject.ENTER){
+	                                	recordStore.loadPage(1);
+	                                }
+	                            }
+	                        }
+	                    }, {
+                            xtype: 'combobox',
+                            id: 'search_sendtype',
+                            emptyText: '类别...',
+                            width: 100,
+                            store: [['内发', '内发'], ['外发', '外发']]
+                        }, {
+                            xtype: 'combobox',
+                            id: 'search_object',
+                            emptyText: '发送对象...',
+                            width: 100,
+                            store: [['供应商', '供应商'], ['客户', '客户'], ['其它', '其它']]
+                        }, {
+                            xtype: 'textfield',
+                            id: 'search_objectname',
+                            width: 120,
+                            emptyText: '对象名称...',
+	                        listeners: {
+	                        	specialKey :function(field,e){
+	                                if (e.getKey() == Ext.EventObject.ENTER){
+	                                	recordStore.loadPage(1);
+	                                }
+	                            }
+	                        }
+                        }, {
+                            xtype: 'datefield',
+                            format: 'Y-m-d',
+                            width: 100,
+                            id: 'search_date_from',
+                            emptyText: '日期从...'
+                        }, {
+                            xtype: 'datefield',
+                            format: 'Y-m-j',
+                            width: 100,
+                            id: 'search_date_to',
+                            emptyText: '日期至...'
+                        }, {
+                            xtype: 'textfield',
+                            id: 'search_cc',
+                            width: 120,
+                            emptyText: '收件人...'
+                        }, {
+                            text: '查询',
+                            iconCls: 'icon-search',
+                            handler: function() {
+                                var search_key = Ext.getCmp('search_key').getValue();
+                                var search_object = Ext.getCmp('search_object').getValue();
+                                var search_objectname = Ext.getCmp('search_objectname').getValue();
+                                var search_date_from = Ext.getCmp('search_date_from').getValue();
+                                var search_date_to = Ext.getCmp('search_date_to').getValue();
+                                var search_cc = Ext.getCmp('search_cc').getValue();
+                                var search_sendtype = Ext.getCmp('search_sendtype').getValue();
+                                recordStore.baseParams = {
+                                	search_key: search_key,
+                                	search_object: search_object,
+                                	search_objectname: search_objectname,
+                                    search_date_from: search_date_from,
+                                    search_date_to: search_date_to,
+                                    search_cc: search_cc,
+                                    search_sendtype: search_sendtype
+                                };
+                                recordStore.loadPage(1);
+                            }
+                        }],
+                    columns: [{
+                            xtype: 'rownumberer'
+                        }, {
+                            text: 'ID',
+                            flex: .5,
+                            hidden: true,
+                            dataIndex: 'id'
+                        }, {
+                            text: '流水号',
+                            width: 120,
+                            sortable: true,
+                            dataIndex: 'code',
+                            renderer: showTitle
+                        }, {
+                            text: '文件编码',
+                            width: 120,
+                            sortable: true,
+                            dataIndex: 'doc_names',
+                            renderer: showTitle
+                        }, {
+                            text: '文件名',
+                            width: 160,
+                            sortable: true,
+                            dataIndex: 'file_names',
+                            renderer: showTitle
+                        }, {
+                            text: '文件类型',
+                            width: 80,
+                            sortable: true,
+                            dataIndex: 'file_type',
+                            renderer: function(value, p, record) {
+                                var file_names = record.get('file_names');
+                                if(file_names) {
+                                    var names = file_names.split(',');
+                                    var exts = new Array();
+                                    for(var i = 0; i < names.length; i++) {
+                                        var ext = names[i].substr(names[i].lastIndexOf('.')+1);
+                                        exts.push(ext);
+                                    }
+                                    return exts.join(',');
+                                } else {
+                                    return '';
+                                }
+                            }
+                        }, {
+                            text: '产品型号',
+                            width: 160,
+                            sortable: true,
+                            dataIndex: 'model',
+                            renderer: showTitle
+                        }, {
+                            text: '发放类型',
+                            width: 80,
+                            sortable: true,
+                            dataIndex: 'sendtype',
+                            renderer: showTitle
+                        }, {
+                            text: '发放对象',
+                            width: 80,
+                            sortable: true,
+                            dataIndex: 'outsendtype',
+                            renderer: showTitle
+                        }, {
+                            text: '对象名称',
+                            width: 180,
+                            sortable: true,
+                            dataIndex: 'partner_name',
+                            renderer: showTitle
+                        }, {
+                            text: '接口人',
+                            width: 140,
+                            sortable: true,
+                            dataIndex: 'linkman',
+                            renderer: showTitle
+                        }, {
+                            text: '收件人',
+                            width: 140,
+                            sortable: true,
+                            dataIndex: 'to',
+                            renderer: showTitle
+                        }, {
+                            text: '抄送人',
+                            width: 140,
+                            dataIndex: 'cc',
+                            renderer: showTitle
+                        }, {
+                            text: '主题',
+                            width: 140,
+                            dataIndex: 'subject',
+                            renderer: showTitle
+                        }, {
+                            text: '内容',
+                            width: 200,
+                            hidden: true,
+                            dataIndex: 'content',
+                            renderer: showTitle
+                        }, {
+                            text: '备注',
+                            width: 160,
+                            dataIndex: 'remark',
+                            renderer: showTitle
+                        }, {
+                            text: '发送结果',
+                            width: 80,
+                            dataIndex: 'result',
+                            renderer: function(value) {
+                        	    if(value == 1) {
+                        	    	return "成功";
+                        	    } else {
+                        	    	return "失败";
+                        	    }
+                            }
+                        }, {
+                            text: '错误信息',
+                            width: 120,
+                            dataIndex: 'error_info',
+                            renderer: showTitle
+                        }, {
+                            text: '发送人',
+                            width: 80,
+                            dataIndex: 'handler'
+                        }, {
+                            text: '发送时间',
+                            width: 120,
+                            dataIndex: 'handle_time',
+                            renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+                        }],
+                    // paging bar on the bottom
+                    bbar: Ext.create('Ext.PagingToolbar', {
+                        store: recordStore,
+                        displayInfo: true,
+                        displayMsg: '显示 {0} - {1} 共 {2}',
+                        emptyMsg: "没有数据"
+                    })
+                });
+
+                recordStore.on("beforeload", function() {
+                    var search_key = Ext.getCmp('search_key').getValue();
+                    var search_object = Ext.getCmp('search_object').getValue();
+                    var search_objectname = Ext.getCmp('search_objectname').getValue();
+                    var search_date_from = Ext.getCmp('search_date_from').getValue();
+                    var search_date_to = Ext.getCmp('search_date_to').getValue();
+                    var search_cc = Ext.getCmp('search_cc').getValue();
+                    var search_sendtype = Ext.getCmp('search_sendtype').getValue();
+                    Ext.apply(recordStore.proxy.extraParams, {
+                    	search_key: search_key,
+                    	search_object: search_object,
+                    	search_objectname: search_objectname,
+                        search_date_from: search_date_from,
+                        search_date_to: search_date_to,
+                        search_cc: search_cc,
+                        search_sendtype: search_sendtype
+                    });
+                });
+
+
+                Ext.create('Ext.container.Viewport', {
+                    layout: 'border',
+                    border: 0,
+                    rtl: true,
+                    items: [{
+                            region: 'center',
+                            layout: 'fit',
+                            border: 0,
+                            plain: true,
+                            items: [grid]
+                        }]
+                });
+            });
+        </script>
+    </head>
+    <body>
+    </body>
+</html>

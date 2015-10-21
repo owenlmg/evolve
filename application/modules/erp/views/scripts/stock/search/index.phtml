@@ -1,0 +1,230 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+var user_id = <?php echo $this->user_id?>;
+var admin = <?php echo $this->admin;?>;
+
+function getStockSearchColumns(warehouseStore){
+	var set = {
+            fields: [],
+            columns: []
+    };
+	
+	set.fields = [{name: 'id'},
+                  {name: 'code'},
+                  {name: 'warehouse'},
+                  //{name: 'warehouse_code'},
+                  //{name: 'warehouse_type_code'},
+                  {name: 'qty'},
+                  {name: 'type'},
+                  {name: 'name'},
+                  {name: 'description'}];
+	
+	set.columns = [{
+        xtype: 'rownumberer'
+    }, {
+        text: '物料代码',
+        dataIndex: 'code',
+        locked: true,
+        width: 120
+    }, {
+        text: '数量',
+        dataIndex: 'qty',
+        renderer: function(val, meta, record){
+        	meta.style = 'background-color: #DFFFDF';
+        	
+        	return val;
+        },
+        locked: true,
+        width: 100
+    }, {
+        text: '物料名称',
+        dataIndex: 'name',
+        renderer: longTextRender,
+        width: 100
+    }, {
+        text: '物料描述',
+        dataIndex: 'description',
+        renderer: longTextRender,
+        width: 200
+    }, /* {
+        text: '仓位',
+        dataIndex: 'warehouse',
+        renderer: longTextRender,
+        width: 100
+    },  */{
+        text: '物料类别',
+        dataIndex: 'type',
+        width: 100
+    }];
+
+	warehouseStore.each(function(rec){
+		set.columns.push({
+	    	text: rec.get('name'),
+	        dataIndex: 'w_' + rec.get('code'),
+	        width: 150
+	    });
+
+		set.fields.push({name: 'w_' + rec.get('code')});
+	});
+
+    return set;
+}
+
+Ext.require([
+    'Ext.*'
+]);
+
+Ext.define('Selection', {
+    extend: 'Ext.data.Model',
+    fields: [{name: 'id', type: 'int'},
+             {name: 'code'},
+             {name: 'name'}]
+});
+
+Ext.define('Result', {
+    extend: 'Ext.data.Model',
+    fields: []
+});
+
+// 结果
+var resultStore = Ext.create('Ext.data.Store', {
+    model: 'Result',
+    pageSize: 100,
+    proxy: {
+        type: 'ajax',
+        reader: {
+            type: 'json',
+            root: 'rows',
+            totalProperty: 'total'
+        },
+        url: homePath+'/public/erp/stock_search/search'
+    },
+    listeners: {
+    	beforeload: function(){
+    		var key = Ext.getCmp('search_key').getValue();
+    	    
+    		Ext.apply(resultStore.proxy.extraParams, {
+    			key: key
+    	    });
+        }
+    }
+});
+
+// 仓位
+var warehouseListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/erp/warehouse_index/getlist'
+    },
+    listeners: {
+        load: function(store){
+            var set = getStockSearchColumns(store);
+
+            Ext.ModelManager.getModel('Result').setFields(set.fields);;
+
+            Ext.getCmp('resultGrid').reconfigure(resultStore, set.columns);
+        }
+    },
+    autoLoad: true
+});
+
+var longTextRender = function(val, cellmeta, record){
+	cellmeta.tdAttr = 'data-qtip="' + val + '"';
+	return val;
+};
+
+// 查询列表
+var resultGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
+	extend: 'Ext.grid.Panel',
+    xtype: 'locking-grid',
+    border: 0,
+	store: resultStore,
+	id: 'resultGrid',
+    columnLines: true,
+    enableLocking: true,
+    tbar: [{
+        xtype: 'textfield',
+        id: 'search_key',
+        emptyText: '关键字...',
+        listeners: {
+        	specialKey :function(field,e){
+                if (e.getKey() == Ext.EventObject.ENTER){
+                	resultStore.loadPage(1);
+                }
+            }
+        }
+    }, {
+        xtype: 'splitbutton',
+        text: '查询',
+        iconCls: 'icon-search',
+        handler: function(){
+        	resultStore.loadPage(1);
+        },
+        menu: [{
+            text: '导出',
+            iconCls: 'icon-export',
+            handler: function(){
+            	var key = Ext.getCmp('search_key').getValue();
+            	
+            	window.open(homePath+'/public/erp/stock_search/search/option/csv/key/' + key);
+            }
+        }]
+    }, '->', {
+        text: '刷新',
+        iconCls: 'icon-refresh',
+        handler: function(){
+        	resultStore.reload();
+        }
+    }],
+    columns: [],
+    bbar: Ext.create('Ext.PagingToolbar', {
+    	border: 0,
+        store: resultStore,
+        displayInfo: true,
+        displayMsg: '显示 {0} - {1} 共 {2}',
+        emptyMsg: "没有数据",
+        items: [{
+            xtype: 'numberfield',
+            id: 'page_size_set',
+            value: 100,
+            width: 150,
+            hideTrigger: true,
+            labelAlign: 'right',
+            fieldLabel: '每页显示',
+            listeners: {
+            	specialKey :function(field,e){
+                      if (e.getKey() == Ext.EventObject.ENTER){
+	                    	  resultStore.pageSize = Ext.getCmp('page_size_set').getValue();
+	                    	  resultStore.loadPage(1);
+	                      }
+	                 }
+	            }
+	      }]
+    })
+});
+
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+    Ext.apply(Ext.QuickTips.getQuickTip(), {showDelay: 100, dismissDelay: 60000});
+    
+    Ext.create('Ext.Viewport', {
+        layout: 'border',
+        items: [{
+            region: 'center',
+            layout: 'fit',
+            border: 0,
+            items: [resultGrid]
+        }]
+    });
+});
+</script>
+</head>
+<body>
+</body>
+</html>

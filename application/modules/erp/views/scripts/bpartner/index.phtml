@@ -1,0 +1,583 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<SCRIPT type="text/javascript">
+var bpartnerAdminDisabled = <?php echo $this->bpartnerAdminDisabled;?>;
+var supplierAdmin = <?php echo $this->supplierAdmin;?>;
+var customerAdmin = <?php echo $this->customerAdmin;?>;
+var supplierView = <?php echo $this->supplierView;?>;
+var customerView = <?php echo $this->customerView;?>;
+
+Ext.require([
+    'Ext.*'
+]);
+
+var typeData = new Array();
+var defaultType = '';
+
+if(!supplierAdmin && !customerAdmin){
+	if(supplierView){
+		typeData.push({"name": "供应商", "id": 0});
+		defaultType = 0;
+	}
+
+	if(customerView){
+		typeData.push({"name": "客户", "id": 1});
+		defaultType = 1;
+	}
+}else{
+	if(supplierAdmin){
+		typeData.push({"name": "供应商", "id": 0});
+		defaultType = 0;
+	}
+
+	if(customerAdmin){
+		typeData.push({"name": "客户", "id": 1});
+		defaultType = 1;
+	}
+}
+
+var partnerTypeStore = Ext.create('Ext.data.Store', {
+    fields: ['name', 'id'],
+    data: typeData
+});
+
+// 选项数据模型
+Ext.define('Selection', {
+    extend: 'Ext.data.Model',
+    fields: [{name: 'id', type: 'int'},
+             {name: 'name'},
+             {name: 'val'}]
+});
+
+// 币种
+var currencyStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+       type: 'ajax',
+       reader: 'json',
+       url: homePath+'/public/erp/setting_currency/getcurrency/option/list'
+    },
+    autoLoad: true
+});
+
+// 税种
+var taxStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+       type: 'ajax',
+       reader: 'json',
+       url: homePath+'/public/erp/setting_tax/gettax/option/list'
+    },
+    autoLoad: true
+});
+
+// 币种渲染
+var currencyRender = function(val){
+	if(val > 0){
+		index = currencyStore.findExact('id',val);
+        if (index != -1){
+            rs = currencyStore.getAt(index).data;
+            return rs.name;
+        }
+        return val;
+	}else{
+		return '无';
+	}
+}
+
+// 付款方式渲染
+var paymentRender = function(val){
+	if(val > 0){
+		index = paymentListStore.findExact('id',val);
+        if (index != -1){
+            rs = paymentListStore.getAt(index).data;
+            return rs.name;
+        }
+        return val;
+	}else{
+		return '无';
+	}
+}
+
+// 税率渲染
+var taxRender = function(val){
+	if(val > 0){
+		index = taxStore.findExact('id',val);
+        if (index != -1){
+            rs = taxStore.getAt(index).data;
+            return rs.name;
+        }
+        return val;
+	}else{
+		return '无';
+	}
+}
+
+// 查看联系人或联系地址信息
+function openContact(type, partner_id)
+{
+	if(type == 'contact'){
+		contactWin.show();
+		
+		Ext.apply(contactStore.proxy.extraParams, {
+			partner_id: partner_id
+	    });
+
+		contactStore.load();
+	}
+}
+
+// 必填提示
+var required = '<span style="color:red;font-weight:bold" data-qtip="Required">*</span>';
+</SCRIPT>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/bpartner/js/group.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/bpartner/js/payment.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/bpartner/js/contact.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/bpartner/js/import.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/application/modules/erp/views/scripts/bpartner/js/add.js"></script>
+<script type="text/javascript">
+// 业务伙伴数据模型
+Ext.define('Partner', {
+    extend: 'Ext.data.Model',
+    fields: [{name: "id"}, 
+             {name: "active"}, 
+             {name: "type"}, 
+             {name: "code"}, 
+             {name: "cname"}, 
+             {name: "ename"}, 
+             {name: "group_id", type: "int"}, 
+             {name: "group_name"}, 
+             {name: "contact_id", type:"int"}, 
+             {name: "tax_id", type:"int"}, 
+             {name: "bank_payment_days", type:"int"}, 
+             {name: "bank_country"}, 
+             {name: "bank_type"}, 
+             {name: "bank_account"}, 
+             {name: "tax_num"}, 
+             {name: "rsm"}, 
+             {name: "terminal_customer"}, 
+             {name: "suffix"}, 
+             {name: "bank_name"}, 
+             {name: "bank_currency", type:"int"}, 
+             {name: "bank_remark"}, 
+             {name: "remark"}, 
+             {name: "create_time",type: 'date',dateFormat: 'timestamp'}, 
+             {name: "update_time",type: 'date',dateFormat: 'timestamp'}, 
+             {name: "creater"}, 
+             {name: "updater"}]
+});
+
+// 业务伙伴数据源
+var partnerStore = Ext.create('Ext.data.Store', {
+    model: 'Partner',
+    pageSize: 50,
+    proxy: {
+        type: 'ajax',
+        reader: {
+            type: 'json',
+            root: 'rows',
+            totalProperty: 'total'
+        },
+        url: homePath+'/public/erp/bpartner/getpartner/option/data'
+    },
+    listeners: {
+    	beforeload: function(){
+    		var key = Ext.getCmp('search_key').getValue();
+    		var type = Ext.JSON.encode(Ext.getCmp('search_type').getValue());
+    		var group_id = Ext.JSON.encode(Ext.getCmp('search_group_id').getValue());
+            
+    		Ext.apply(partnerStore.proxy.extraParams, {
+        		key: key,
+        		type: type,
+        		group_id: group_id
+            });
+        }
+    }
+});
+
+// 业务伙伴信息列表
+var partnerGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
+	extend: 'Ext.grid.Panel',
+	border: 0,
+    xtype: 'locking-grid',
+    id: 'partnerGrid',
+	store: partnerStore,
+    columnLines: true,
+    tbar: [{
+        xtype: 'combobox',
+        id: 'search_type',
+        value: defaultType,
+        displayField: 'name',
+        valueField: 'id',
+        width: 100,
+        editable: false,
+        store: partnerTypeStore,
+        listeners: {
+            change: function(combo, newValue, oldValue, eOpts){
+                if(newValue != oldValue){
+                	partnerStore.load({
+                        params: {
+                        	type: newValue
+                        }
+                    });
+                	
+                	groupListStore.load({
+                        params: {
+                        	type: newValue
+                        }
+                    });
+                }
+            }
+        }
+    }, {
+        xtype: 'combobox',
+        id: 'search_group_id',
+        emptyText: '选择组...',
+        displayField: 'name',
+        valueField: 'id',
+        width: 180,
+        store: groupListStore,
+        queryMode: 'local',
+        multiSelect: true
+    }, {
+        xtype: 'textfield',
+        id: 'search_key',
+        emptyText: '名称/代码...',
+        listeners: {
+        	specialKey :function(field,e){
+                if (e.getKey() == Ext.EventObject.ENTER){
+                	partnerStore.loadPage(1);
+                }
+            }
+        }
+    }, {
+        xtype: 'splitbutton',
+        text: '查询',
+        iconCls: 'icon-search',
+        handler: function(){
+        	partnerStore.loadPage(1);
+        },
+        menu: [{
+            text: '导出',
+            disabled: bpartnerAdminDisabled,
+            iconCls: 'icon-export',
+            handler: function(){
+            	var key = Ext.getCmp('search_key').getValue();
+        		var type = Ext.JSON.encode(Ext.getCmp('search_type').getValue());
+        		var group_id = Ext.JSON.encode(Ext.getCmp('search_group_id').getValue());
+                
+            	window.open(homePath+'/public/erp/bpartner/getpartner/option/data/export/1/key/' + key + '/type/' + type + '/group_id/' + group_id);
+            }
+        }]
+    }, {
+        text: '添加',
+        disabled: bpartnerAdminDisabled,
+        iconCls: 'icon-add',
+        handler: function(){
+        	partnerWin.show();
+        	Ext.getCmp('partner_form').getForm().reset();
+        	Ext.getCmp('partnerSubBtn').enable();
+        	partnerWin.setTitle('新建业务伙伴');
+        	contactStore.removeAll();
+        	
+        	Ext.getCmp('partner_id').setValue(0);
+        	Ext.getCmp('edit_type').setValue('new');
+
+        	contactStore.loadData([],false);
+
+        	var type = Ext.getCmp('search_type').getValue();
+        	Ext.getCmp('partner_form').getForm().findField('type').setValue(type);
+        }
+    }, {
+    	text: '编辑',
+    	disabled: bpartnerAdminDisabled,
+        iconCls: 'icon-edit',
+        handler: function(){
+        	var selection = Ext.getCmp('partnerGrid').getSelectionModel().getSelection();
+        	
+        	if(selection.length > 0){
+            	partnerWin.show();
+            	Ext.getCmp('partnerSubBtn').enable();
+            	partnerWin.setTitle('修改业务伙伴');
+            	
+            	Ext.getCmp('partner_form').loadRecord(selection[0]);
+            	
+            	var id = selection[0].get('id');// 业务伙伴ID
+            	
+            	Ext.getCmp('edit_type').setValue('edit');
+            	Ext.getCmp('partner_id').setValue(id);
+            	
+            	contactStore.loadData([],false);
+            	
+            	Ext.apply(contactStore.proxy.extraParams, {
+            		partner_id: id
+                });
+            	
+            	contactStore.load();
+        	}else{
+                Ext.MessageBox.alert('错误', '没有选择业务伙伴！');
+            }
+        }
+    }, {
+        text: '删除',
+        disabled: bpartnerAdminDisabled,
+        iconCls: 'icon-delete',
+        handler: function(){
+        	var selection = Ext.getCmp('partnerGrid').getView().getSelectionModel().getSelection();
+
+            if(selection.length > 0){
+            	Ext.MessageBox.confirm('确认', '确定删除业务伙伴？', function(button, text){
+                    if(button == 'yes'){
+                    	Ext.Msg.wait('保存中，请稍后...', '提示');
+                        Ext.Ajax.request({
+                            url: homePath+'/public/erp/bpartner/editpartner/edit_type/delete',
+                            params: {partner_id: selection[0].data['id']},
+                            method: 'POST',
+                            success: function(response, options) {
+                                var data = Ext.JSON.decode(response.responseText);
+
+                                if(data.success){
+                                    Ext.MessageBox.alert('提示', data.info);
+                                    partnerStore.reload();
+                                }else{
+                                    Ext.MessageBox.alert('错误', data.info);
+                                }
+                            },
+                            failure: function(response){
+                                Ext.MessageBox.alert('错误', '删除失败');
+                            }
+                        });
+                    }
+                });
+            }else{
+                Ext.MessageBox.alert('错误', '没有选择删除对象！');
+            }
+        }
+    }, {
+        text: '组管理',
+        disabled: bpartnerAdminDisabled,
+        iconCls: 'icon-group',
+        handler: function(){
+            var type = Ext.getCmp('search_type').getValue();
+            Ext.getCmp('search_group_type').setValue(type);
+            
+            // 组管理窗口
+            groupWin.show();
+
+            groupStore.load({
+                params: {
+                	type: type
+                }
+            });
+        }
+    }, {
+        text: '付款方式管理',
+        disabled: bpartnerAdminDisabled,
+        iconCls: 'icon-doc',
+        handler: function(){
+            // 付款方式管理窗口
+            paymentWin.show();
+
+            paymentStore.load();
+        }
+    }],
+    viewConfig: {
+        stripeRows: false,// 取消偶数行背景色
+        getRowClass: function(record) {
+            if(record.get('active') == 0){
+                return 'gray-row';
+            }
+        }
+    },
+    columns: [{
+        xtype: 'rownumberer'
+    }, {
+        text: 'ID',
+        hidden: true,
+        align: 'center',
+        dataIndex: 'id',
+        width: 50
+    }, {
+        text: '类别',
+        locked: true,
+        align: 'center',
+        dataIndex: 'type',
+        width: 80
+    }, {
+        text: '代码',
+        locked: true,
+        align: 'center',
+        dataIndex: 'code',
+        width: 80
+    }, {
+        text: '中文名称',
+        dataIndex: 'cname',
+        width: 200
+    }, {
+        text: '英文名称',
+        dataIndex: 'ename',
+        width: 200
+    }, {
+        hidden: true,
+        text: '组ID',
+        dataIndex: 'group_id',
+        width: 50
+    }, {
+        text: '组名称',
+        dataIndex: 'group_name',
+        width: 100
+    }, {
+        text: '联系方式',
+        renderer: partnerContactRender,
+        align: 'center',
+        dataIndex: 'id',
+        width: 80
+    }, {
+        text: 'RSM',
+        align: 'center',
+        dataIndex: 'rsm',
+        width: 80
+    }, {
+        text: '终端客户',
+        dataIndex: 'terminal_customer',
+        width: 160
+    }, {
+        text: '后缀',
+        align: 'center',
+        dataIndex: 'suffix',
+        width: 80
+    }, {
+        text: '付款信息',
+        columns: [{
+            text: '付款方式',
+            dataIndex: 'bank_payment_days',
+            renderer: paymentRender,
+            width: 80
+        }, {
+            text: '币种',
+            align: 'center',
+            dataIndex: 'bank_currency',
+            renderer: currencyRender,
+            width: 50
+        }, {
+            text: '税率',
+            align: 'center',
+            dataIndex: 'tax_id',
+            renderer: taxRender,
+            width: 100
+        }, {
+        	text: '银行国家',
+            align: 'center',
+            dataIndex: 'bank_country',
+            width: 80
+        }, {
+        	text: '开户行',
+            dataIndex: 'bank_type',
+            width: 200
+        }, {
+        	text: '账号',
+            dataIndex: 'bank_account',
+            width: 200
+        }, {
+        	text: '税号',
+            dataIndex: 'tax_num',
+            width: 200
+        }, {
+        	text: '开户名称',
+            dataIndex: 'bank_name',
+            width: 200
+        }, {
+        	text: '付款备注',
+            dataIndex: 'bank_remark',
+            width: 200
+        }]
+    }, {
+        text: '备注',
+        dataIndex: 'remark',
+        width: 200
+    }, {
+        text: '创建人',
+        hidden: true,
+        dataIndex: 'creater',
+        align: 'center',
+        width: 80
+    }, {
+        text: '创建时间',
+        hidden: true,
+        dataIndex: 'create_time',
+        align: 'center',
+        renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+        width: 120
+    }, {
+        text: '更新人',
+        hidden: true,
+        dataIndex: 'updater',
+        align: 'center',
+        width: 80
+    }, {
+        text: '更新时间',
+        hidden: true,
+        dataIndex: 'update_time',
+        align: 'center',
+        renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+        width: 120
+    }],
+    listeners: {
+        itemdblclick: function( grid, record, item, index, e, eOpts ) {
+        	partnerWin.show();
+        	partnerWin.setTitle('业务伙伴');
+        	
+        	Ext.getCmp('partner_form').loadRecord(record);
+        	
+        	var id = record.get('id');// 业务伙伴ID
+        	
+        	Ext.getCmp('partnerSubBtn').disable();
+        	
+        	Ext.apply(contactStore.proxy.extraParams, {
+        		partner_id: id
+            });
+
+        	contactStore.load();
+        }
+    },
+    bbar: Ext.create('Ext.PagingToolbar', {
+    	border: 0,
+        store: partnerStore,
+        displayInfo: true,
+        displayMsg: '显示 {0} - {1} 共 {2}',
+        emptyMsg: "没有数据"
+    })
+});
+
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+    
+    Ext.create('Ext.Viewport', {
+        layout: 'border',
+        items: [{
+            region: 'center',
+            border: 0,
+            layout: 'fit',
+            plain: true,
+            items: [partnerGrid]
+        }]
+    });
+
+    partnerStore.loadPage(1);
+
+    var type = Ext.getCmp('search_type').getValue();
+	
+	groupListStore.load({
+        params: {
+        	type: type
+        }
+    });
+});
+</script>
+</head>
+<body>
+</body>
+</html>

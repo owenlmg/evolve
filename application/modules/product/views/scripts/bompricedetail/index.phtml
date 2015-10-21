@@ -1,0 +1,355 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<?php
+	    $onceexportable = 1;
+
+		if(Application_Model_User::checkPermissionByRoleName('BOM查询-批量导出')
+		  || Application_Model_User::checkPermissionByRoleName('BOM查询-单个导出')
+		  || Application_Model_User::checkPermissionByRoleName('BOM管理员')
+		  || Application_Model_User::checkPermissionByRoleName('系统管理员')){
+			$onceexportable = 0;
+		}
+?>
+<script type="text/javascript" src="<?php echo HOME_PATH?>/public/js/common.js"></script>
+<script type="text/javascript">
+Ext.require([
+    'Ext.*'
+]);
+
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+    Ext.Ajax.timeout = 300000;
+
+    Ext.define('bom', {
+    extend: 'Ext.data.Model',
+    idProperty: 'sid',
+    fields: [{ name: "sid" },
+             { name: "id" },
+             { name: "nid" },
+             { name: "pid" },
+             { name: "recordkey" },
+             { name: "code" },
+             { name: "name" },
+             { name: "description" },
+             { name: "qty" },
+             { name: "ver" },
+             { name: "partposition" },
+             { name: "replace" },
+             { name: "remark" },
+             { name: "project_no_name" },
+             { name: "bom_file" },
+             { name: "state" },
+             { name: "count" },
+            { name: "low_cny" },
+            { name: "high_cny" },
+            { name: "average_cny" },
+            { name: "low_usd" },
+            { name: "high_usd" },
+            { name: "average_usd" }
+            ]
+    });
+
+    function showTotalPrice(value, p, record) {
+        if(record.get('qty') && value) {
+            return Number(record.get('qty') * value).toFixed(4);
+        }
+        return 0;
+    }
+
+    var explanded = new Array();
+    var recordkey = "<?php if (isset($_GET['recordkey'])) echo $_GET['recordkey']; ?>";
+    var treeStore = Ext.create('Ext.data.TreeStore', {
+        model: 'bom',
+        proxy: {
+            type: 'ajax',
+            reader: 'json',
+            timeout: 300000,
+            url: '<?php echo HOME_PATH; ?>/public/product/bompricedetail/getlist/recordkey/' + recordkey
+        },
+        lazyFill: true,
+        listeners:{
+            beforeload:function(){
+                msgTip = Ext.MessageBox.show({
+                    title:'提示',
+                    width : 250,
+                    msg:'数据加载中,请稍后......'
+                });
+            }
+        }
+    });
+    treeStore.load({callback: function(records, options, success){
+        msgTip.hide(); // 加载完成，关闭提示框
+    }});
+
+    var infoWin = Ext.create('Ext.window.Window', {
+	    title: '器件位置',
+	    modal: true,
+	    id: 'infoWin',
+	    layout: 'fit',
+	    maximizable: true,
+	    width: 400,
+	    resizable: true,
+	    closeAction: 'hide',
+	    resizable: true,
+	    padding: 10,
+	    items: [{
+	        xtype: 'displayfield',
+	        id: 'infoWinPartposition'
+	    }]
+	});
+
+    var treePanel = Ext.create('Ext.tree.Panel', {
+        //loadMask: true,
+        useArrows: false,
+        rootVisible: false,
+        border:0,
+        layout: 'fit',
+        store: treeStore,
+        xtype: 'cell-editing',
+        animate: false,
+        viewConfig: {
+            plugins: {
+                ptype: 'treeviewdragdrop',
+                containerScroll: true
+            },
+            getRowClass: function(record) {
+                if(!record.get('active')){
+                    // 当启用状态为false时，设置背景色
+                    return 'gray-row';
+                }else if(record.get('name') == '新类别'){
+                    // 当新增部门未取名时，设置背景色
+                    return 'light-red-row';
+                }
+            }
+        },
+        tbar: [{
+            text: '全部展开',
+            handler: function(){
+	        	if(this.text == '全部展开') {
+	        		treePanel.expandAll();
+	        		this.setText('全部折叠');
+	        	} else {
+	        		treePanel.collapseAll();
+	        		this.setText('全部展开');
+	        	}
+            }
+        }, {
+            text: '导出',
+            scope: this,
+            disabled: <?php echo $onceexportable ?>,
+            handler: function(){
+            	Ext.Msg.wait('加载中，请稍后...', '提示');
+                Ext.Ajax.request({
+                    url: '<?php echo HOME_PATH; ?>/public/product/bompricedetail/exportcsv',
+                    params: {
+	                	search_recordkey: recordkey,
+                        source: 'list'
+                    },
+                    method: 'POST',
+                    success: function(response, options) {
+                        var url = '<?php echo HOME_PATH; ?>/public/dcc/download/downcsv/path/' + response.responseText;
+                        Ext.Msg.hide();
+                        window.open(url);
+                    }
+                });
+            }
+        }, {
+            text: '导出已展开',
+            hidden: true,
+            scope: this,
+            disabled: <?php echo $onceexportable ?>,
+            handler: function(){
+            	if(explanded.length == 0) {
+            		Ext.MessageBox.alert('提示', 'BOM未展开！');
+            		return;
+            	}
+            	Ext.Msg.wait('加载中，请稍后...', '提示');
+                Ext.Ajax.request({
+                    url: '<?php echo HOME_PATH; ?>/public/product/bom/exportcsv',
+                    params: {
+	                	search_recordkey: recordkey,
+	                	explanded: Ext.JSON.encode(explanded),
+                        source: 'list'
+                    },
+                    method: 'POST',
+                    success: function(response, options) {
+                        var url = '<?php echo HOME_PATH; ?>/public/dcc/download/downcsv/path/' + response.responseText;
+                        Ext.Msg.hide();
+                        window.open(url);
+                    }
+                });
+            }
+        }, {
+            text: '升版状况',
+            id: 'updDetailBtn',
+            hidden: true,
+            handler: function(){
+            	alert(<?php echo $this->recordkey?>);
+            	Ext.create('Ext.window.Window', {
+                    title: 'BOM升版状况',
+                    maximized: true,
+                    maximizable: false,
+                    layout: 'fit',
+                    html: "<iframe src='<?php echo HOME_PATH; ?>/public/product/upddetail?recordkey=<?php echo $this->recordkey?>&code=<?php echo $this->code?>&ver=<?php echo $this->ver?>' frameborder=0 width=100% height=100%></iframe>"
+                }).show();
+            }
+        }],
+        columns: [{
+            text: 'ID',
+            width: 40,
+            hidden: true,
+            dataIndex: 'sid'
+        }, {
+            xtype: 'treecolumn',
+            text: '物料代码',
+            width: 240,
+            sortable: true,
+            dataIndex: 'code',
+            renderer: function(value, p, record) {
+            	if(value && record.get('ver')) {
+            		return value + " " + "<b>V" + record.get('ver') + "</b>";
+            	} else {
+            		return value;
+            	}
+            }
+        },{
+            text: '状态',
+            width: 80,
+            dataIndex: 'state',
+            renderer: showTitle
+        },{
+            text: '物料名称',
+            width: 180,
+            dataIndex: 'name',
+            stopSelection: false
+        },{
+            text: '物料描述',
+            width: 240,
+            dataIndex: 'description',
+            renderer: showTitle
+        },{
+            text: '产品型号',
+            width: 180,
+            hidden: true,
+            dataIndex: 'project_no_name',
+            renderer: showTitle
+        },{
+            text: '数量',
+            width: 100,
+            dataIndex: 'qty',
+            renderer: showTitle
+        }, {
+          text: '最低价',
+          columns: [{
+              text     : 'CNY',
+              width    : 80,
+              dataIndex: 'low_cny',
+              renderer : showTotalPrice
+            }, {
+                text     : 'USD',
+                width    : 80,
+                dataIndex: 'low_usd',
+              renderer : showTotalPrice
+            }]
+        }, {
+            text: '最高价',
+            columns: [{
+                text     : 'CNY',
+                width    : 80,
+                dataIndex: 'high_cny',
+                renderer : showTotalPrice
+            }, {
+                text     : 'USD',
+                width    : 80,
+                dataIndex: 'high_usd',
+                renderer : showTotalPrice
+            }]
+        }, {
+            text: '平均价',
+            columns: [{
+                text     : 'CNY',
+                width    : 80,
+                dataIndex: 'average_cny',
+                renderer : showTotalPrice
+            }, {
+                text     : 'USD',
+                width    : 80,
+                dataIndex: 'average_usd',
+                renderer : showTotalPrice
+            }]
+        }],
+        listeners: {
+            'itemclick': function(treeview, record, item, index, e, opts){
+                treeview.toggleOnDblClick = false;
+                if(!record.get('leaf')){
+                    var selModel = treePanel.getSelectionModel();
+                    var selDataModel = selModel.getLastSelected();
+                    var selNode = treeStore.getNodeById(selDataModel.internalId);
+
+                    selNode.expand();
+                }
+            },
+            'afteritemexpand': function( node, index, item, eOpts ) {
+            	for(var i = 0;i < explanded.length; i++) {
+            		if(explanded[i] == node.data.code) {
+            			break;
+            		}
+            	}
+            	explanded.push(node.data.code);
+            },
+            'afteritemcollapse': function( node, index, item, eOpts ) {
+            	for(var i = 0;i < explanded.length; i++) {
+            		if(explanded[i] == node.data.code) {
+            			explanded.splice(i, 1);
+            		}
+            	}
+            	var rootNode = treePanel.getRootNode();
+            	var childNodes = rootNode.childNodes;
+            	for(var i=0;i<childNodes.length;i++){
+            	    if(childNodes[i].data.code == node.data.code) {
+            	    	childNodes[i].collapseChildren(true);
+            	        childNodes[i].eachChild(function(child) {
+            	        	if(child.data.children) {
+            	        		for(var k = 0;k < explanded.length; k++) {
+				            		if(explanded[k] == child.data.code) {
+				            			explanded.splice(k, 1);
+				            		}
+				            	}
+            	        	}
+            	        })
+            	        break;
+            	    }
+            	}
+            }
+        }
+    });
+
+    Ext.create('Ext.container.Viewport', {
+        layout: 'border',
+        border:0,
+        rtl: true,
+        items: [{
+            region: 'center',
+            border:0,
+            layout: 'fit',
+            plain: true,
+            items:[treePanel]
+        }]
+    });
+});
+function showPart(value) {
+	Ext.MessageBox.show({
+        title: '器件位置',
+        value : value,
+        width:400,
+        height: 200,
+        buttons: Ext.MessageBox.OK,
+        multiline: true
+    });
+}
+</script>
+</head>
+<body>
+</body>
+</html>

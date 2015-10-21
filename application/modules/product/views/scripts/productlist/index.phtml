@@ -1,0 +1,511 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<?php
+$user = new Application_Model_User();
+$btnDisabled = $user->checkPermissionByRoleName('产品信息列表管理员') || Application_Model_User::checkPermissionByRoleName('系统管理员');
+$btnDisabled = $btnDisabled ? 0 :1;
+?>
+
+<script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/common.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/models.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/comboxtree.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/fileSelect.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/downloadFile.js"></script>
+<script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/materielDosage.js"></script>
+<script type="text/javascript"
+        src="<?php echo HOME_PATH ?>/application/modules/product/views/scripts/productlist/js/import.js"></script>
+<style type="text/css">
+    .x-fieldset {
+        border: 1px solid #B5B8C8;
+        display: block;
+    }
+
+    .x-fieldset-none {
+        border: 0;
+        display: block;
+        padding: 0;
+    }
+
+    .x-grid-cell.myreview {
+        background-color: #9fc;
+    }
+</style>
+<script type="text/javascript">
+Ext.require([
+    'Ext.*'
+]);
+Ext.define('Ext.ux.CustomTrigger', {
+    extend: 'Ext.form.field.Trigger',
+    alias: 'widget.customtrigger',
+    // override onTriggerClick
+    onTriggerClick: function () {
+        Ext.Msg.alert('Status', 'You clicked my trigger!');
+    }
+});
+
+Ext.onReady(function () {
+    Ext.QuickTips.init();
+
+    Ext.define('plist', {
+        extend: 'Ext.data.Model',
+        idProperty: 'id',
+        fields: [
+            {name: "id"},
+            {name: "code"},
+            {name: "step"},
+            {name: "description"},
+            {name: "is_bom_exists"},
+            {name: "bom_apply_time"},
+            {name: "bom_archive_time"},
+            {name: "product_code"},
+            {name: "bosa"},
+            {name: "bosa_supply"},
+            {name: "tosa"},
+            {name: "tosa_supply"},
+            {name: "rosa"},
+            {name: "rosa_supply"},
+            {name: "pcb"},
+            {name: "pcba"},
+            {name: "dg02"},
+            {name: "dg01"},
+            {name: "label_print_rule"},
+            {name: "product_label"},
+            {name: "barcode_label"},
+            {name: "tooling_model"},
+            {name: "sample_send_time"},
+            {name: "sample_send_feedback"},
+            {name: "trial_produce_qa1"},
+            {name: "trial_produce_qa2"},
+            {name: "mtb"},
+            {name: "tsq"},
+            {name: "sqc"},
+            {name: "ed"},
+            {name: "pts"},
+            {name: "sp"},
+            {name: "ep"},
+            {name: "fep"},
+            {name: "fsp"},
+            {name: "ld"},
+            {name: "pg"},
+            {name: "pd"},
+            {name: "pra"},
+            {name: "rd"},
+            {name: "nfc"},
+            {name: "pmr"},
+            {name: "frm"},
+            {name: "pfc"},
+            {name: "wi"},
+            {name: "other"},
+            {name: "create_time"},
+            {name: "create_user"},
+            {name: "update_time"},
+            {name: "update_user"},
+            {name: "dl"},
+            {name: "ipa"},
+            {name: "cri"},
+            {name: "ds"},
+            {name: "dd"},
+            {name: "pl"},
+            {name: "pes"},
+            {name: "pcb_file"},
+            {name: "icd"},
+            {name: "smt"},
+            {name: "sqr"},
+            {name: "dvs"},
+            {name: "dvp"},
+            {name: "dvr"},
+            {name: "dvt"},
+            {name: "rtr"},
+            {name: "emr"},
+            {name: "mp"}
+        ]
+    });
+
+    var personal = "<?php if (isset($_GET['personal'])) echo 3 ?>";
+    var store = Ext.create('Ext.data.Store', {
+        pageSize: 50,
+        model: 'plist',
+        proxy: {
+            type: 'ajax',
+            reader: {
+                root: 'topics',
+                totalProperty: 'totalCount'
+            },
+            url: '<?php echo HOME_PATH; ?>/public/product/productlist/getlist/mytype/' + personal
+        },
+        autoLoad: true
+    });
+
+    var rowEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+        clicksToEdit: 1
+    });
+
+    var required = '<span style="color:red;font-weight:bold" data-qtip="Required">*</span>';
+
+    // 文件下载
+    var download = function (id) {
+        window.open('<?php echo HOME_PATH; ?>/public/dcc/download/download/id/' + id);
+    };
+
+    var grid = Ext.create('Ext.grid.Panel', {
+        store: store,
+        border: 0,
+        selType: 'checkboxmodel',
+        columnLines: true,
+        viewConfig: {
+            stripeRows: false
+        },
+        tbar: [
+            {
+                xtype: 'textfield',
+                id: 'search_tag',
+                width: 300,
+                emptyText: '模糊查询，多个查询条件以空格隔开...',
+                listeners: {
+                    specialKey: function (field, e) {
+                        if (e.getKey() == Ext.EventObject.ENTER) {
+                            store.loadPage(1);
+                        }
+                    }
+                }
+            },
+            {
+                xtype: 'splitbutton',
+                text: '查询',
+                iconCls: 'icon-search',
+                handler: function () {
+                    var search_tag = Ext.getCmp('search_tag').getValue();
+                    store.baseParams = {
+                        search_tag: search_tag
+                    }
+                    store.loadPage(1);
+                },
+                menu: [
+                    {
+                        text: '导出',
+                        disabled: <?php echo $btnDisabled ?>,
+                        iconCls: 'icon-export',
+                        hidden: true,
+                        handler: function () {
+                            var search_tag = Ext.getCmp('search_tag').getValue();
+                            Ext.Msg.wait('加载中，请稍后...', '提示');
+                            Ext.Ajax.request({
+                                url: '<?php echo HOME_PATH; ?>/public/product/productlist/exportcsv',
+                                params: {
+                                    search_tag: search_tag,
+                                    source: 'list'
+                                },
+                                method: 'POST',
+                                success: function (response, options) {
+                                    var url = '<?php echo HOME_PATH; ?>/public/dcc/download/downcsv/path/' + response.responseText;
+                                    Ext.Msg.hide();
+                                    window.open(url);
+                                }
+                            });
+                        }
+                    },
+                    {
+                        text: '导入',
+                        disabled: <?php echo $btnDisabled ?>,
+                        iconCls: 'icon-import',
+                        handler: function () {
+                            importWin.show();
+                        }
+                    }
+                ]
+            },
+            {
+                text: '添加',
+                scope: this,
+                disabled: <?php echo $btnDisabled ?>,
+                iconCls: 'icon-add',
+                handler: function () {
+                    rowEditing.cancelEdit();
+                    var r = Ext.create('plist', {
+
+                    });
+                    store.insert(0, r);
+                    rowEditing.startEdit(0, 2);
+                }
+            },
+            {
+                text: '删除',
+                scope: this,
+                disabled: <?php echo $btnDisabled ?>,
+                iconCls: 'icon-delete',
+                handler: function () {
+                    var selection = grid.getView().getSelectionModel().getSelection();
+                    if (selection.length > 0) {
+                        // 格式正确则提交修改数据
+                        Ext.MessageBox.confirm('确认', '确定删除所选内容？', function (button, text) {
+                            if (button == 'yes') {
+                                store.remove(selection);
+                                var deleteRecords = store.getRemovedRecords();
+                                var changeRows = {
+                                    deleted: []
+                                }
+
+                                for (var i = 0; i < deleteRecords.length; i++) {
+                                    changeRows.deleted.push(deleteRecords[i].data)
+                                }
+
+                                var json = Ext.JSON.encode(changeRows);
+                                Ext.Msg.wait('提交中，请稍后...', '提示');
+                                Ext.Ajax.request({
+                                    url: '<?php echo HOME_PATH; ?>/public/product/productlist/remove',
+                                    params: {json: json},
+                                    method: 'POST',
+                                    success: function (response, options) {
+                                        var data = Ext.JSON.decode(response.responseText);
+                                        if (data.success) {
+                                            Ext.MessageBox.alert('提示', data.info);
+                                            store.reload();
+                                        } else {
+                                            Ext.MessageBox.alert('错误', data.info);
+                                        }
+                                    },
+                                    failure: function (form, action) {
+                                        Ext.MessageBox.alert('错误', action.result.info);
+                                    }
+                                });
+                            }
+                        });
+                    } else {
+                        Ext.MessageBox.alert('错误', '没有选择删除对象！');
+                    }
+                }
+            },
+            {
+                text: '保存修改',
+                scope: this,
+                disabled: <?php echo $btnDisabled ?>,
+                iconCls: 'icon-save',
+                handler: function(){
+                    var updateRecords = store.getUpdatedRecords();
+                    var insertRecords = store.getNewRecords();
+                    var deleteRecords = store.getRemovedRecords();
+
+                    // 判断是否有修改数据
+                    if(updateRecords.length + insertRecords.length + deleteRecords.length > 0){
+                        var changeRows = {
+                            updated:    [],
+                            inserted:   [],
+                            deleted:    []
+                        }
+
+                        // 判断成品物料号是否有为空的情况
+                        var valueCheck = true;
+                        var msg = "";
+                        for(var i = 0; i < updateRecords.length; i++){
+                            var data = updateRecords[i].data;
+                            if(data['code'] == '') {
+                                valueCheck = false;
+                                msg = "“成品物料号”不能为空";
+                                break;
+                            }
+                            changeRows.updated.push(data)
+                        }
+
+                        for(var i = 0; i < insertRecords.length; i++){
+                            var data = insertRecords[i].data;
+
+                            if(data['code'] == '') {
+                                valueCheck = false;
+                                msg = "“成品物料号”不能为空";
+                                break;
+                            }
+                            changeRows.inserted.push(data)
+                        }
+
+                        for(var i = 0; i < deleteRecords.length; i++){
+                            changeRows.deleted.push(deleteRecords[i].data)
+                        }
+
+                        // 格式正确则提交修改数据
+                        if(valueCheck){
+                            Ext.MessageBox.confirm('确认', '确定保存修改内容？', function(button, text){
+                                if(button == 'yes'){
+                                    var json = Ext.JSON.encode(changeRows);
+
+                                    Ext.Msg.wait('提交中，请稍后...', '提示');
+                                    Ext.Ajax.request({
+                                        url: '<?php echo HOME_PATH; ?>/public/product/productlist/save',
+                                        params: {json: json},
+                                        method: 'POST',
+                                        success: function(response, options) {
+                                            var data = Ext.JSON.decode(response.responseText);
+                                            if(data.success){
+                                                Ext.MessageBox.alert('提示', data.info);
+                                                store.reload();
+                                            }else{
+                                                Ext.MessageBox.alert('错误', data.info);
+                                            }
+                                        },
+                                        failure: function(form, action){
+                                            Ext.MessageBox.alert('错误', action.result.info);
+                                        }
+                                    });
+                                }
+                            });
+                        }else{
+                            Ext.MessageBox.alert('提示', msg);
+                        }
+                    }else{
+                        Ext.MessageBox.alert('提示', '没有修改任何数据！');
+                    }
+                }
+            }
+        ],
+        plugins: rowEditing,
+        columns: [
+            {
+                xtype: 'rownumberer'
+            },
+            {
+                text: 'ID',
+                width: 40,
+                hidden: true,
+                locked: true,
+                dataIndex: 'id'
+            },
+            { text: '物料号        ', width: 160, dataIndex: 'code', locked: false,                 editor: {allowBlank: false} },
+            { text: '描述              ', width: 200, dataIndex: 'description', locked: false,                editor: {allowBlank: true}, renderer: showTitle },
+            { text: '状态              ', width: 80, dataIndex: 'step',                editor: new Ext.form.field.ComboBox({
+                typeAhead: true,
+                triggerAction: 'all',
+                store: [
+                    ['Sample','Sample'],
+                    ['QA1','QA1'],
+                    ['QA2','QA2'],
+                    ['MBOM','MBOM'],
+                    ['EOL','EOL']
+                ]
+            }) },
+            { text: '是否有成品BOM     ', width: 120, dataIndex: 'is_bom_exists',        editor: new Ext.form.field.ComboBox({
+                typeAhead: true,
+                triggerAction: 'all',
+                store: [
+                    ['Yes','Yes'],
+                    ['No','No']
+                ]
+            }) },
+            { text: '成品代码申请日期      ', width: 140, dataIndex: 'bom_apply_time',         editor: {allowBlank: true} },
+            { text: '成品BOM归档日期      ', width: 140, dataIndex: 'bom_archive_time',         editor: {allowBlank: true} },
+            { text: 'Product Code      ', width: 100, dataIndex: 'product_code',         editor: {allowBlank: true} },
+            { text: 'BOSA              ', width: 120, dataIndex: 'bosa',                 editor: {allowBlank: true} },
+            { text: 'BOSA供应商        ', width: 120, dataIndex: 'bosa_supply',          editor: {allowBlank: true} },
+            { text: 'TOSA              ', width: 120, dataIndex: 'tosa',                 editor: {allowBlank: true} },
+            { text: 'TOSA供应商        ', width: 120, dataIndex: 'tosa_supply',          editor: {allowBlank: true} },
+            { text: 'ROSA              ', width: 120, dataIndex: 'rosa',                 editor: {allowBlank: true} },
+            { text: 'ROSA供应商        ', width: 120, dataIndex: 'rosa_supply',          editor: {allowBlank: true} },
+            { text: 'PCB               ', width: 120, dataIndex: 'pcb',                  editor: {allowBlank: true} },
+            { text: 'PCBA              ', width: 160, dataIndex: 'pcba',                 editor: {allowBlank: true} },
+            { text: 'DG02              ', width: 160, dataIndex: 'dg02',                 editor: {allowBlank: true} },
+            { text: 'DG01              ', width: 160, dataIndex: 'dg01',                 editor: {allowBlank: true} },
+            { text: '产品标签          ', width: 160, dataIndex: 'product_label',        editor: {allowBlank: true} },
+            { text: '条码标签          ', width: 160, dataIndex: 'barcode_label',        editor: {allowBlank: true} },
+            { text: '标签打印规则      ', width: 160, dataIndex: 'label_print_rule',     editor: {allowBlank: true} },
+            { text: '工装夹具          ', width: 160, dataIndex: 'tooling_model',        editor: {allowBlank: true}, renderer: showTitle },
+            { text: '送样情况          ', width: 160, dataIndex: 'sample_send_time',      editor: {allowBlank: true}, renderer: showTitle },
+            { text: 'PRA               ', width: 160, dataIndex: 'pra',                  editor: {allowBlank: true} },
+            { text: '试产记录', width: 160, dataIndex: 'trial_produce_qa1',    editor: {allowBlank: true} , renderer: showTitle},
+            { text: 'PMR               ', width: 160, dataIndex: 'pmr',                  editor: {allowBlank: true} , renderer: showTitle},
+            { text: 'DL                ', width: 160, dataIndex: 'dl',                   editor: {allowBlank: true} },
+            { text: 'IPA               ', width: 160, dataIndex: 'ipa',                  editor: {allowBlank: true} },
+            { text: 'CRI               ', width: 160, dataIndex: 'cri',                  editor: {allowBlank: true} },
+            { text: 'DS                ', width: 160, dataIndex: 'ds',                   editor: {allowBlank: true} },
+            { text: 'DD                ', width: 160, dataIndex: 'dd',                   editor: {allowBlank: true} },
+            { text: 'PL                ', width: 160, dataIndex: 'pl',                   editor: {allowBlank: true} },
+            { text: 'PES               ', width: 160, dataIndex: 'pes',                  editor: {allowBlank: true} },
+            { text: 'PCB加工文件       ', width: 160, dataIndex: 'pcb_file',             editor: {allowBlank: true} ,renderer: showTitle},
+            { text: 'ICD               ', width: 160, dataIndex: 'icd',                  editor: {allowBlank: true} },
+            { text: 'SMT贴片文件       ', width: 160, dataIndex: 'smt',                  editor: {allowBlank: true} ,renderer: showTitle},
+            { text: 'MP               ', width: 160, dataIndex: 'mp',                  editor: {allowBlank: true} , renderer: showTitle},
+            { text: 'SQR               ', width: 160, dataIndex: 'sqr',                  editor: {allowBlank: true} },
+            { text: 'DVS               ', width: 160, dataIndex: 'dvs',                  editor: {allowBlank: true} },
+            { text: 'DVP               ', width: 160, dataIndex: 'dvp',                  editor: {allowBlank: true} },
+            { text: 'DVR               ', width: 160, dataIndex: 'dvr',                  editor: {allowBlank: true} },
+            { text: 'DVT               ', width: 160, dataIndex: 'dvt',                  editor: {allowBlank: true} },
+            { text: 'RTR               ', width: 160, dataIndex: 'rtr',                  editor: {allowBlank: true} },
+            { text: 'EMR               ', width: 160, dataIndex: 'emr',                  editor: {allowBlank: true} },
+            { text: 'MTB               ', width: 160, dataIndex: 'mtb',                  editor: {allowBlank: true} },
+            { text: 'TSQ               ', width: 160, dataIndex: 'tsq',                  editor: {allowBlank: true} , renderer: showTitle},
+            { text: 'SQC               ', width: 160, dataIndex: 'sqc',                  editor: {allowBlank: true} },
+            { text: 'ED                ', width: 160, dataIndex: 'ed',                   editor: {allowBlank: true} },
+            { text: 'PTS               ', width: 160, dataIndex: 'pts',                  editor: {allowBlank: true} },
+            { text: 'SP                ', width: 160, dataIndex: 'sp',                   editor: {allowBlank: true} },
+            { text: 'EP                ', width: 160, dataIndex: 'ep',                   editor: {allowBlank: true} },
+            { text: 'FEP               ', width: 160, dataIndex: 'fep',                  editor: {allowBlank: true} },
+            { text: 'FSP               ', width: 160, dataIndex: 'fsp',                  editor: {allowBlank: true} },
+            { text: 'LD                ', width: 160, dataIndex: 'ld',                   editor: {allowBlank: true} , renderer: showTitle},
+            { text: 'PD                ', width: 160, dataIndex: 'pd',                   editor: {allowBlank: true} },
+            { text: 'PG                ', width: 160, dataIndex: 'pg',                   editor: {allowBlank: true} },
+            { text: 'NFC               ', width: 160, dataIndex: 'nfc',                  editor: {allowBlank: true} },
+            { text: 'FRM               ', width: 160, dataIndex: 'frm',                  editor: {allowBlank: true} },
+            { text: 'PFC               ', width: 160, dataIndex: 'pfc',                  editor: {allowBlank: true} },
+            { text: 'WI                ', width: 160, dataIndex: 'wi',                   editor: {allowBlank: true} },
+            { text: 'Other             ', width: 160, dataIndex: 'other',                editor: {allowBlank: true} }
+        ],
+        listeners: {
+            itemdblclick: function (grid) {
+                //                viewAction(grid);
+            }
+        },
+        bbar: Ext.create('Ext.PagingToolbar', {
+            store: store,
+            displayInfo: true,
+            displayMsg: '显示 {0} - {1} 共 {2}',
+            emptyMsg: "没有数据",
+            items: [
+                {
+                    xtype: 'numberfield',
+                    id: 'page_size_set',
+                    value: 50,
+                    width: 150,
+                    hideTrigger: true,
+                    labelAlign: 'right',
+                    fieldLabel: '每页显示',
+                    listeners: {
+                        specialKey: function (field, e) {
+                            if (e.getKey() == Ext.EventObject.ENTER) {
+                                var thisStore = this.up('pagingtoolbar').getStore();
+                                thisStore.pageSize = Ext.getCmp('page_size_set').getValue();
+                                thisStore.loadPage(1);
+                            }
+                        }
+                    }
+                }
+            ]
+
+        })
+    });
+
+    store.on("beforeload", function () {
+        var search_tag = Ext.getCmp('search_tag').getValue();
+        Ext.apply(store.proxy.extraParams, {
+            search_tag: search_tag
+        });
+    });
+
+
+    Ext.create('Ext.container.Viewport', {
+        layout: 'border',
+        rtl: true,
+        border: 0,
+        items: [
+            {
+                region: 'center',
+                layout: 'fit',
+                border: 0,
+                plain: true,
+                items: [grid]
+            }
+        ]
+    });
+});
+</script>
+</head>
+<body>
+</body>
+</html>

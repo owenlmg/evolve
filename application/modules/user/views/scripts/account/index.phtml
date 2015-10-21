@@ -1,0 +1,387 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+Ext.require([
+    'Ext.*'
+]);
+
+var checkRender = function(value, metaData, record, colIndex, store, view) {
+    if(value == 1){
+        return '<img src="'+homePath+'/public/images/icons/ok.png"></img>';
+    }else{
+    	return '<img src="'+homePath+'/public/images/icons/cross.gif"></img>';
+    }
+};
+
+// 修改密码表单
+var editPwdForm = Ext.create('Ext.form.Panel', {
+    xtype: 'form',
+    id: 'editPwdForm',
+    border: false,
+    bodyPadding: 5,
+    border: 0,
+    url: homePath+'/public/user/account/editpwd',
+    defaultType: 'textfield',
+
+    fieldDefaults: {
+    	xtype: 'textfield',
+        inputType: 'password',
+        labelAlign: 'right',
+        labelWidth: 100,
+        labelStyle: 'font-weight:bold'
+    },
+
+    items: [{
+        fieldLabel: '输入旧密码',
+        name: 'pwd0',
+        id: 'pwd0',
+        allowBlank: false
+    }, {
+        fieldLabel: '输入新密码',
+        name: 'pwd1',
+        id: 'pwd1',
+        allowBlank: false
+    }, {
+        fieldLabel: '再次输入',
+        name: 'pwd2',
+        id: 'pwd2',
+        allowBlank: false
+    }, {
+        xtype: 'label',
+        text: '（密码长度必须大于等于6位且包含英文字母及数字）',
+        style: {
+            color: '#FF0000'
+        }
+    }],
+
+    buttons: [{
+        text: '提交',
+        formBind: true,
+        disabled: true,
+        handler: function() {
+        	var form = this.up('form').getForm();
+        	
+            if (form.isValid()) {
+                var pwd1 = Ext.getCmp('pwd1').getValue();
+                var pwd2 = Ext.getCmp('pwd2').getValue();
+
+                if(pwd1 == pwd2){
+                    // 检查密码强度，密码长度必须大于等于6位且包含英文字母及数字
+                	if(pwd1.length < 6){
+                		Ext.Msg.alert('错误', '密码长度不能小于6位，请重新输入！');
+                	}else if((!pwd1.match(/[a-z]/) && !pwd1.match(/[A-Z]/)) || !pwd1.match(/\d/)){
+                		Ext.Msg.alert('错误', '密码必须包含字母和数字，请重新输入！');
+                	}else{
+                		form.submit({
+                        	waitMsg: '提交中，请稍后...',
+                            success: function(form, action) {
+                                if(action.result){
+                                    Ext.Msg.alert('提醒', action.result.info);
+                                    editPwdWin.hide();
+                                }else{
+                                    Ext.Msg.alert('错误', action.result.info);
+                                }
+                            },
+                            failure: function(form, action) {
+                                Ext.Msg.alert('错误', action.result.info);
+                            }
+                        });
+                	}
+                }else{
+                	Ext.Msg.alert('错误', '密码不一致，请重新输入！');
+                }
+            }
+        }
+    },{
+        text: '取消',
+        handler: function() {
+            Ext.getCmp('newContentWin').hide();
+        }
+    }]
+});
+
+// 修改密码窗口
+var editPwdWin = Ext.create('Ext.window.Window', {
+    title: '修改密码',
+    id: 'newContentWin',
+    height: 200,
+    width: 330,
+    modal: true,
+    constrain: true,
+    resizable: false,
+    layout: 'fit',
+    items: editPwdForm,
+    closeAction: 'hide'
+});
+
+Ext.onReady(function() {
+    var form = Ext.create('Ext.form.Panel', {
+    	autoScroll: true,
+        bodyPadding: 10,
+        border: 0,
+        items: [{
+        	xtype: 'fieldcontainer',
+        	msgTarget : 'side',
+            layout: 'hbox',
+            defaults: {
+            	xtype: 'displayfield',
+                labelStyle: 'font-weight:bold',
+                flex: 1,
+                labelWidth: 100
+            },
+            items: [{name: 'account', value: '<?php echo $this->user_info['account']?>', renderer: checkRender, fieldLabel: '系统账号'}, 
+                    {name: 'account_active', value: '<?php echo $this->user_info['account_active']?>', renderer: checkRender, fieldLabel: '账号状态'}, 
+                    {name: 'active', value: '<?php echo $this->user_info['active']?>', renderer: checkRender, fieldLabel: '在职状态'}, 
+                    {name: 'employment_type', value: '<?php echo $this->user_info['employment_type']?>', fieldLabel: '用工形式'}]
+        }, {
+        	xtype: 'fieldset',
+        	title: '基本信息',
+        	collapsible: true,
+            defaults: {
+                labelWidth: 100,
+                anchor: '100%',
+                layout: {
+                    type: 'hbox',
+                    defaultMargins: '0 5 0 0'
+                }
+            },
+            items: [{
+            	xtype: 'fieldcontainer',
+            	msgTarget : 'side',
+                layout: 'hbox',
+                defaults: {
+                	xtype: 'displayfield',
+                	labelStyle: 'font-weight:bold',
+                    flex: 1,
+                    labelWidth: 100
+                },
+                items: [{name: 'number', value: '<?php echo $this->user_info['number']?>', fieldLabel: '工号'}, 
+                        {name: 'cname', value: '<?php echo $this->user_info['cname']?>', fieldLabel: '中文名'}, 
+                        {name: 'ename', value: '<?php echo $this->user_info['ename']?>', fieldLabel: '英文名'}, 
+                        {name: 'tel', value: '<?php echo $this->user_info['tel']?>', fieldLabel: '手机号'}]
+            }, {
+            	xtype: 'fieldcontainer',
+            	msgTarget : 'side',
+                layout: 'hbox',
+                defaults: {
+                	xtype: 'displayfield',
+                	labelStyle: 'font-weight:bold',
+                    flex: 1,
+                    labelWidth: 100
+                },
+                items: [{name: 'sex', value: '<?php echo $this->user_info['sex']?>', fieldLabel: '性别'}, 
+                        {name: 'birthday', value: '<?php echo $this->user_info['birthday']?>', fieldLabel: '出生日期'}, 
+                        {name: 'email', value: '<?php echo $this->user_info['email']?>', fieldLabel: '邮箱'}, 
+                        {name: 'ext', value: '<?php echo $this->user_info['ext']?>', fieldLabel: '分机号'}]
+            }]
+        }, {
+        	xtype: 'fieldset',
+        	title: '在职信息',
+        	collapsible: true,
+            defaults: {
+                labelWidth: 100,
+                anchor: '100%',
+                layout: {
+                    type: 'hbox',
+                    defaultMargins: '0 5 0 0'
+                }
+            },
+            items: [{
+            	xtype: 'fieldcontainer',
+            	msgTarget : 'side',
+                layout: 'hbox',
+                defaults: {
+                	xtype: 'displayfield',
+                	labelStyle: 'font-weight:bold',
+                    flex: 1,
+                    labelWidth: 100
+                },
+                items: [{name: 'dept', value: '<?php echo $this->user_info['dept']?>', fieldLabel: '部门'}, 
+                        {name: 'post', value: '<?php echo $this->user_info['post']?>', fieldLabel: '职位'}, 
+                        {name: 'manager', value: '<?php echo $this->user_info['manager']?>', fieldLabel: '上级主管'}, 
+                        {name: 'work_years', value: '<?php echo $this->user_info['work_years']?>', fieldLabel: '工作年限'}]
+            }, {
+            	xtype: 'fieldcontainer',
+            	msgTarget : 'side',
+                layout: 'hbox',
+                defaults: {
+                	xtype: 'displayfield',
+                	labelStyle: 'font-weight:bold',
+                    flex: 1,
+                    labelWidth: 100
+                },
+                items: [{name: 'entry_date', value: '<?php echo $this->user_info['entry_date']?>', fieldLabel: '入职日期'}, 
+                        {name: 'regularization_date', value: '<?php echo $this->user_info['regularization_date']?>', fieldLabel: '转正日期'}, 
+                        {name: 'labor_contract_start', value: '<?php echo $this->user_info['labor_contract_start']?>', fieldLabel: '劳动合同-起始'}, 
+                        {name: 'labor_contract_end', value: '<?php echo $this->user_info['labor_contract_end']?>', fieldLabel: '劳动合同-截止'}]
+            }]
+        }, {
+        	xtype: 'fieldset',
+        	title: '个人信息',
+        	collapsible: true,
+            defaults: {
+                labelWidth: 100,
+                anchor: '100%',
+                layout: {
+                    type: 'hbox',
+                    defaultMargins: '0 5 0 0'
+                }
+            },
+            items: [{
+            	xtype: 'fieldcontainer',
+            	msgTarget : 'side',
+                layout: 'hbox',
+                defaults: {
+                	xtype: 'displayfield',
+                	labelStyle: 'font-weight:bold',
+                    flex: 1,
+                    labelWidth: 100
+                },
+                items: [{name: 'marital_status', value: '<?php echo $this->user_info['marital_status']?>', renderer: checkRender, fieldLabel: '婚否'}, 
+                        {name: 'marry_day', value: '<?php echo $this->user_info['marry_day']?>', fieldLabel: '结婚纪念日'}, 
+                        {name: 'children_birthday', value: '<?php echo $this->user_info['children_birthday']?>', fieldLabel: '子女生日', flex: 2}]
+            }, {
+            	xtype: 'fieldcontainer',
+            	msgTarget : 'side',
+                layout: 'hbox',
+                defaults: {
+                	xtype: 'displayfield',
+                	labelStyle: 'font-weight:bold',
+                    flex: 1,
+                    labelWidth: 100
+                },
+                items: [{name: 'other_contact', value: '<?php echo $this->user_info['other_contact']?>', fieldLabel: '紧急联系人'}, 
+                        {name: 'other_relationship', value: '<?php echo $this->user_info['other_relationship']?>', fieldLabel: '双方关系'}, 
+                        {name: 'other_contact_way', value: '<?php echo $this->user_info['other_contact_way']?>', fieldLabel: '联系方式', flex: 2}]
+            }, {
+            	xtype: 'fieldcontainer',
+            	msgTarget : 'side',
+                layout: 'hbox',
+                defaults: {
+                	xtype: 'displayfield',
+                	labelStyle: 'font-weight:bold',
+                    flex: 2,
+                    labelWidth: 100
+                },
+                items: [{name: 'address', value: '<?php echo $this->user_info['address']?>', fieldLabel: '家庭住址'}, 
+                        {name: 'offical_address', value: '<?php echo $this->user_info['offical_address']?>', fieldLabel: '户籍地址'}]
+            }]
+        }, {
+        	xtype: 'fieldset',
+        	title: '工资信息',
+        	collapsible: true,
+            defaults: {
+                labelWidth: 100,
+                anchor: '100%',
+                layout: {
+                    type: 'hbox',
+                    defaultMargins: '0 5 0 0'
+                }
+            },
+            items: [{
+            	xtype: 'fieldcontainer',
+            	msgTarget : 'side',
+                layout: 'hbox',
+                defaults: {
+                	xtype: 'displayfield',
+                	labelStyle: 'font-weight:bold',
+                    flex: 1,
+                    labelWidth: 100
+                },
+                items: [{name: 'salary', value: '<?php echo $this->user_info['salary']?>', fieldLabel: '薪水'}, 
+                        {name: 'bank', value: '<?php echo $this->user_info['bank']?>', fieldLabel: '开户行'}, 
+                        {name: 'bank_num', value: '<?php echo $this->user_info['bank_num']?>', fieldLabel: '银行卡号', flex: 2}]
+            }]
+        }, {
+        	xtype: 'fieldset',
+        	title: '证件信息',
+        	collapsible: true,
+            defaults: {
+                labelWidth: 100,
+                anchor: '100%',
+                layout: {
+                    type: 'hbox',
+                    defaultMargins: '0 5 0 0'
+                }
+            },
+            items: [{
+            	xtype: 'fieldcontainer',
+            	msgTarget : 'side',
+                layout: 'hbox',
+                defaults: {
+                	xtype: 'displayfield',
+                	labelStyle: 'font-weight:bold',
+                    flex: 1,
+                    labelWidth: 100
+                },
+                items: [{name: 'id_card', value: '<?php echo $this->user_info['id_card']?>', fieldLabel: '身份证号'}, 
+                        {name: 'insurcode', value: '<?php echo $this->user_info['insurcode']?>', fieldLabel: '社保号'}, 
+                        {name: 'accumulation_fund_code', value: '<?php echo $this->user_info['accumulation_fund_code']?>', fieldLabel: '公积金号'}, 
+                        {name: 'driving_license', value: '<?php echo $this->user_info['driving_license']?>', fieldLabel: '驾照'}]
+            }]
+        }, {
+        	xtype: 'fieldset',
+        	title: '其它信息',
+        	collapsible: true,
+            defaults: {
+                labelWidth: 100,
+                anchor: '100%',
+                layout: {
+                    type: 'hbox',
+                    defaultMargins: '0 5 0 0'
+                }
+            },
+            items: [{
+            	xtype: 'fieldcontainer',
+            	msgTarget : 'side',
+                layout: 'hbox',
+                defaults: {
+                	xtype: 'displayfield',
+                	labelStyle: 'font-weight:bold',
+                    flex: 1,
+                    labelWidth: 100
+                },
+                items: [{name: 'school', value: '<?php echo $this->user_info['school']?>', fieldLabel: '毕业院校'}, 
+                        {name: 'education', value: '<?php echo $this->user_info['education']?>', fieldLabel: '学历'}, 
+                        {name: 'major', value: '<?php echo $this->user_info['major']?>', fieldLabel: '专业'}, 
+                        {name: 'politics_status', value: '<?php echo $this->user_info['politics_status']?>', fieldLabel: '政治面貌'}]
+            }]
+        }, {
+            xtype     : 'displayfield',
+            name      : 'remark',
+            value: '<?php echo $this->user_info['remark']?>',
+            labelStyle: 'font-weight:bold',
+            fieldLabel: '备注'
+        }],
+        tbar: ['->', {
+            text   : '修改密码',
+            border: 0,
+            iconCls: 'icon-edit',
+            handler: function() {
+            	editPwdForm.getForm().reset();
+            	editPwdWin.show();
+            }
+        }]
+    });
+
+    Ext.QuickTips.init();
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+    
+    Ext.create('Ext.Viewport', {
+        layout: 'border',
+        items: [{
+            region: 'center',
+            border: 0,
+            layout: 'fit',
+            plain: true,
+            items: [form]
+        }]
+    });
+});
+</script>
+</head>
+<body>
+</body>
+</html>

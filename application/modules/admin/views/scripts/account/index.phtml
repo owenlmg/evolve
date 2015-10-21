@@ -1,0 +1,350 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+Ext.require([
+    'Ext.*'
+]);
+
+Ext.onReady(function() {
+	// 选项数据模型
+	Ext.define('Selection', {
+	    extend: 'Ext.data.Model',
+	    fields: ['id', 'name']
+	});
+	
+    // 账号数据模型
+    Ext.define('Account', {
+        extend: 'Ext.data.Model',
+        fields: [{name: "id"}, 
+                 {name: "active"}, 
+                 {name: "name"},  
+                 {name: "dept_name"}, 
+                 {name: "ename"}, 
+                 {name: "email"}, 
+                 {name: "role"}, 
+                 {name: "remark"}, 
+                 {name: "last_login_time",type: 'date',dateFormat: 'timestamp'}, 
+                 {name: "create_time",type: 'date',dateFormat: 'timestamp'}, 
+                 {name: "update_time",type: 'date',dateFormat: 'timestamp'}, 
+                 {name: "creater"}, 
+                 {name: "updater"}]
+    });
+    
+    // 角色列表数据源
+    var roleListStore = Ext.create('Ext.data.ArrayStore', {
+    	model: 'Selection',
+        proxy: {
+            type: 'ajax',
+            url: homePath+'/public/admin/account/getrolelist',
+            reader: 'json'
+        },
+        autoLoad: true
+    });
+    
+    // 账号数据源
+    var accountStore = Ext.create('Ext.data.Store', {
+        model: 'Account',
+        remoteSort: true,
+        proxy: {
+            type: 'ajax',
+            reader: {
+                type: 'json'
+            },
+            url: homePath+'/public/admin/account/getuserlist'
+        }
+    });
+    
+    Ext.tip.QuickTipManager.init();
+
+    // 账号编辑插件
+    var accountRowEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+        clicksToEdit: 1
+    });
+
+    function loadData(csv)
+    {
+    	var key = Ext.getCmp('search_key').getValue();
+        var role_id = Ext.JSON.encode(Ext.getCmp('search_role_id').getValue());
+        var active = Ext.JSON.encode(Ext.getCmp('search_active').getValue());
+        
+        accountStore.load({
+            params: {
+            	active: active,
+                key: key,
+                role_id: role_id,
+                csv: csv
+            }
+        });
+    }
+    
+    // 账号列表
+    var accountGrid = Ext.create('Ext.grid.Panel', {
+    	store: accountStore,
+    	border: 0,
+        columnLines: true,
+        tbar: [{
+            xtype: 'combobox',
+            id: 'search_active',
+            fieldLabel: '启用',
+            labelWidth: 40,
+            value: 1,
+            displayField: 'name',
+            valueField: 'id',
+            width: 100,
+            store: Ext.create('Ext.data.Store', {
+                fields: ['name', 'id'],
+                data: [
+                    {"name": "是", "id": 1},
+                    {"name": "否", "id": 0}
+                ]
+            })
+        }, {
+            xtype: 'combobox',
+            id: 'search_role_id',
+            emptyText: '选择角色...',
+            displayField: 'name',
+            valueField: 'id',
+            width: 180,
+            store: roleListStore,
+            queryMode: 'local',
+            editable: false,
+            multiSelect: true
+        }, {
+            xtype: 'textfield',
+            id: 'search_key',
+            emptyText: '工号/中文名/英文名...',
+            listeners: {
+            	specialKey :function(field,e){
+                    if (e.getKey() == Ext.EventObject.ENTER){
+                    	loadData(false);
+                    }
+                }
+            }
+        }, {
+            xtype: 'splitbutton',
+            text: '查询',
+            iconCls: 'icon-search',
+            handler: function(){
+                loadData(false);
+            },
+            menu: [{
+                text: '导出',
+                iconCls: 'icon-export',
+                handler: function(){
+                	window.open(homePath+'/public/admin/account/exportcsv');
+                }
+            }]
+        }, {
+            text: '保存',
+            iconCls: 'icon-save',
+            handler: function(){
+                var updateRecords = accountStore.getUpdatedRecords();
+
+                // 判断是否有修改数据
+                if(updateRecords.length > 0){
+                    var changeRows = {
+                            updated:    []
+                    }
+
+                    // 判断信息是否完整
+                    var valueCheck = true;
+
+                    for(var i = 0; i < updateRecords.length; i++){
+                        var data = updateRecords[i].data;
+                        
+                        if(data['employee_id'] == ''){
+                            valueCheck = false;
+                            break;
+                        }
+                        
+                        changeRows.updated.push(data)
+                    }
+
+                    // 格式正确则提交修改数据
+                    if(valueCheck){
+                        Ext.MessageBox.confirm('确认', '确定保存修改内容？', function(button, text){
+                            if(button == 'yes'){
+                                var json = Ext.JSON.encode(changeRows);
+
+                                Ext.Msg.wait('保存中，请稍后...', '提示');
+                                Ext.Ajax.request({
+                                    url: homePath+'/public/admin/account/edit',
+                                    params: {json: json},
+                                    method: 'POST',
+                                    success: function(response, options) {
+                                        var data = Ext.JSON.decode(response.responseText);
+
+                                        if(data.success){
+                                            Ext.MessageBox.alert('提示', data.info);
+                                            accountStore.reload();
+                                        }else{
+                                            Ext.MessageBox.alert('错误', data.info);
+                                        }
+                                    },
+                                    failure: function(response){
+                                        Ext.MessageBox.alert('错误', '保存提交失败');
+                                    }
+                                });
+                            }
+                        });
+                    }else{
+                        Ext.MessageBox.alert('错误', '账号信息不完整，请继续填写！');
+                    }
+                }else{
+                    Ext.MessageBox.alert('提示', '没有修改任何数据！');
+                }
+            }
+        }, {
+        	text: '重置密码',
+            iconCls: 'icon-refresh',
+            handler: function(){
+            	var selModel = accountGrid.getSelectionModel();
+            	
+                if(selModel.hasSelection()){
+                	Ext.MessageBox.confirm('确认', '确定重置当前用户密码？', function(button, text){
+                		if(button == 'yes'){
+                        	var selDataModel = selModel.getLastSelected();
+                        	var selId = selDataModel.internalId;
+        
+                        	Ext.Msg.wait('提交中，请稍后...', '提示');
+                        	Ext.Ajax.request({
+                                url: homePath+'/public/admin/account/resetpwd',
+                                params: {id: selId},
+                                method: 'POST',
+                                success: function(response, options) {
+                                    var data = Ext.JSON.decode(response.responseText);
+        
+                                    if(data.success){
+                                        Ext.MessageBox.alert('提示', data.info);
+                                    }else{
+                                        Ext.MessageBox.alert('错误', data.info);
+                                    }
+                                },
+                                failure: function(response){
+                                    Ext.MessageBox.alert('错误', '保存提交失败');
+                                }
+                            });
+                		}
+                	});
+                }else{
+                    Ext.MessageBox.alert('错误', '没有选择重置对象！');
+                }
+            }
+        }, '->', {
+            text: '刷新',
+            iconCls: 'icon-refresh',
+            handler: function(){
+            	accountStore.reload();
+            }
+        }],
+        plugins: accountRowEditing,
+        viewConfig: {
+            stripeRows: false,// 取消偶数行背景色
+            getRowClass: function(record) {
+                if(!record.get('active')){
+                    // 离职员工背景色为灰色
+                    return 'gray-row';
+                }
+            }
+        },
+        columns: [{
+            xtype: 'rownumberer'
+        }, {
+            text: 'ID',
+            align: 'center',
+            hidden: true,
+            dataIndex: 'id'
+        }, {
+            xtype: 'checkcolumn',
+            text: '启用',
+            align: 'center',
+            dataIndex: 'active',
+            stopSelection: false,
+            flex: 0.5
+        }, {
+            text: '部门',
+            dataIndex: 'dept_name',
+            flex: 1
+        }, {
+            text: '[工号] 中文名',
+            dataIndex: 'name',
+            flex: 1
+        }, {
+            text: '英文名',
+            dataIndex: 'ename',
+            flex: 1
+        }, {
+            text: '邮箱',
+            dataIndex: 'email',
+            flex: 1.2
+        }, {
+            text: '角色',
+            dataIndex: 'role',
+            renderer: function(val, cellmeta, record){
+            	cellmeta.tdAttr = 'data-qtip="' + val + '"';
+            	console.log(record);
+            	return val;
+            },
+            flex: 1.5
+        }, {
+            text: '上次登录时间',
+            dataIndex: 'last_login_time',
+            align: 'center',
+            renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+            flex: 1.2
+        }, {
+            text: '备注',
+            dataIndex: 'remark',
+            editor: 'textfield',
+            flex: 1.5
+        }, {
+            text: '创建人',
+            hidden: true,
+            dataIndex: 'creater',
+            align: 'center',
+            flex: 1
+        }, {
+            text: '创建时间',
+            hidden: true,
+            dataIndex: 'create_time',
+            align: 'center',
+            renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+            flex: 1.5
+        }, {
+            text: '更新人',
+            hidden: true,
+            dataIndex: 'updater',
+            align: 'center',
+            flex: 1
+        }, {
+            text: '更新时间',
+            hidden: true,
+            dataIndex: 'update_time',
+            align: 'center',
+            renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+            flex: 1.5
+        }]
+    });
+
+    Ext.QuickTips.init();
+
+    accountStore.load();
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+    
+    Ext.create('Ext.Viewport', {
+        layout: 'border',
+        items: [{
+            region: 'center',
+            border: 0,
+            layout: 'fit',
+            items: [accountGrid]
+        }]
+    });
+});
+</script>
+</head>
+<body>
+</body>
+</html>

@@ -1,0 +1,244 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<?php 
+$user_session = new Zend_Session_Namespace('user');
+/**
+ * 当用户未登录且公告非公开则跳转到登录
+ * 当用户已登录但公告未激活且当前用户不是“公告管理员”时，提示错误信息
+ */
+
+$admin = 0;
+if(Application_Model_User::checkPermissionByRoleName('公告管理员,系统管理员')){
+    $admin = 1;
+}
+
+if(!isset($user_session->user_info) && $this->content['public'] == 0){
+    exit("当前公告非公开，请登录系统查看！");
+}else if(isset($user_session->user_info) && $this->content['active'] == 0 && !$admin){
+    exit("当前公告未激活，不能查看！");
+}
+?>
+<script type="text/javascript" src="<?php echo HOME_PATH; ?>/public/js/editor.js"></script>
+<script language="javascript">
+Ext.require([
+    'Ext.*'
+]);
+
+Ext.onReady(function() {
+	Ext.get('comment_submit').on('click', function(e){
+		var comment = CKEDITOR.instances.comment.getData();
+		var anonymity = Ext.get('anonymity').dom.checked;
+		var news_id = Ext.get('news_id').dom.value;
+		Ext.Msg.wait('提交中，请稍后...', '提示');
+		Ext.Ajax.request({
+            url: homePath+'/public/hra/news/comment',
+            params: {comment: comment, news_id: news_id, anonymity: anonymity},
+            method: 'POST',
+            success: function(response, options) {
+                var data = Ext.JSON.decode(response.responseText);
+
+                if(data.success){
+                    Ext.MessageBox.alert('提示', data.info, function(){
+                    	window.location.reload();
+                    });
+                }else{
+                    Ext.MessageBox.alert('错误', data.info);
+                }
+            }
+        });
+    });
+});
+
+// 修改评论内容表单
+var commentContentForm = Ext.create('Ext.form.Panel', {
+    xtype: 'form',
+    id: 'commentContentForm',
+    layout: {
+        type: 'vbox',
+        align: 'stretch'
+    },
+    border: false,
+    bodyPadding: 5,
+    
+    url: homePath+'/public/hra/news/editcomment',
+    defaultType: 'textfield',
+
+    fieldDefaults: {
+        labelAlign: 'right',
+        labelWidth: 50,
+        labelStyle: 'font-weight:bold'
+    },
+
+    items: [{
+        xtype: 'hiddenfield',
+        name: 'comment_id',
+        id: 'comment_id'
+    }, {
+        xtype: 'ckeditor',
+        name: 'content',
+        id: 'content',
+        allowBlank: true,
+        CKConfig: {
+            height: 240,
+            toolbar: [[ 'Source', 'Preview', '-', 'NewPage', 'Cut' , 'Copy' , 'Paste' , 'PasteText' , 'PasteFromWord' , '-' , 'Scayt' ],
+                      [ 'Undo' , 'Redo' , '-' , 'Smiley' ],
+                      [ 'NumberedList' , 'BulletedList' , 'Bold' , 'Italic' , '-' , 'Outdent' , 'Indent' ],
+                      [ 'Font' , 'FontSize', 'Format' , '-' , 'Maximize' ]],
+            //如果选择字体样式等的弹出窗口被当前window挡住，就设置这个为一个较大的值
+            baseFloatZIndex: 99999,
+            //图片和flash都上传到这里
+            filebrowserBrowseUrl : homePath+'/library/ckeditor/ckfinder/ckfinder.html',
+            filebrowserImageBrowseUrl : homePath+'/library/ckeditor/ckfinder/ckfinder.html?Type=Site',
+            filebrowserFlashBrowseUrl : homePath+'/library/ckeditor/ckfinder/ckfinder.html?Type=Site',
+            filebrowserUploadUrl : homePath+'/library/ckeditor/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Site',
+            filebrowserImageUploadUrl : homePath+'/library/ckeditor/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Site',
+            filebrowserFlashUploadUrl : homePath+'/library/ckeditor/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Site'
+        },
+        anchor: '100%'
+    }],
+
+    buttons: [{
+        text: '提交',
+        handler: function() {
+            var form = this.up('form').getForm();
+            
+            if (form.isValid()) {
+                form.submit({
+                	waitMsg: '提交中，请稍后...',
+                    success: function(form, action) {
+                        Ext.Msg.alert('Success', action.result.info);
+                        window.location.reload();
+                    },
+                    failure: function(form, action) {
+                        Ext.Msg.alert('Failed', action.result.info);
+                    }
+                });
+            }
+        }
+    },{
+        text: '取消',
+        handler: function() {
+            this.up('window').hide();
+        }
+    }]
+});
+
+// 修改评论窗口
+var commentEditWin = Ext.create('Ext.window.Window', {
+    title: '修改评论',
+    id: 'commentContentWin',
+    height: 400,
+    width: 1000,
+    modal: true,
+    constrain: true,
+    resizable: false,
+    layout: 'fit',
+    items: commentContentForm,
+    closeAction: 'hide'
+});
+
+// 修改评论
+function editComment(comment_id){
+	commentEditWin.show();
+	Ext.getCmp('comment_id').setValue(comment_id);
+	Ext.getCmp('content').setValue(document.getElementById('comment_content_'+comment_id).innerHTML);
+    /* var record = newsStore.getAt(idx);Ext.getCmp('comment_content').dom.innerHTML
+    var title = record.get('title');
+    newsContentForm.getForm().loadRecord(record);
+    newsEditWin.setTitle('修改'); */
+}
+
+// 删除评论
+function deleteComment(comment_id){
+	Ext.MessageBox.confirm('确认', '确定保存修改内容？', function(button, text){
+        if(button == 'yes'){
+        	Ext.Msg.wait('提交中，请稍后...', '提示');
+        	Ext.Ajax.request({
+                url: homePath+'/public/hra/news/deletecomment',
+                params: {comment_id: comment_id},
+                method: 'POST',
+                success: function(response, options) {
+                    var data = Ext.JSON.decode(response.responseText);
+
+                    if(data.success){
+                        Ext.MessageBox.alert('提示', data.info, function(){
+                        	window.location.reload();
+                        });
+                    }else{
+                        Ext.MessageBox.alert('错误', data.info);
+                    }
+                }
+            });
+        }
+    });
+}
+</script>
+</head>
+<body>
+<div>
+<DIV class="content-head"><img src="http://localhost/evolve/public/images/logo.png"></DIV>
+
+<DIV class="content-mid">
+<DIV class="content-mid-top">
+<DIV class="text-title"><?php echo $this->content['title']; ?></DIV>
+<DIV><?php echo $this->content['subhead']; ?></DIV>
+<DIV>发布时间：<?php echo $this->content['create_time']; ?> 更新时间：<?php echo $this->content['update_time']; ?></DIV>
+</DIV>
+<DIV class="news_content"><?php echo $this->content['content']; ?></DIV>
+<DIV class="comment_body">
+<?php 
+$i = 0;
+foreach ($this->comment as $comment){
+$i++;
+?>
+<DIV class="comment_head">
+<div class="comment_head_l">
+[<?php echo $i?>楼] 用户：<?php if($comment['anonymity']){echo '匿名用户';}else{echo $comment['user'];} ?>
+<?php if($admin || $user_session->user_info['user_id'] == $comment['user_id']):?>
+&nbsp;&nbsp;&nbsp;&nbsp;
+<img style="cursor:pointer;" onclick="editComment(<?php echo $comment['id']?>);" src="<?php echo HOME_PATH?>/public/images/icons/edit.png" title="修改评论"></img>&nbsp;&nbsp;
+<img style="cursor:pointer;" onclick="deleteComment(<?php echo $comment['id']?>);" src="<?php echo HOME_PATH?>/public/images/icons/cross.gif" title="删除评论"></img>
+<?php endif;?>
+</div>
+<div class="comment_head_r">时间：<?php echo $comment['create_time']; ?>&nbsp;&nbsp;&nbsp;&nbsp;更新时间：<?php echo $comment['update_time']; ?></div>
+</DIV>
+
+
+<DIV class="comment_content" id="comment_content_<?php echo $comment['id']?>"><?php echo $comment['comment']; ?></DIV>
+<?php 
+}
+?>
+</DIV>
+<?php if(isset($user_session->user_info)):?>
+<DIV><TEXTAREA id="comment" name="comment"></TEXTAREA></DIV>
+<DIV class="content-foot-btn">
+<INPUT type="hidden" id="news_id" name="news_id" value="<?php echo $this->content['id']; ?>">
+<INPUT type="checkbox" id="anonymity" name="anonymity">匿名
+<button id="comment_submit" name="comment_submit">提交</button>
+<button onclick="window.close();">关闭</button>
+</DIV>
+
+<script type="text/javascript">
+window.onload = function () {
+    var editor = CKEDITOR.replace("comment", {
+        toolbar: [[ 'Source', 'Preview', '-', 'NewPage', 'Cut' , 'Copy' , 'Paste' , 'PasteText' , 'PasteFromWord' , '-' , 'Scayt' ],
+                  [ 'Undo' , 'Redo' , '-' , 'Smiley' ],
+                  [ 'NumberedList' , 'BulletedList' , 'Bold' , 'Italic' , '-' , 'Outdent' , 'Indent' ],
+                  [ 'Font' , 'FontSize', 'Format' , '-' , 'Maximize' ]],
+        filebrowserBrowseUrl : homePath+'/library/ckeditor/ckfinder/ckfinder.html',
+        filebrowserImageBrowseUrl : homePath+'/library/ckeditor/ckfinder/ckfinder.html?Type=Site',
+        filebrowserFlashBrowseUrl : homePath+'/library/ckeditor/ckfinder/ckfinder.html?Type=Site',
+        filebrowserUploadUrl : homePath+'/library/ckeditor/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Site',
+        filebrowserImageUploadUrl : homePath+'/library/ckeditor/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Site',
+        filebrowserFlashUploadUrl : homePath+'/library/ckeditor/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Site'
+    });
+}
+</script>
+<?php endif;?>
+</DIV>
+
+<DIV class="content-foot"><?php echo SYS_COPYRIGHT; ?></DIV>
+</div>
+</body>
+</html>

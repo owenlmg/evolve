@@ -1,0 +1,655 @@
+<html>
+    <head>
+        <?php echo SYS_HEAD; ?>
+<?php
+		$editable = 0;
+
+		if(Application_Model_User::checkPermissionByRoleName('文件管理员') || Application_Model_User::checkPermissionByRoleName('系统管理员')){
+			$editable = 1;
+		}
+	?>
+        <script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/common.js"></script>
+        <script type="text/javascript">
+            Ext.require([
+                'Ext.data.*',
+                'Ext.grid.*',
+                'Ext.form.*'
+            ]);
+
+            Ext.onReady(function() {
+                Ext.QuickTips.init();
+                // 产品系列数据模型
+                Ext.define('project', {
+                    extend: 'Ext.data.Model',
+                    fields: [{name: "id"},
+                        {name: "name"}]
+                });
+                Ext.define('type', {
+                    extend: 'Ext.data.Model',
+                    fields: ['id', 'code', 'autocode', 'automethod', 'modelrequire']
+                });
+
+                Ext.define('code', {
+                    extend: 'Ext.data.Model',
+                    idProperty: 'id',
+                    fields: [{name: "id"}, {
+                            name: "prefix"
+                        }, {
+                            name: "type_id"
+                        }, {
+                            name: "type_code"
+                        }, {
+                            name: "code"
+                        }, {
+                            name: "project_standard_no"
+                        }, {
+                            name: "active"
+                        }, {
+                            name: "description"
+                        }, {
+                            name: "remark"
+                        }, {
+                            name: "create_time",
+                            type: 'date',
+                            dateFormat: 'timestamp'
+                        }, {
+                            name: "update_time",
+                            type: 'date',
+                            dateFormat: 'timestamp'
+                        }, {
+                            name: "creater"
+                        }, {
+                            name: "updater"
+                        }, {
+                            name: "files_id"
+                        }, {
+                            name: "reviewing_id"
+                        }, {
+                            name: "project_no"
+                        }, {
+                            name: "project_name"
+                        }, {
+                            name: "automethod"
+                        }, {
+                            name: "state"
+                        }]
+                });
+                var personal = "<?php if (isset($_GET['personal'])) echo $_GET['personal']; ?>";
+
+                var typeStore = Ext.create('Ext.data.Store', {
+                    model: 'type',
+                    proxy: {
+                        type: 'ajax',
+                        reader: 'json',
+                        url: '<?php echo HOME_PATH; ?>/public/dcc/type/gettypeforcode'
+                    },
+                    autoLoad: true
+                });
+
+                var codeStore = Ext.create('Ext.data.Store', {
+                    model: 'code',
+                    pageSize: 100,
+                    proxy: {
+                        type: 'ajax',
+                        reader: {
+                            root: 'topics',
+                            totalProperty: 'totalCount'
+                        },
+                        url: '<?php echo HOME_PATH; ?>/public/dcc/code/getcode/personal/' + personal
+                    },
+                    autoLoad: true
+                });
+
+                // 产品系列数据源
+                var projectStore = Ext.create('Ext.data.Store', {
+                    model: 'project',
+                    proxy: {
+                        type: 'ajax',
+                        reader: 'json',
+                        url: '<?php echo HOME_PATH; ?>/public/dcc/code/getproject'
+                    },
+                    autoLoad: true
+                });
+
+                var rowEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+                    clicksToEdit: 1
+                });
+
+                var required = '<span style="color:red;font-weight:bold" data-qtip="Required">*</span>';
+
+                var formPanel = {
+                    xtype: 'form',
+                    border:0,
+                    width: 600,
+                    bodyPadding: 5,
+                    layout: 'form',
+                    waitMsgTarget: true,
+                    fieldDefaults: {
+                        labelAlign: 'right',
+                        labelWidth: 85,
+                        margin: '0 10 0 0',
+                        msgTarget: 'side'
+                    },
+                    items: [{
+                            xtype: 'fieldcontainer',
+                            layout: 'hbox',
+                            items: [{
+                                    xtype: 'textfield',
+                                    hidden: true,
+                                    name: 'id'
+                                }, {
+                                    xtype: 'combobox',
+                                    fieldLabel: '文件简号',
+                                    afterLabelTextTpl: required,
+                                    id: 'prefix',
+                                    name: 'prefix',
+                                    allowBlank: false,
+                                    store: typeStore,
+                                    valueField: 'id',
+                                    displayField: 'code',
+                                    triggerAction: 'all',
+                                    typeAhead: true,
+                                    forceSelection: true,
+                                    selectOnFocus:true,
+                                    queryMode: 'local',
+                                    emptyText: '选择简号',
+                                    flex: 2,
+                                    listeners: {
+                                        'select': function() {
+                                            var row = typeStore.getAt(typeStore.find('id', this.value));
+                                            var modelrequire = row.get('modelrequire');
+                                            var code = Ext.getCmp('code');
+                                            var project_no = Ext.getCmp('project_no');
+                                            var automethod = row.get('automethod');
+                                            // 编码方式：手动
+                                            // 管理员模块，并且管理员分配时，显示
+                                            if(automethod == 'H' || (automethod == 'A' && personal == "")) {
+                                                code.show();
+                                                code.allowBlank = false;
+                                            } else {
+                                            	code.hide();
+                                                code.allowBlank = true;
+                                            }
+                                            // 产品型号：编码方式中有产品型号，或者指定必须填写
+                                            if (modelrequire == "1" || (automethod && automethod.indexOf('S') !== -1)) {
+                                                project_no.allowBlank = false;
+                                            } else {
+                                                project_no.allowBlank = true;
+                                            }
+                                        }
+                                    }
+                                }, {
+                                    xtype: 'checkbox',
+                                    fieldLabel: '是否激活',
+                                    flex: 2,
+                                    checked: true,
+                                    name: 'active'
+                                }
+                            ]}, {
+                            xtype: 'fieldcontainer',
+                            layout: 'hbox',
+                            items: [{
+                                    xtype: 'combobox',
+                                    editable: true,
+                                    fieldLabel: '产品型号',
+                                    flex: 2,
+                                    id: 'project_no',
+                                    name: 'project_no',
+                                    displayField: 'name',
+                                    valueField: 'id',
+                                    triggerAction: 'all',
+                                    forceSelection: true,
+                                    selectOnFocus:true,
+                                    emptyText: '无',
+                                    lazyRender: true,
+                                    store: projectStore,
+							        queryParam: 'q',
+							        minChars: 2,
+							        queryMode: 'remote'
+                                }, {
+                                    xtype: 'textfield',
+                                    fieldLabel: '文件编码',
+                                    afterLabelTextTpl: required,
+                                    flex: 2,
+                                    hidden: true,
+                                    allowBlank: false,
+                                    id: 'code',
+                                    name: 'code'
+                                }
+                            ]
+                        }, {
+                            xtype: 'fieldcontainer',
+                            layout: 'hbox',
+                            items: [{
+                                    xtype: 'textfield',
+                                    fieldLabel: '产品方案',
+                                    flex: 2,
+                                    hidden: true,
+                                    id: 'project_standard_no',
+                                    name: 'project_standard_no'
+                                }
+                            ]
+                        }, {
+                            xtype: 'fieldcontainer',
+                            layout: 'hbox',
+                            items: [{
+                                    xtype: 'textarea',
+                                    afterLabelTextTpl: required,
+                                    fieldLabel: '文件描述',
+                                    flex: 2,
+                                    allowBlank: false,
+                                    rows: 2,
+                                    name: 'description'
+                                }, {
+                                    xtype: 'textarea',
+                                    fieldLabel: '备注',
+                                    flex: 2,
+                                    rows: 2,
+                                    name: 'remark'
+                                }
+                            ]}
+                    ]
+                };
+                var win = new Ext.Window({
+                    xtype: "window",
+                    border:0,
+                    title: '文件号申请',
+                    autoHeight: true,
+                    width: 600,
+                    modal: true,
+                    layout: 'fit',
+                    closeAction: 'hide',
+                    items: [formPanel],
+                    buttons: [{
+                            text: '提交',
+                            formBind: true,
+                            handler: function() {
+                                var window = this.up('window');
+                                var form = window.down('form').getForm();
+                                if (form.isValid()) {
+                                    form.submit({
+                                        clientValidation: true,
+                                        url: '<?php echo HOME_PATH; ?>/public/dcc/code/save',
+                                        submitEmptyText: false,
+                                        waitMsg: '提交中，请稍后...',
+                                        method: 'POST',
+                                        success: function(form, action) {
+                                            Ext.MessageBox.alert('提示', action.result.info);
+                                            if (action.result.result) {
+                                                codeStore.reload();
+                                                form.reset();
+                                                window.hide();
+                                            } else {
+                                                Ext.MessageBox.alert('错误', action.result.info);
+                                            }
+                                        },
+                                        failure: function(form, action) {
+                                            Ext.MessageBox.alert('错误', action.result.info);
+                                        }
+                                    });
+                                }
+                            }
+                        }, {
+                            text: '取消',
+                            handler: function() {
+                                win.hide();
+                            }
+                        }]
+                });
+
+                var codePanel = Ext.create('Ext.grid.Panel', {
+                    store: codeStore,
+                    selType: 'checkboxmodel',
+                    border:0,
+                    columnLines: true,
+                    viewConfig: {
+                        stripeRows: false, // 取消偶数行背景色
+                        getRowClass: function(record) {
+                            if (!record.get('active')) {
+                                // 当分类启用状态为false时，设置背景色
+                                return 'gray-row';
+                            }
+                        }
+                    },
+                    tbar: [{
+                            xtype: 'textfield',
+                            id: 'search_code',
+                            width: 120,
+                            emptyText: '文件号...',
+                            listeners: {
+                                specialKey: function(field, e) {
+                                    if (e.getKey() == Ext.EventObject.ENTER) {
+                                        codeStore.loadPage(1);
+                                    }
+                                }
+                            }
+                        }, {
+                            xtype: 'textfield',
+                            id: 'search_description',
+                            width: 120,
+                            emptyText: '文件描述...',
+                            listeners: {
+                                specialKey: function(field, e) {
+                                    if (e.getKey() == Ext.EventObject.ENTER) {
+                                        codeStore.loadPage(1);
+                                    }
+                                }
+                            }
+                        }, {
+                            xtype: 'combobox',
+                            id: 'search_active',
+                            emptyText: '状态...',
+                            width: 100,
+                           store: [['1', '已归档'], ['0', '未归档']]
+                        }, {
+                            text: '查询',
+                            iconCls: 'icon-search',
+                            handler: function() {
+                                var search_code = Ext.getCmp('search_code').getValue();
+                                var search_active = Ext.getCmp('search_active').getValue();
+                                var search_description = Ext.getCmp('search_description').getValue();
+
+                                codeStore.baseParams = {
+                                    search_code: search_code,
+                                    search_active: search_active,
+                                    search_description: search_description,
+                                    limit: 15,
+                                    start: 0
+                                }
+                                codeStore.loadPage(1);
+                            }
+                        }, {
+                            text: '申请文件号',
+                            hidden : personal == 3 ? true : false,
+                            scope: this,
+                            handler: function() {
+                                win.setTitle("文件号申请");
+                                var code = Ext.getCmp('code');
+                                var prefix = Ext.getCmp('prefix');
+                                code.allowBlank = true;
+                                prefix.setDisabled(false);
+                                prefix.setReadOnly(false);
+                                code.hide();
+                                var formPanel = win.down('form');
+                                formPanel.getForm().reset();
+
+                                win.show();
+                            }
+                        }, {
+                            text: '编辑',
+                            hidden : personal == 3 ? true : false,
+                            scope: this,
+                            handler: function() {
+                                var selection = codePanel.getView().getSelectionModel().getSelection();
+                                var editable = <?php echo $editable ?>;
+                                if (selection.length <= 0) {
+                                    Ext.MessageBox.alert('请注意', '请您选择要编辑的记录！');
+                                } else if (selection.length >= 2) {
+                                    Ext.MessageBox.alert('请注意', '不能同时编辑多个数据！');
+                                } else if (selection[0].get('files_id') && !editable) {
+                                    Ext.MessageBox.alert('请注意', '已归档文件号不能编辑！');
+                                } else {
+                                    var grid = selection[0];
+                                    var formPanel = win.down('form');
+
+                                    formPanel.getForm().reset();
+
+                                    var code = Ext.getCmp('code');
+                                    var prefix = Ext.getCmp('prefix');
+                                    // 不显示文件编码编辑框的情况：普通用户进入并且文件编码不存在
+                                    if(!(personal && grid.get('code') == "")) {
+                                    	code.allowBlank = false;
+	                                    prefix.setDisabled(true);
+	                                    code.show();
+                                    } else {
+                                    	code.allowBlank = true;
+	                                    prefix.setDisabled(false);
+	                                    code.hide();
+                                    }
+                                    if(grid.get('state') == 'Reviewing') {
+                                        code.allowBlank = true;
+                                        prefix.setDisabled(false);
+                                        code.hide();
+                                    }
+                                    prefix.setReadOnly(true);
+
+                                    if(selection[0].get('files_id')) {
+                                    	Ext.getCmp('code').setReadOnly(true);
+                                    } else {
+                                    	Ext.getCmp('code').setReadOnly(false);
+
+	                                    // 普通用户登录，并且编码方式是管理员分配的，不能编辑
+	                                    if(personal && grid.get('automethod') == 'A') {
+	                                    	code.setReadOnly(true);
+	                                    }
+                                    }
+
+                                    formPanel.getForm().loadRecord(grid);
+                                    win.setTitle("文件号修改");
+                                    win.show();
+                                }
+                            }
+                        }, {
+                            text: '删除',
+                            hidden : personal == 3 ? true : false,
+                            scope: this,
+                            handler: function() {
+                                var selection = codePanel.getView().getSelectionModel().getSelection();
+                                var editable = <?php echo $editable ?>;
+                                if (selection.length > 0) {
+                                    // 已归档文件不能删除
+                                    for (var i = 0; i < selection.length; i++) {
+                                        if (selection[i].data.files_id) {
+                                            Ext.MessageBox.alert('错误', '文件编码' + selection[i].data.code + '已归档,不能删除');
+                                            return false;
+                                        }
+                                        if (selection[i].data.reviewing_id) {
+                                            Ext.MessageBox.alert('错误', '文件编码' + selection[i].data.code + '正在归档 ,不能删除');
+                                            return false;
+                                        }
+                                        if(!editable) {
+                                            if (selection[i].data.code) {
+                                                Ext.MessageBox.alert('错误', '已分配文件编码的申请不能删除，文件编码：' + selection[i].data.code + '');
+                                                return false;
+                                            }
+                                        }
+                                    }
+
+                                    // 格式正确则提交修改数据
+                                    Ext.MessageBox.confirm('确认', '确定删除所选内容？', function(button, text) {
+                                        if (button === 'yes') {
+                                            codeStore.remove(selection);
+
+                                            var deleteRecords = codeStore.getRemovedRecords();
+
+                                            var changeRows = {
+                                                deleted: []
+                                            }
+
+                                            for (var i = 0; i < deleteRecords.length; i++) {
+                                                changeRows.deleted.push(deleteRecords[i].data)
+                                            }
+
+                                            var json = Ext.JSON.encode(changeRows);
+                                            Ext.Msg.wait('提交中，请稍后...', '提示');
+                                            Ext.Ajax.request({
+                                                url: '<?php echo HOME_PATH; ?>/public/dcc/code/remove',
+                                                params: {json: json},
+                                                method: 'POST',
+                                                success: function(response, options) {
+                                                    var data = Ext.JSON.decode(response.responseText);
+
+                                                    if (data.success) {
+                                                        Ext.MessageBox.alert('提示', data.info);
+                                                        codeStore.reload();
+                                                    } else {
+                                                        Ext.MessageBox.alert('错误', data.info);
+                                                    }
+                                                },
+                                                failure: function(form, action) {
+                                                    Ext.MessageBox.alert('错误', action.result.info);
+                                                }
+                                            });
+                                        }
+                                    });
+
+                                } else {
+                                    Ext.MessageBox.alert('错误', '没有选择删除对象！');
+                                }
+                            }
+                        }, '-', , {
+                        text: '分配文件号',
+                        scope: this,
+                        hidden : personal == 3 ? false : true,
+                        handler: function() {
+                            var selection = codePanel.getView().getSelectionModel().getSelection();
+                            var editable = <?php echo $editable ?>;
+                            if (selection.length <= 0) {
+                                Ext.MessageBox.alert('请注意', '请您选择要分配的记录！');
+                            } else if (selection.length >= 2) {
+                                Ext.MessageBox.alert('请注意', '不能同时分配多个数据！');
+                            } else if (selection[0].get('files_id') && !editable) {
+                                Ext.MessageBox.alert('请注意', '已归档文件号不能修改！');
+                            } else {
+                                var grid = selection[0];
+                                var resultFn = function(btn, text) {
+                                    if(btn == 'ok') {
+                                        if(text) {
+                                            Ext.Msg.wait('提交中，请稍后...', '提示');
+                                            Ext.Ajax.request({
+                                                url: '<?php echo HOME_PATH; ?>/public/dcc/code/savecode',
+                                                params: {id : selection[0].data.id, code: text},
+                                                method: 'POST',
+                                                success: function(response, options) {
+                                                    var data = Ext.JSON.decode(response.responseText);
+                                                    if (data.success) {
+                                                        Ext.MessageBox.alert('提示', data.info);
+                                                        codeStore.reload();
+                                                    } else {
+                                                        Ext.MessageBox.alert('错误', data.info);
+                                                    }
+                                                },
+                                                failure: function(form, action) {
+                                                    Ext.MessageBox.alert('错误', action.result.info);
+                                                }
+                                            });
+                                        } else {
+                                            Ext.MessageBox.alert('请注意', '请输入文件编码！');
+                                            Ext.MessageBox.prompt('文件编码分配', '请输入分配的文件编码:', resultFn);
+                                        }
+                                    }
+                                }
+                                Ext.MessageBox.prompt('文件编码分配', '请输入分配的文件编码:', resultFn);
+                            }
+                        }
+                    }],
+                    columns: [{
+                            xtype: 'rownumberer'
+                        }, {
+                            text: 'ID',
+                            flex: .5,
+                            hidden: true,
+                            dataIndex: 'id'
+                        }, {
+                            text: '文件号',
+                            flex: 1,
+                            sortable: true,
+                            dataIndex: 'code'
+                        }, {
+                            text: '是否激活',
+                            flex: 0.5,
+                            dataIndex: 'active',
+                            align: 'center',
+                            stopSelection: false,
+                            renderer: viewBool
+                        }, {
+                            text: '归档状态',
+                            flex: 0.5,
+                            dataIndex: 'files_id',
+                            renderer: function(value) {
+                                if (value)
+                                    return '已归档';
+                                else
+                                    return '未归档';
+                            }
+                        }, {
+                            text: '产品型号',
+                            flex: 1,
+                            dataIndex: 'project_name',
+                            renderer: showTitle
+                        }, {
+                            text: '产品方案',
+                            flex: 1,
+                            hidden: true,
+                            dataIndex: 'project_standard_no',
+                            renderer: showTitle
+                        }, {
+                            text: '文件描述',
+                            flex: 1.5,
+                            dataIndex: 'description',
+                            renderer: showTitle
+                        }, {
+                            text: '备注',
+                            flex: 1.5,
+                            dataIndex: 'remark',
+                            renderer: showTitle
+                        }, {
+                            text: '创建人',
+                            flex: 0.5,
+                            dataIndex: 'creater'
+                        }, {
+                            text: '创建时间',
+                            flex: 1,
+                            hidden: true,
+                            dataIndex: 'create_time',
+                            renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+                        }, {
+                            text: '更新人',
+                            flex: 0.5,
+                            hidden: true,
+                            dataIndex: 'updater'
+                        }, {
+                            text: '更新时间',
+                            flex: 1,
+                            hidden: true,
+                            dataIndex: 'update_time',
+                            renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s')
+                        }],
+                    bbar: Ext.create('Ext.PagingToolbar', {
+                        store: codeStore,
+                        displayInfo: true,
+                        displayMsg: '显示 {0} - {1} 共 {2}',
+                        emptyMsg: "没有数据"
+                    })
+                });
+
+                codeStore.on("beforeload", function() {
+                    var search_code = Ext.getCmp('search_code').getValue();
+                    var search_active = Ext.getCmp('search_active').getValue();
+                    var search_description = Ext.getCmp('search_description').getValue();
+                    Ext.apply(codeStore.proxy.extraParams, {
+                        search_code: search_code,
+                        search_active: search_active,
+                        search_description: search_description
+                    });
+                });
+
+
+                Ext.create('Ext.container.Viewport', {
+                    layout: 'border',
+                    border:0,
+                    rtl: true,
+                    plain: true,
+                    items: [{
+                            region: 'center',
+                            border:0,
+                            layout: 'fit',
+                            items: [codePanel]
+                        }]
+                });
+            });
+        </script>
+    </head>
+    <body>
+    </body>
+</html>

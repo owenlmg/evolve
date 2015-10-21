@@ -1,0 +1,386 @@
+<html>
+<head>
+<?php echo SYS_HEAD; ?>
+<script type="text/javascript">
+var user_id = <?php echo $this->user_id?>;
+var accessViewTotal = <?php echo $this->accessViewTotal?>;
+
+Ext.require([
+    'Ext.*'
+]);
+
+Ext.define('Selection', {
+    extend: 'Ext.data.Model',
+    fields: [{name: 'id', type: 'int'},
+             {name: 'code'},
+             {name: 'text'},
+             {name: 'name'}]
+});
+
+Ext.define('Statistics', {
+    extend: 'Ext.data.Model',
+    fields: [{name: 'id'},
+             {name: 'doc_type'},
+             {name: 'transaction_type'},
+             {name: 'doc_number'},
+             {name: 'code'},
+             {name: 'material_remark'},
+             {name: 'warehouse_type'},
+             {name: 'warehouse'},
+             {name: 'qty'},
+             {name: 'total'},
+             {name: 'name'},
+             {name: 'description'},
+             {name: 'remark'},
+             {name: 'doc_description'},
+             {name: 'doc_remark'},
+             {name: "create_time"},
+             {name: "creater"}]
+});
+
+// 结果
+var statisticsStore = Ext.create('Ext.data.Store', {
+    model: 'Statistics',
+    pageSize: 100,
+    proxy: {
+        type: 'ajax',
+        reader: {
+            type: 'json',
+            root: 'rows',
+            totalProperty: 'total'
+        },
+        url: homePath+'/public/erp/stock_statistics/statistics'
+    },
+    listeners: {
+    	beforeload: function(){
+    		var key = Ext.getCmp('search_key').getValue();
+            var date_from = Ext.Date.format(Ext.getCmp('search_date_from').getValue(), 'Y-m-d');
+            var date_to = Ext.Date.format(Ext.getCmp('search_date_to').getValue(), 'Y-m-d');
+    		var doc_type = Ext.JSON.encode(Ext.getCmp('search_doc_type').getValue());
+    		var transaction_type = Ext.JSON.encode(Ext.getCmp('search_transaction_type').getValue());
+    		var warehouse_type = Ext.JSON.encode(Ext.getCmp('search_warehouse_type').getValue());
+    		var warehouse = Ext.JSON.encode(Ext.getCmp('search_warehouse').getValue());
+    	    
+    		Ext.apply(statisticsStore.proxy.extraParams, {
+    			key: key,
+    			date_from: date_from,
+    			date_to: date_to,
+    			doc_type: doc_type,
+    			transaction_type: transaction_type,
+    			warehouse_type: warehouse_type,
+    			warehouse: warehouse
+    	    });
+        }
+    }
+});
+
+// 仓库
+var warehouseTypeListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+       type: 'ajax',
+       reader: 'json',
+       url: homePath+'/public/erp/warehouse_index/gettype/option/list'
+    },
+    autoLoad: true
+});
+
+// 仓位
+var warehouseListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/erp/warehouse_index/getlist'
+    },
+    autoLoad: true
+});
+
+// 单据类别
+var stockTypeStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+        type: 'ajax',
+        reader: 'json',
+        url: homePath+'/public/erp/stock_index/getstocktypelist'
+    },
+    autoLoad: true
+});
+
+// 库存交易类别
+var transactionListStore = Ext.create('Ext.data.Store', {
+    model: 'Selection',
+    proxy: {
+      type: 'ajax',
+      reader: 'json',
+      url: homePath+'/public/erp/warehouse_index/gettransaction/option/list'
+    },
+    autoLoad: true
+});
+
+var totalColumn = Ext.create('Ext.grid.column.Column', {
+    text: '金额',
+    //locked: true,
+    dataIndex: 'total',
+    align: 'center',
+    renderer: function(val, meta){
+        if(val < 0){
+    	    meta.style = 'color: #FF0000;background-color: #DFFFDF';
+	    }else{
+       	   meta.style = 'background-color: #DFFFDF';
+        }
+      	
+    	return Ext.util.Format.currency(val, '￥', 2);
+    },
+    width: 80
+});
+
+// 查询列表
+var statisticsGrid = Ext.create('Ext.grid.Panel', {
+    border: 0,
+    id: 'statisticsGrid',
+	store: statisticsStore,
+	id: 'statisticsGrid',
+    columnLines: true,
+    tbar: [{
+        xtype: 'combobox',
+        id: 'search_doc_type',
+        emptyText: '单据类别...',
+        displayField: 'name',
+        valueField: 'text',
+        width: 150,
+        store: stockTypeStore,
+        queryMode: 'local',
+        editable: false,
+        multiSelect: true,
+    }, {
+        xtype: 'combobox',
+        id: 'search_transaction_type',
+        emptyText: '库存交易类别...',
+        displayField: 'name',
+        valueField: 'text',
+        width: 150,
+        store: transactionListStore,
+        queryMode: 'local',
+        editable: false,
+        multiSelect: true,
+    }, {
+        xtype: 'combobox',
+        id: 'search_warehouse_type',
+        emptyText: '仓库...',
+        displayField: 'name',
+        valueField: 'id',
+        width: 150,
+        store: warehouseTypeListStore,
+        queryMode: 'local',
+        editable: false,
+        multiSelect: true,
+        listeners: {
+        	change: function( sel, newValue, oldValue, eOpts ){
+        		Ext.getCmp('search_warehouse').clearValue()
+            	
+        		warehouseListStore.load({
+                    params: {
+                        type: Ext.JSON.encode(newValue)
+                    }
+                });
+            }
+        }
+    }, {
+        xtype: 'combobox',
+        id: 'search_warehouse',
+        emptyText: '仓位...',
+        displayField: 'name',
+        valueField: 'id',
+        width: 150,
+        store: warehouseListStore,
+        queryMode: 'local',
+        editable: false,
+        multiSelect: true
+    }, {
+        xtype: 'datefield',
+        format: 'Y-m-d',
+        width: 110,
+        id: 'search_date_from',
+        emptyText: '交易日期从...',
+        value: Ext.util.Format.date(new Date(), 'Y-m-01')
+    }, {
+        xtype: 'datefield',
+        format: 'Y-m-d',
+        width: 110,
+        id: 'search_date_to',
+        emptyText: '交易日期至...',
+        value: Ext.util.Format.date(new Date(), 'Y-m-t')
+    }, {
+        xtype: 'textfield',
+        id: 'search_key',
+        emptyText: '关键字...',
+        listeners: {
+        	specialKey :function(field,e){
+                if (e.getKey() == Ext.EventObject.ENTER){
+                	statisticsStore.loadPage(1);
+                }
+            }
+        }
+    }, {
+        xtype: 'splitbutton',
+        text: '查询',
+        iconCls: 'icon-search',
+        handler: function(){
+        	statisticsStore.loadPage(1);
+        },
+        menu: [{
+            text: '导出',
+            iconCls: 'icon-export',
+            handler: function(){
+            	var key = Ext.getCmp('search_key').getValue();
+                var date_from = Ext.Date.format(Ext.getCmp('search_date_from').getValue(), 'Y-m-d');
+                var date_to = Ext.Date.format(Ext.getCmp('search_date_to').getValue(), 'Y-m-d');
+        		var doc_type_arr = Ext.getCmp('search_doc_type').getValue();
+        		var transaction_type_arr = Ext.getCmp('search_transaction_type').getValue();
+        		var warehouse_type = Ext.JSON.encode(Ext.getCmp('search_warehouse_type').getValue());
+        		var warehouse = Ext.JSON.encode(Ext.getCmp('search_warehouse').getValue());
+        	    
+        	    var doc_type = '';
+        	    var transaction_type = '';
+        		
+        		for(var i = 0; i < doc_type_arr.length; i++){
+        		    if(i == 0){
+        		    	doc_type = doc_type_arr[i];
+        		    }else{
+        		    	doc_type += ',' + doc_type_arr[i];
+        		    }
+        		}
+        		
+        		for(var i = 0; i < transaction_type_arr.length; i++){
+        		    if(i == 0){
+        		    	transaction_type = transaction_type_arr[i];
+        		    }else{
+        		    	transaction_type += ',' + transaction_type_arr[i];
+        		    }
+        		}
+        	    
+            	window.open(homePath+'/public/erp/stock_statistics/statistics/option/csv/key/'+key+'/date_from/'+date_from+'/date_to/'+date_to+'/doc_type/'+doc_type+'/transaction_type/'+transaction_type+'/warehouse_type/'+warehouse_type+'/warehouse/'+warehouse);
+            	//window.open(homePath+'/public/erp/stock_statistics/statistics/option/csv');
+            }
+        }]
+    }, '->', {
+        text: '刷新',
+        iconCls: 'icon-refresh',
+        handler: function(){
+        	statisticsStore.reload();
+        }
+    }],
+    columns: [{
+        xtype: 'rownumberer'
+    }, {
+        text: '单据类别',
+        align: 'center',
+        dataIndex: 'doc_type',
+        //locked: true,
+        width: 80
+    }, {
+        text: '库存交易类别',
+        align: 'center',
+        dataIndex: 'transaction_type',
+        //locked: true,
+        width: 100
+    }, {
+        text: '单据号',
+        align: 'center',
+        dataIndex: 'doc_number',
+        //locked: true,
+        width: 100
+    }, {
+        text: '物料代码',
+        align: 'center',
+        dataIndex: 'code',
+        //locked: true,
+        width: 120
+    }, {
+        text: '数量',
+        dataIndex: 'qty',
+        align: 'center',
+        renderer: function(val, meta, record){
+            if(val < 0){
+         	   meta.style = 'color: #FF0000;background-color: #DFFFDF';
+            }else{
+         	   meta.style = 'background-color: #DFFFDF';
+            }
+        	
+        	return val;
+        },
+        //locked: true,
+        width: 80
+    }, {
+        text: '物料名称',
+        dataIndex: 'name',
+        width: 150
+    }, {
+        text: '物料描述',
+        dataIndex: 'description',
+        width: 200
+    }, {
+        text: '物料备注',
+        dataIndex: 'remark',
+        width: 100
+    }, {
+        text: '仓库',
+        dataIndex: 'warehouse_type',
+        width: 100
+    }, {
+        text: '仓位',
+        dataIndex: 'warehouse',
+        width: 100
+    }, {
+        text: '描述',
+        dataIndex: 'doc_description',
+        width: 100
+    }, {
+        text: '备注',
+        dataIndex: 'doc_remark',
+        width: 100
+    }, {
+        text: '制单人',
+        dataIndex: 'creater',
+        align: 'center',
+        width: 100
+    }, {
+        text: '制单时间',
+        dataIndex: 'create_time',
+        align: 'center',
+        width: 150
+    }],
+    bbar: Ext.create('Ext.PagingToolbar', {
+    	border: 0,
+        store: statisticsStore,
+        displayInfo: true,
+        displayMsg: '显示 {0} - {1} 共 {2}',
+        emptyMsg: "没有数据"
+    })
+});
+
+Ext.onReady(function() {
+    Ext.QuickTips.init();
+    
+    Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+    
+    Ext.create('Ext.Viewport', {
+        layout: 'border',
+        items: [{
+            region: 'center',
+            layout: 'fit',
+            border: 0,
+            items: [statisticsGrid]
+        }]
+    });
+
+    if(accessViewTotal){
+    	Ext.getCmp('statisticsGrid').getView().headerCt.insert(5, totalColumn);
+    }
+});
+</script>
+</head>
+<body>
+</body>
+</html>
