@@ -360,12 +360,7 @@ var overtimeGrid = Ext.create('Ext.grid.Panel', {
             hidden: hraBtnHidden,
             iconCls: 'icon-export',
             handler: function(){
-                var state = Ext.getCmp('search_o_state').getValue();
-                var key = Ext.getCmp('search_o_key').getValue();
-                var date_from = Ext.Date.format(Ext.getCmp('search_o_date_from').getValue(), 'Y-m-d');
-                var date_to = Ext.Date.format(Ext.getCmp('search_o_date_to').getValue(), 'Y-m-d');
-                
-                window.open(homePath+'/public/user/attendance/getovertime/option/csv/key/'+key+'/state/'+state+'/date_from/'+date_from+'/date_to/'+date_to);
+                window.open(homePath+'/public/user/attendance/getovertime/option/csv');
             }
         }]
     }, {

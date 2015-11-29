@@ -292,7 +292,7 @@ class Product_TypeController extends Zend_Controller_Action
         foreach($data as $d) {
             $num++;
             $tmpArr = array(
-                'cnt' => $num,
+            	'cnt' => $num,
                 'code1' => isset($d['children']) && $d['children'] ? $d['code'] : '',
                 'code2' => isset($d['children']) && $d['children'] ? '' : $d['code'],
                 'name' => $d['name'],

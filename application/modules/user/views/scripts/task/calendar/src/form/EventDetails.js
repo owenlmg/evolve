@@ -40,8 +40,8 @@ Ext.define('Ext.calendar.form.EventDetails', {
         labelWidth: 65
     },
     title: 'Event Form',
-    titleTextAdd: 'Add Event',
-    titleTextEdit: 'Edit Event',
+    titleTextAdd: '添加任务',
+    titleTextEdit: '修改任务',
     bodyStyle: 'background:transparent;padding:20px 20px 10px;',
     border: false,
     buttonAlign: 'center',
@@ -88,23 +88,23 @@ Ext.define('Ext.calendar.form.EventDetails', {
         });
 
         this.titleField = new Ext.form.Text({
-            fieldLabel: 'Title',
+            fieldLabel: '任务名称',
             name: Ext.calendar.data.EventMappings.Title.name,
-            emptyText: 'Event Title',
+            emptyText: '任务名称...',
             allowBlank: false,
             anchor: '90%'
         });
         this.dateRangeField = new Ext.calendar.form.field.DateRange({
-            fieldLabel: 'When',
+            fieldLabel: '时间',
             singleLine: false,
             anchor: '90%'
         });
         this.reminderField = new Ext.calendar.form.field.ReminderCombo({
-            name: 'Reminder',
+            name: '提醒',
             anchor: '70%'
         });
         this.notesField = new Ext.form.TextArea({
-            fieldLabel: 'Notes',
+            fieldLabel: '任务描述',
             name: Ext.calendar.data.EventMappings.Notes.name,
             grow: true,
             growMax: 150,
@@ -151,18 +151,18 @@ Ext.define('Ext.calendar.form.EventDetails', {
         this.fbar = [{
             cls: 'ext-del-btn',
             itemId: this.id+'-del-btn',
-            text: 'Delete Event',
+            text: '删除任务',
             scope: this,
             handler: this.onDelete,
             minWidth: 150
         },
         {
-            text: 'Save',
+            text: '保存',
             scope: this,
             handler: this.onSave
         },
         {
-            text: 'Cancel',
+            text: '取消',
             scope: this,
             handler: this.onCancel
         }];

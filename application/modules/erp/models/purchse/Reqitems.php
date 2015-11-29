@@ -102,7 +102,7 @@ class Erp_Model_Purchse_Reqitems extends Application_Model_Db
                 'items_name'                => $d['name'],
                 'items_description'         => $d['description'],
                 'items_qty'                 => $d['qty'],
-                'items_qty_order'             => $qty_order,
+                'items_qty_order' 	        => $qty_order,
                 'items_unit'                => $d['unit'],
                 'items_price'               => $d['price'],
                 'items_line_total'          => $d['line_total'],

@@ -15,7 +15,7 @@ class Product_BompricedetailController extends Zend_Controller_Action
     public function getlistAction() {
         $request = $this->getRequest()->getParams();
         if(!isset($request['recordkey']) || !$request['recordkey']) {
-            exit;
+        	exit;
         }
         $recordkey = $request['recordkey'];
         $fa = new Product_Model_Fa();
@@ -34,36 +34,36 @@ class Product_BompricedetailController extends Zend_Controller_Action
         $data = $fa->getOne($recordkey);
         $bom = array();
         for($i = 0; $i < count($data); $i++) {
-            if($i == 0){
-                $row = $data[$i];
+        	if($i == 0){
+        		$row = $data[$i];
                 $price = $bomprice->calcBomPrice($row['recordkey'], 'CNY');
-                $bom = array(
-                        'sid'            => $row['sid'],
-                        'nid'            => $row['nid'],
-                        'recordkey'      => $row['recordkey'],
-                        'id'             => $row['id'],
-                        'name'          => $row['name'],
-                        'description'   => $row['description'],
-                        'remark'        => $row['remark'],
-                        'project_no_name' => $row['project_no_name'],
-                        'bom_file' => $row['bom_file'],
-                        'code'        => $row['code'],
-                        'qty'        => $row['qty'],
-                        'ver'        => $row['ver'],
-                        'partposition'        => "",
-                        'replace'        => "",
-                        'state'         => $row['state'],
-                        'count'          => 1,
-                        'leaf'          => false,
-                        'low_cny'          => $price['low'],
-                        'low_usd'          => round($price['low'] * $rate, 4),
-                        'high_cny'          => $price['high'],
-                        'high_usd'          => round($price['high'] * $rate, 4),
-                        'average_cny'          => $price['average'],
-                        'average_usd'          => round($price['average'] * $rate, 4),
-                        'children'      => $this->getData($fa, $son, $recordkey, 2, $rate)
-                );
-            }
+	            $bom = array(
+	                    'sid'            => $row['sid'],
+	                    'nid'            => $row['nid'],
+	                    'recordkey'      => $row['recordkey'],
+	                    'id'             => $row['id'],
+	                    'name'          => $row['name'],
+	                    'description'   => $row['description'],
+	                    'remark'        => $row['remark'],
+	                    'project_no_name' => $row['project_no_name'],
+	                    'bom_file' => $row['bom_file'],
+	                    'code'        => $row['code'],
+	                    'qty'        => $row['qty'],
+	                    'ver'        => $row['ver'],
+	                    'partposition'        => "",
+	                    'replace'        => "",
+	                    'state'         => $row['state'],
+	                    'count'          => 1,
+	                    'leaf'          => false,
+	                    'low_cny'          => $price['low'],
+	                    'low_usd'          => round($price['low'] * $rate, 4),
+	                    'high_cny'          => $price['high'],
+	                    'high_usd'          => round($price['high'] * $rate, 4),
+	                    'average_cny'          => $price['average'],
+	                    'average_usd'          => round($price['average'] * $rate, 4),
+	                    'children'      => $this->getData($fa, $son, $recordkey, 2, $rate)
+	            );
+	        }
         }
         $result = array(
                 'sid'            => '',
@@ -106,7 +106,7 @@ class Product_BompricedetailController extends Zend_Controller_Action
             $fadata = $fa->getFa($data[$i]['code'], null);
             $faRow = "";
             if($fadata && count($fadata) > 0) {
-                $faRow = $fadata[0];
+        	    $faRow = $fadata[0];
             }
             if($faRow){
                 $price = $bomprice->calcBomPrice($faRow['recordkey'], 'CNY');
@@ -179,17 +179,17 @@ class Product_BompricedetailController extends Zend_Controller_Action
         $whereSearch = "1=1";
         foreach ($request as $k => $v) {
             if ($v) {
-                if ("search_recordkey" == $k && $v) {
+            	if ("search_recordkey" == $k && $v) {
                     $whereSearch .= " and t1.recordkey = '$v'";
                 } else if ("explanded" == $k && $v) {
                     $explanded = json_decode($v);
                 } else {
-                    $col = str_replace('search_', '', $k);
-                    if ($col != $k) {
-                        // 查询条件
-                        $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
-                    }
-                }
+	                $col = str_replace('search_', '', $k);
+	                if ($col != $k) {
+	                    // 查询条件
+	                    $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
+	                }
+            	}
             }
         }
         // 获取物料数据
@@ -299,14 +299,14 @@ class Product_BompricedetailController extends Zend_Controller_Action
             fclose($file);
         }
         /* foreach($push_data as $data) {
-            $count = $data['count'];
-            $data['count'] = "";
-            $prefix = "";
-            for($i = 0;$i < $count; $i++){
-                $prefix .= "  ";
-            }
-            $data['code'] = $prefix.$data['code'];
-            $d = $this->object_array($data);
+        	$count = $data['count'];
+        	$data['count'] = "";
+        	$prefix = "";
+        	for($i = 0;$i < $count; $i++){
+        		$prefix .= "  ";
+        	}
+        	$data['code'] = $prefix.$data['code'];
+        	$d = $this->object_array($data);
             fputcsv($file, $d);
         }
 
@@ -342,17 +342,17 @@ class Product_BompricedetailController extends Zend_Controller_Action
             $fadata = $fa->getFa($data[$i]['code'], null);
             $faRow = "";
             if($fadata && count($fadata) > 0) {
-                $faRow = $fadata[0];
+        	    $faRow = $fadata[0];
             }
             $row = array();
             $row['cnt'] = "";
             $row['code'] = $data[$i]['code'];
             if($faRow){
                 $row['code'] = $data[$i]['code'].' V'.$faRow['ver'];
-                $row['state'] = $faRow['state'];
-                $row['name'] = $data[$i]['name'];
-                $row['description'] = $data[$i]['description'];
-                
+	            $row['state'] = $faRow['state'];
+	            $row['name'] = $data[$i]['name'];
+	            $row['description'] = $data[$i]['description'];
+	            
                 $price = $bomPrice->calcBomPrice($faRow['recordkey'], 'CNY');
                 $row['low_cny'] = round($price['low'] * $data[$i]['qty'], 4);
                 $row['low_usd'] = round($price['low'] * $rate * $data[$i]['qty'], 4);
@@ -361,42 +361,42 @@ class Product_BompricedetailController extends Zend_Controller_Action
                 $row['average_cny'] = round($price['average'] * $data[$i]['qty'], 4);
                 $row['average_usd'] = round($price['average'] * $rate * $data[$i]['qty'], 4);
                 
-                $row['project_no_name'] = $faRow['project_no_name'];
-                $row['qty'] = $data[$i]['qty'];
-                $row['replace'] = $data[$i]['replace'];
-                $row['partposition'] = $data[$i]['partposition'];
-                $row['remark'] = $data[$i]['remark'];
-                $row['count'] = $count;
+	            $row['project_no_name'] = $faRow['project_no_name'];
+	            $row['qty'] = $data[$i]['qty'];
+	            $row['replace'] = $data[$i]['replace'];
+	            $row['partposition'] = $data[$i]['partposition'];
+	            $row['remark'] = $data[$i]['remark'];
+	            $row['count'] = $count;
                 $push_data[] = $row;
                 if(count($explanded) == 0 || in_array($data[$i]['code'], $explanded)) {
-                    $push_data = $this->getBomInfo($push_data, $fa, $son, $faRow['recordkey'], ++$count, $explanded, $rate);
-                    $count--;
+	                $push_data = $this->getBomInfo($push_data, $fa, $son, $faRow['recordkey'], ++$count, $explanded, $rate);
+	                $count--;
                 }
             }else{
-                $row['state'] = $data[$i]['mstate'];
-                $row['name'] = $data[$i]['name'];
-                $row['description'] = $data[$i]['description'];
+	            $row['state'] = $data[$i]['mstate'];
+	            $row['name'] = $data[$i]['name'];
+	            $row['description'] = $data[$i]['description'];
 
-                if(isset($_SESSION['mprice'][$data[$i]['code']])) {
-                    // session 中存在
-                    $price = $_SESSION['mprice'][$data[$i]['code']];
-                } else {
-                    $price = $price_list->getMultiPrice($data[$i]['code'], 'CNY');
-                    $_SESSION['mprice'][$data[$i]['code']] = $price;
-                }
-                $row['low_cny'] = round($price['low'] * $data[$i]['qty'], 4);
-                $row['low_usd'] = round($price['low'] * $rate * $data[$i]['qty'], 4);
-                $row['high_cny'] = round($price['high'] * $data[$i]['qty'], 4);
-                $row['high_usd'] = round($price['high'] * $rate * $data[$i]['qty'], 4);
-                $row['average_cny'] = round($price['average'] * $data[$i]['qty'], 4);
-                $row['average_usd'] = round($price['average'] * $rate * $data[$i]['qty'], 4);
-                
-                $row['project_no_name'] = "";
-                $row['qty'] = $data[$i]['qty'];
-                $row['replace'] = $data[$i]['replace'];
-                $row['partposition'] = $data[$i]['partposition'];
-                $row['remark'] = $data[$i]['remark'];
-                $row['count'] = $count;
+	            if(isset($_SESSION['mprice'][$data[$i]['code']])) {
+	                // session 中存在
+	                $price = $_SESSION['mprice'][$data[$i]['code']];
+	            } else {
+	                $price = $price_list->getMultiPrice($data[$i]['code'], 'CNY');
+	                $_SESSION['mprice'][$data[$i]['code']] = $price;
+	            }
+	            $row['low_cny'] = round($price['low'] * $data[$i]['qty'], 4);
+	            $row['low_usd'] = round($price['low'] * $rate * $data[$i]['qty'], 4);
+	            $row['high_cny'] = round($price['high'] * $data[$i]['qty'], 4);
+	            $row['high_usd'] = round($price['high'] * $rate * $data[$i]['qty'], 4);
+	            $row['average_cny'] = round($price['average'] * $data[$i]['qty'], 4);
+	            $row['average_usd'] = round($price['average'] * $rate * $data[$i]['qty'], 4);
+	            
+	            $row['project_no_name'] = "";
+	            $row['qty'] = $data[$i]['qty'];
+	            $row['replace'] = $data[$i]['replace'];
+	            $row['partposition'] = $data[$i]['partposition'];
+	            $row['remark'] = $data[$i]['remark'];
+	            $row['count'] = $count;
                 $push_data[] = $row;
             }
         }

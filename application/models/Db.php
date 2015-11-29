@@ -42,11 +42,11 @@ class Application_Model_Db extends Zend_Db_Table
      * @param array $join
      *            连接的表
      *            例：array(
-     *                     'type' => INNERJOIN,
+     *	    	         'type' => INNERJOIN,
      *                   'table' => table1,
-     *                     'condition' => 'table1.column1 = 'table.column',
-     *                     'cols' => array('column1')
-     *                 )
+     *	                 'condition' => 'table1.column1 = 'table.column',
+     *	                 'cols' => array('column1')
+     *	             )
      *            
      * @param array $columns
      *            要查找的列
@@ -101,24 +101,24 @@ class Application_Model_Db extends Zend_Db_Table
                         }
                         
                         switch($type) {
-                            case LEFTJONIN:
-                                $select->joinLeft($tablename, $condition, $cols);
-                                break;
-                            case RIGJTJOIN:
-                                $select->joinRight($tablename, $condition, $cols);
-                                break;
-                            case CROSSJOIN:
-                                $select->joinCross($tablename, $condition, $cols);
-                                break;
-                            case FULLJOIN:
-                                $select->joinFull($tablename, $condition, $cols);
-                                break;
-                            case NATUREJOIN:
-                                $select->joinNatural($tablename, $condition, $cols);
-                                break;
-                            default:
-                                $select->join($tablename, $condition, $cols);
-                                break;
+                        	case LEFTJONIN:
+                        	    $select->joinLeft($tablename, $condition, $cols);
+                        	    break;
+                        	case RIGJTJOIN:
+                        	    $select->joinRight($tablename, $condition, $cols);
+                        	    break;
+                        	case CROSSJOIN:
+                        	    $select->joinCross($tablename, $condition, $cols);
+                        	    break;
+                        	case FULLJOIN:
+                        	    $select->joinFull($tablename, $condition, $cols);
+                        	    break;
+                        	case NATUREJOIN:
+                        	    $select->joinNatural($tablename, $condition, $cols);
+                        	    break;
+                        	default:
+                        	    $select->join($tablename, $condition, $cols);
+                        	    break;
                         }
                     }
                 }
@@ -164,10 +164,10 @@ class Application_Model_Db extends Zend_Db_Table
      * @param array $join
      *            连接的表
      *            例：array(
-     *                     'type' => INNERJOIN,
+     *	    	         'type' => INNERJOIN,
      *                   'table' => table1,
-     *                     'condition' => 'table1.column1 = 'table.column'
-     *                 )
+     *	                 'condition' => 'table1.column1 = 'table.column'
+     *	             )
      * @return 异常时返回false，正常时返回条数
      */
     public function getJoinCount($where = array(), $join = array(), $column = 'count(*)') {
@@ -199,24 +199,24 @@ class Application_Model_Db extends Zend_Db_Table
                         $condition = $j['condition'];
                         
                         switch($type) {
-                            case LEFTJONIN:
-                                $select->joinLeft($tablename, $condition);
-                                break;
-                            case RIGJTJOIN:
-                                $select->joinRight($tablename, $condition);
-                                break;
-                            case CROSSJOIN:
-                                $select->joinCross($tablename, $condition);
-                                break;
-                            case FULLJOIN:
-                                $select->joinFull($tablename, $condition);
-                                break;
-                            case NATUREJOIN:
-                                $select->joinNatural($tablename, $condition);
-                                break;
-                            default:
-                                $select->join($tablename, $condition);
-                                break;
+                        	case LEFTJONIN:
+                        	    $select->joinLeft($tablename, $condition);
+                        	    break;
+                        	case RIGJTJOIN:
+                        	    $select->joinRight($tablename, $condition);
+                        	    break;
+                        	case CROSSJOIN:
+                        	    $select->joinCross($tablename, $condition);
+                        	    break;
+                        	case FULLJOIN:
+                        	    $select->joinFull($tablename, $condition);
+                        	    break;
+                        	case NATUREJOIN:
+                        	    $select->joinNatural($tablename, $condition);
+                        	    break;
+                        	default:
+                        	    $select->join($tablename, $condition);
+                        	    break;
                         }
                     }
                 }

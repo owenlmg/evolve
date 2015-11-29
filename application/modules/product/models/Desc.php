@@ -90,15 +90,15 @@ class Product_Model_Desc extends Application_Model_Db
                 ->where("t1.id in (SELECT t2.table_id from oa_record t2 where t2.handle_user = $myId and t2.table_name = 'oa_product_materiel_desc' and t2.action = '审批')");
 
         if($type == 1) {
-            $sqlArray = array($sql1);
+        	$sqlArray = array($sql1);
         } else if($type == 2) {
-            $sqlArray = array($sql2);
+        	$sqlArray = array($sql2);
         } else if($type == 3) {
-            $sqlArray = array($sql3);
+        	$sqlArray = array($sql3);
         } else {
-            $sqlArray = array($sql3, $sql1, $sql2);
+        	$sqlArray = array($sql3, $sql1, $sql2);
         }
-        $selectUnion = $this->select()->union($sqlArray, Zend_Db_Select::SQL_UNION);
+    	$selectUnion = $this->select()->union($sqlArray, Zend_Db_Select::SQL_UNION);
 
         $data = $this->fetchAll($selectUnion)->toArray();
 

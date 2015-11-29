@@ -8,7 +8,6 @@ class Admin_CronController extends Zend_Controller_Action
 {
     public function indexAction()
     {
-        echo 'cron';
         exit;
     }
     
@@ -34,33 +33,9 @@ class Admin_CronController extends Zend_Controller_Action
         $dateStart = date('Y-m-d', strtotime('-3 day'));
         
         $data = $mail->fetchAll("state = 0 and add_date >= '".$dateStart."'")->toArray();
-        $employeeModel = new Hra_Model_Employee();
         //echo '<pre>';print_r($data);exit;
         foreach ($data as $d){
-            // 过滤作废的员工邮箱
-            $mailTo = explode(',', $d['to']);
-            $mailToReal = array();
-            $mailCc = explode(',', $d['cc']);
-            $mailCcReal = array();
-            
-            foreach ($mailTo as $m) {
-                if ($employeeModel->checkEmail($m)) {
-                    array_push($mailToReal, $m);
-                }
-            }
-            
-            foreach ($mailCc as $c) {
-                if ($employeeModel->checkEmail($c)) {
-                    array_push($mailCcReal, $c);
-                }
-            }
-            
-            $mail->update(array(
-                    'content'   => '<div style="color:#f00;font-weight:bold;">系统计划任务重发！</div>'.$d['content'],
-                    'to'        => implode(',', $mailTo),
-                    'cc'        => implode(',', $mailCc),
-                    'err_info'  => '',
-            ), "id = ".$d['id']);
+            $mail->update(array('content' => '<div style="color:#f00;font-weight:bold;">系统任务计划重发！</div>'.$d['content']), "id = ".$d['id']);
             $result = $mail->send($d['id']);
             
             if(!$result['success']){
@@ -113,26 +88,26 @@ class Admin_CronController extends Zend_Controller_Action
         
         $table = '<style type="text/css">
 table.gridtable {
-    font-family: verdana,arial,sans-serif;
-    font-size:11px;
-    color:#333333;
-    border-width: 1px;
-    border-color: #666666;
-    border-collapse: collapse;
+	font-family: verdana,arial,sans-serif;
+	font-size:11px;
+	color:#333333;
+	border-width: 1px;
+	border-color: #666666;
+	border-collapse: collapse;
 }
 table.gridtable th {
-    border-width: 1px;
-    padding: 8px;
-    border-style: solid;
-    border-color: #666666;
-    background-color: #dedede;
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #dedede;
 }
 table.gridtable td {
-    border-width: 1px;
-    padding: 8px;
-    border-style: solid;
-    border-color: #666666;
-    background-color: #ffffff;
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #ffffff;
 }
 </style><table class="gridtable"><tr>
                                 <th>#</th>

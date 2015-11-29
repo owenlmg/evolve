@@ -268,7 +268,7 @@ class Admin_FormController extends Zend_Controller_Action {
             $model = new Admin_Model_Model();
             $formattr = new Admin_Model_Form();
             try {
-                $ids = $this->getsons($model, $id, array($id));
+            	$ids = $this->getsons($model, $id, array($id));
                 $db = $model->getAdapter();
                 $sql = "delete t1, t2, t3 from oa_admin_model t1 left JOIN oa_admin_formattr t2 on t1.id = t2.model_id left JOIN oa_admin_formval t3 on t2.id = t3.attrid where t1.id in (".implode(',', $ids).")";
                 $db->query($sql);
@@ -282,13 +282,13 @@ class Admin_FormController extends Zend_Controller_Action {
     }
     
     private function getsons($model, $parent, $ids) {
-        $data = $model->fetchRow("parentid = $parent");
-        if($data) {
-            $ids[] = $data['id'];
-            return $this->getsons($model, $data['id'], $ids);
-        } else {
-            return $ids;
-        }
+    	$data = $model->fetchRow("parentid = $parent");
+    	if($data) {
+    		$ids[] = $data['id'];
+    		return $this->getsons($model, $data['id'], $ids);
+    	} else {
+    		return $ids;
+    	}
     }
 
     public function getmodeltreeAction() {

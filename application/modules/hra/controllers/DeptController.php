@@ -24,19 +24,18 @@ class Hra_DeptController extends Zend_Controller_Action
         $request = $this->getRequest()->getParams();
 
         $option = isset($request['option']) ? $request['option'] : 'list';
-        $active = isset($request['active']) ? $request['active'] : null;
 
         $dept = new Hra_Model_Dept();
 
         if($option == 'list'){
-            $data = $dept->getList($active);
+            $data = $dept->getList();
         }else{
             // 请求部门的层级ID
             $parentId = isset($request['parentId']) ? $request['parentId'] : 0;
             // 获取部门数据
             $data = $dept->getData($parentId);
         }
-        //echo '<pre>';print_r($data);die;
+        
         // 将部门数据转为json格式并输出
         echo Zend_Json::encode($data);
 

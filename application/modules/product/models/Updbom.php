@@ -61,7 +61,7 @@ class Product_Model_Updbom extends Application_Model_Db
      * 获取BOM列表
      */
     public function getMy($type, $where, $myId, $start, $limit) {
-        // 该我审批的
+    	// 该我审批的
         $sql3 = $this->select()
                 ->setIntegrityCheck(false)
                 ->from(array('t1' => $this->_name))
@@ -84,9 +84,9 @@ class Product_Model_Updbom extends Application_Model_Db
         if(!Application_Model_User::checkPermissionByRoleName('文件管理员')
         && !Application_Model_User::checkPermissionByRoleName('物料管理员')
         && !Application_Model_User::checkPermissionByRoleName('系统管理员')) {
-            $sql1 = $sql1->where("(t1.state = 'Reviewing' or t1.state = 'Return' or t1.state = 'Draft' or t1.state = 'Active') and t1.create_user = $myId");
+        	$sql1 = $sql1->where("(t1.state = 'Reviewing' or t1.state = 'Return' or t1.state = 'Draft' or t1.state = 'Active') and t1.create_user = $myId");
         } else {
-            $sql1 = $sql1->where("(t1.state = 'Reviewing' or t1.state = 'Return' or t1.state = 'Active') or (t1.state = 'Draft' and t1.create_user = $myId)");
+        	$sql1 = $sql1->where("(t1.state = 'Reviewing' or t1.state = 'Return' or t1.state = 'Active') or (t1.state = 'Draft' and t1.create_user = $myId)");
         }
 
         // 我审批过的
@@ -103,18 +103,18 @@ class Product_Model_Updbom extends Application_Model_Db
         }
         
         if($type == 1) {
-            $sqlArray = array($sql1);
+        	$sqlArray = array($sql1);
         } else if($type == 2) {
-            $sqlArray = array($sql2);
+        	$sqlArray = array($sql2);
         } else if($type == 3) {
-            $sqlArray = array($sql3);
+        	$sqlArray = array($sql3);
         } else {
-            $sqlArray = array($sql3, $sql1, $sql2);
+        	$sqlArray = array($sql3, $sql1, $sql2);
         }
-        $selectUnion = $this->select()->union($sqlArray, Zend_Db_Select::SQL_UNION)
-                            ->order('state DESC')
-                            ->order('update_time desc')
-                            ->limit($limit, $start);
+    	$selectUnion = $this->select()->union($sqlArray, Zend_Db_Select::SQL_UNION)
+    	                    ->order('state DESC')
+    	                    ->order('update_time desc')
+    	                    ->limit($limit, $start);
 
         $data = $this->fetchAll($selectUnion)->toArray();
 
@@ -152,17 +152,17 @@ class Product_Model_Updbom extends Application_Model_Db
             $sql2->where("t1.id in ($ids)");
         }
         if($type == 1) {
-            $sqlArray = array($sql1);
+        	$sqlArray = array($sql1);
         } else if($type == 2) {
-            $sqlArray = array($sql2);
+        	$sqlArray = array($sql2);
         } else if($type == 3) {
-            $sqlArray = array($sql3);
+        	$sqlArray = array($sql3);
         } else {
-            $sqlArray = array($sql1, $sql2, $sql3);
+        	$sqlArray = array($sql1, $sql2, $sql3);
         }
-        $selectUnion = $this->select()->union($sqlArray, Zend_Db_Select::SQL_UNION)
-                            ->order('state DESC')
-                            ->order('update_time desc');
+    	$selectUnion = $this->select()->union($sqlArray, Zend_Db_Select::SQL_UNION)
+    	                    ->order('state DESC')
+    	                    ->order('update_time desc');
 
         $data = $this->fetchAll($selectUnion)->count();
 

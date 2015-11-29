@@ -93,7 +93,7 @@ class Erp_Model_Sale_Orderitems extends Application_Model_Db
                 'items_name'                => $d['name'],
                 'items_description'         => $d['description'],
                 'items_qty'                 => $d['qty'],
-                'items_qty_send'              => $qty_send,
+                'items_qty_send'      	    => $qty_send,
                 'items_unit'                => $d['unit'],
                 'items_price'               => $d['price'],
                 'items_price_tax'           => $price_tax,

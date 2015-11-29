@@ -13,24 +13,26 @@ class Product_CatalogController extends Zend_Controller_Action
         $this->view->salesDisable = 1;
         $this->view->pmDisable = 1;
         $this->view->reviewDisable = 1;
+        $this->view->adminDisable = 1;
         
         $this->view->user_id = 0;
         
         if(isset($user_session->user_info)){
             $this->view->user_id = $user_session->user_info['user_id'];
         
-            if(Application_Model_User::checkPermissionByRoleName('产品中心-市场')){
+            if(Application_Model_User::checkPermissionByRoleName('产品中心-市场') || Application_Model_User::checkPermissionByRoleName('产品中心-工程师')){
                 $this->view->salesDisable = 0;
             }
         
             if(Application_Model_User::checkPermissionByRoleName('产品中心-PM')){
+                $this->view->adminDisable = 0;
                 $this->view->salesDisable = 0;
                 $this->view->pmDisable = 0;
             }
         
-            if(Application_Model_User::checkPermissionByRoleName('产品中心-审核')){
+            /* if(Application_Model_User::checkPermissionByRoleName('产品中心-审核')){
                 $this->view->reviewDisable = 0;
-            }
+            } */
         
             if(Application_Model_User::checkPermissionByRoleName('系统管理员')){
                 $this->view->salesDisable = 0;
@@ -79,7 +81,9 @@ class Product_CatalogController extends Zend_Controller_Action
         $review_transfer_user = isset($request['review_transfer_user']) ? $request['review_transfer_user'] : null;
         $review_remark = isset($request['review_remark']) ? $request['review_remark'] : null;
         
-        if($review_id && $review_operate){
+        $ids = explode(',', $review_id);
+        
+        foreach ($ids as $id){
             if($review_operate == 'transfer' && $review_transfer_user == null){
                 $result['success'] = false;
                 $result['info'] = '转审对象为空，批准失败！';
@@ -87,25 +91,63 @@ class Product_CatalogController extends Zend_Controller_Action
                 $user = new Application_Model_User();
                 $review = new Dcc_Model_Review();
                 
+                $now = date('Y-m-d H:i:s');
+                $user_session = new Zend_Session_Namespace('user');
+                $user_id = $user_session->user_info['user_id'];
+                
+                $userData = $user->fetchRow("id = ".$user_id)->toArray();
+                $employee_id = $userData['employee_id'];
+                
+                $employee = new Hra_Model_Employee();
+                $catalog = new Product_Model_Catalog();
+                $mail = new Application_Model_Log_Mail();
+                
+                $catalogData = $catalog->fetchRow("id = ".$id)->toArray();
+                $applyEmployeeData = $user->fetchRow("id = ".$catalogData['create_user'])->toArray();
+                $applyEmployee = $employee->fetchRow("id = ".$applyEmployeeData['employee_id'])->toArray();
+                
                 if($review_operate == 'transfer'){
                     // 转审
+                    $catalog->update(array('review_info' => $catalogData['review_info'].'<br>'.$now.': '.$user_session->user_info['user_name'].' [转审]'), "id = ".$id);
                     $userData = $user->fetchRow("id = ".$review_transfer_user)->toArray();
                     $employee_id = $userData['employee_id'];
+                    $transferEmployee = $employee->fetchRow("id = ".$employee_id)->toArray();
+                    $to = $transferEmployee['email'];
+                    //echo $employee_id;exit;
+                    $review->update(array('plan_user' => $employee_id), "type = 'product_add' and file_id = ".$id." and finish_flg = 0");
                     
-                    $review->update(array('plan_user' => $employee_id), "type = 'product_add' and file_id = ".$review_id." and finish_flg = 0");
+                    $mailContent = '<div>产品中心新增产品型号等待审核，请登录系统查看：</div>
+                                        <div>
+                                        <p><b>审核意见：</b>'.$review_remark.'</p>
+                                        <p><b>标准型号：</b>'.$catalogData['model_standard'].'</p>
+                                        <p><b>内部型号：</b>'.$catalogData['model_internal'].'</p>
+                                        <p><b>描述：</b>'.$catalogData['description'].'</p>
+                                        <p><b>申请人：</b>'.$applyEmployee['cname'].'</p>
+                                        <p><b>申请时间：</b>'.$now.'</p>
+                                        </div>';
+                    
+                    $mailData = array(
+                            'type'      => '消息',
+                            'subject'   => '产品中心-转审',
+                            'to'        => $to,
+                            'cc'        => $user_session->user_info['user_email'].','.$applyEmployee['email'],
+                            'user_id'   => $catalogData['create_user'],
+                            'content'   => $mailContent,
+                            'add_date'  => $now
+                    );
+                    
+                    try {
+                        // 记录邮件日志并发送邮件
+                        $mail->send($mail->insert($mailData));
+                    } catch (Exception $e) {
+                        $result['success'] = false;
+                        $result['info'] = $e->getMessage();
+                    
+                        echo Zend_Json::encode($result);
+                    
+                        exit;
+                    }
                 }else{
-                    $now = date('Y-m-d H:i:s');
-                    $user_session = new Zend_Session_Namespace('user');
-                    $user_id = $user_session->user_info['user_id'];
-                    
-                    $userData = $user->fetchRow("id = ".$user_id)->toArray();
-                    $employee_id = $userData['employee_id'];
-                    
-                    $employee = new Hra_Model_Employee();
-                    //$flow = new Admin_Model_Flow();
-                    //$step = new Admin_Model_Step();
-                    $catalog = new Product_Model_Catalog();
-                    
                     $data = array(
                             'actual_user'   => $employee_id,
                             'finish_time'   => $now,
@@ -113,25 +155,49 @@ class Product_CatalogController extends Zend_Controller_Action
                     );
                     
                     // 更新审核记录
-                    $review->update($data, "type = 'product_add' and file_id = ".$review_id." and finish_flg = 0");
+                    $review->update($data, "type = 'product_add' and file_id = ".$id." and finish_flg = 0");
                     
                     // 更新审核状态及审核意见
                     if($review_operate == 'no'){
                         $reviewResult = '<font style="color: #FF0000"><b>拒绝</b></font>';
-                        $catalog->update(array('review' => 1, 'auditor_remark' => $review_remark), "id = ".$review_id);
+                        $catalog->update(array('review' => 1, 'auditor_remark' => $review_remark, 'review_info' => $catalogData['review_info'].'<br>'.$now.': '.$user_session->user_info['user_name'].' [拒绝]'), "id = ".$id);
                     }else{
                         $reviewResult = '<font style="color: #006400"><b>批准</b></font>';
-                        $catalog->update(array('auditor_id' => $user_id, 'auditor_time' => $now, 'review' => 2, 'auditor_remark' => $review_remark), "id = ".$review_id);
+                        $catalog->update(array('auditor_id' => $user_id, 'auditor_time' => $now, 'review' => 2, 'auditor_remark' => $review_remark, 'review_info' => $catalogData['review_info'].'<br>'.$now.': '.$user_session->user_info['user_name'].' [批准]'), "id = ".$id);
                     }
                     
-                    $catalogData = $catalog->fetchRow("id = ".$review_id)->toArray();
-                    
-                    if($review_operate == 'no'){
-                        $mail = new Application_Model_Log_Mail();
+                    //if($review_operate == 'no'){
+                    if(true){
+                        $noticeMails = array();
+                        $noticeUsers = array();
+                        
+                        $member = new Admin_Model_Member();
+                        
+                        $reviewerInfo = $review->getReviewUserInfo('product_add', $id);// 审核人
                         
                         $applyEmployeeData = $user->fetchRow("id = ".$catalogData['create_user'])->toArray();
-                        $applyEmployee = $employee->fetchRow("id = ".$applyEmployeeData['employee_id'])->toArray();
-                        $to = $applyEmployee['email'];
+                        $applyEmployee = $employee->fetchRow("id = ".$applyEmployeeData['employee_id'])->toArray();// 申请人
+                        
+                        $noticeTo = $member->getMemberWithManagerByName('产品中心-PM');// 管理员
+                        
+                        foreach ($noticeTo as $n){
+                            if($n['email'] != '' && !in_array($n['user_id'], $noticeUsers)){
+                                array_push($noticeMails, $n['email']);
+                                array_push($noticeUsers, $n['user_id']);
+                            }
+                        }
+                        
+                        foreach ($reviewerInfo as $r){
+                            if($r['email'] != '' && !in_array($r['user_id'], $noticeUsers)){
+                                array_push($noticeMails, $r['email']);
+                                array_push($noticeUsers, $r['user_id']);
+                            }
+                        }
+                        
+                        if (!in_array($catalogData['create_user'], $noticeUsers)) {
+                            array_push($noticeMails, $applyEmployee['email']);
+                            array_push($noticeUsers, $catalogData['create_user']);
+                        }
                         
                         $mailContent = '<div>产品中心新增产品型号，已审核：</div>
                                         <div>
@@ -140,14 +206,14 @@ class Product_CatalogController extends Zend_Controller_Action
                                         <p><b>标准型号：</b>'.$catalogData['model_standard'].'</p>
                                         <p><b>内部型号：</b>'.$catalogData['model_internal'].'</p>
                                         <p><b>描述：</b>'.$catalogData['description'].'</p>
-                                        <p><b>申请人：</b>'.$user_session->user_info['user_name'].'</p>
-                                        <p><b>申请时间：</b>'.$now.'</p>
+                                        <p><b>申请人：</b>'.$applyEmployee['cname'].'</p>
+                                        <p><b>申请时间：</b>'.$catalogData['create_time'].'</p>
                                         </div>';
                         
                         $mailData = array(
                                 'type'      => '消息',
                                 'subject'   => '产品中心-审核',
-                                'to'        => $to,
+                                'to'        => implode(',', $noticeMails),
                                 'cc'        => $user_session->user_info['user_email'],
                                 'user_id'   => $catalogData['create_user'],
                                 'content'   => $mailContent,
@@ -168,9 +234,6 @@ class Product_CatalogController extends Zend_Controller_Action
                     }
                 }
             }
-        }else{
-            $result['success'] = false;
-            $result['info'] = 'ID为空，批准失败！';
         }
         
         echo Zend_Json::encode($result);
@@ -503,6 +566,7 @@ class Product_CatalogController extends Zend_Controller_Action
                 'display_deleted'   => isset($request['display_deleted']) ? ($request['display_deleted'] == 'true' ? 1 : 0) : 0,
                 'type_id'           => isset($request['type_id']) && $request['type_id'] != 'null' ? $request['type_id'] : '',
                 'series_id'         => isset($request['series_id']) && $request['series_id'] != 'null' ? $request['series_id'] : '',
+                'have_code'         => isset($request['have_code']) && $request['have_code'] != 'null' ? $request['have_code'] : '',
                 'stage_id'          => isset($request['stage_id']) && $request['stage_id'] != 'null' && $request['stage_id'] != 'undefined' ? $request['stage_id'] : '',
                 'developmode_id'    => isset($request['developmode_id']) && $request['developmode_id'] && $request['developmode_id'] != 'undefined' ? $request['developmode_id'] : '',
                 'page'              => isset($request['page']) ? $request['page'] : 1,
@@ -620,32 +684,42 @@ class Product_CatalogController extends Zend_Controller_Action
             $mass_production_date = isset($request['mass_production_date']) && $request['mass_production_date'] != '' ? $request['mass_production_date'] : null;
             
             if($catalog_id && $code){
-                $data = array(
-                        'code'                  => $code,
-                        'code_old'              => $code_old,
-                        'stage_id'              => $stage_id,
-                        'remark'                => $remark,
-                        'date_dvt'              => $date_dvt,
-                        'qa1_date'              => $qa1_date,
-                        'qa2_date'              => $qa2_date,
-                        'evt_date'              => $evt_date,
-                        'mass_production_date'  => $mass_production_date,
-                        'update_time'           => $now,
-                        'update_user'           => $user_id
-                );
-                
-                $where = "id = ".$catalog_id;
-                
-                try {
-                    $catalog->update($data, $where);
-                } catch (Exception $e) {
+                if($catalog->fetchAll("id != ".$catalog_id." and code = '".$code."'")->count() == 0) {
+                    $data = array(
+                            'code'                  => $code,
+                            'code_old'              => $code_old,
+                            'stage_id'              => $stage_id,
+                            'remark'                => $remark,
+                            'date_dvt'              => $date_dvt,
+                            'qa1_date'              => $qa1_date,
+                            'qa2_date'              => $qa2_date,
+                            'evt_date'              => $evt_date,
+                            'mass_production_date'  => $mass_production_date,
+                            'update_time'           => $now,
+                            'update_user'           => $user_id
+                    );
+                    
+                    $where = "id = ".$catalog_id;
+                    
+                    try {
+                        $catalog->update($data, $where);
+                    } catch (Exception $e) {
+                        $result['success'] = false;
+                        $result['info'] = $e->getMessage();
+                        
+                        echo Zend_Json::encode($result);
+                        
+                        exit;
+                    }
+                } else {
                     $result['success'] = false;
-                    $result['info'] = $e->getMessage();
-                
+                    $result['info'] = '代码重复，请重新分配';
+                    
                     echo Zend_Json::encode($result);
-                
+                    
                     exit;
                 }
+                
             }else{
                 $result['success'] = false;
                 $result['info'] = '信息不完整，编辑失败！';
@@ -654,25 +728,28 @@ class Product_CatalogController extends Zend_Controller_Action
             $operate = isset($request['operate']) ? $request['operate'] : null;
             $review = isset($request['review']) ? $request['review'] : null;
             $id = isset($request['id']) ? $request['id'] : null;
+            $ids = isset($request['ids']) ? $request['ids'] : null;
             $active = isset($request['active']) ? $request['active'] : null;
             $active = $active == 'on' ? 1 : 0;
             $description = isset($request['description']) ? $request['description'] : null;
             $remark = isset($request['remark']) ? $request['remark'] : null;
-            $code_customer = isset($request['code_customer']) ? $request['code_customer'] : null;
-            $model_customer = isset($request['model_customer']) ? $request['model_customer'] : null;
+            $code_customer = isset($request['code_customer']) ? trim($request['code_customer']) : null;
+            $model_customer = isset($request['model_customer']) ? trim($request['model_customer']) : null;
             $description_customer = isset($request['description_customer']) ? $request['description_customer'] : null;
             $type_id = isset($request['type_id']) ? $request['type_id'] : null;
             $type_id = isset($request['type_id']) ? $request['type_id'] : null;
             $series_id = isset($request['series_id']) ? $request['series_id'] : null;
             $series_id = isset($request['series_id']) ? $request['series_id'] : null;
             $developmode_id = isset($request['developmode_id']) ? $request['developmode_id'] : null;
-            $model_standard = isset($request['model_standard']) ? $request['model_standard'] : null;
-            $model_internal = isset($request['model_internal']) ? $request['model_internal'] : null;
+            $model_standard = isset($request['model_standard']) ? trim($request['model_standard']) : null;
+            $model_internal = isset($request['model_internal']) ? trim($request['model_internal']) : null;
             
             if($operate == 'delete' && $id){
+                // 删除
                 try {
                     if($catalog->fetchAll("id = ".$id." and auditor_id is not null")->count() == 1){
-                        $catalog->update(array('delete' => 1), "id = ".$id);
+                        $catalogData = $catalog->fetchRow("id = ".$id)->toArray();
+                        $catalog->update(array('delete' => 1, 'review_info' => $catalogData['review_info'].'<br>'.$now.': '.$user_session->user_info['user_name'].' [删除]'), "id = ".$id);
                     }else{
                         $catalog->delete("id = ".$id);
                         
@@ -687,9 +764,48 @@ class Product_CatalogController extends Zend_Controller_Action
                 
                     exit;
                 }
+            } else if($operate == 'disable' && $ids){
+                // 作废
+                $idArr = explode(',', $ids);
+                
+                foreach ($idArr as $id){
+                    try {
+                        if($catalog->fetchAll("id = ".$id." and active = 1")->count() == 1){
+                            $catalogData = $catalog->fetchRow("id = ".$id)->toArray();
+                            $catalog->update(array('active' => 0, 'review_info' => $catalogData['review_info'].'<br>'.$now.': '.$user_session->user_info['user_name'].' [作废]'), "id = ".$id);
+                        }
+                    } catch (Exception $e){
+                        $result['success'] = false;
+                        $result['info'] = $e->getMessage();
+                    
+                        echo Zend_Json::encode($result);
+                    
+                        exit;
+                    }
+                }
+            } else if($operate == 'enable' && $ids){
+                // 启用
+                $idArr = explode(',', $ids);
+                
+                foreach ($idArr as $id){
+                    try {
+                        if($catalog->fetchAll("id = ".$id." and active = 0")->count() == 1){
+                            $catalogData = $catalog->fetchRow("id = ".$id)->toArray();
+                            $catalog->update(array('active' => 1, 'review_info' => $catalogData['review_info'].'<br>'.$now.': '.$user_session->user_info['user_name'].' [启用]'), "id = ".$id);
+                        }
+                    } catch (Exception $e){
+                        $result['success'] = false;
+                        $result['info'] = $e->getMessage();
+                    
+                        echo Zend_Json::encode($result);
+                    
+                        exit;
+                    }
+                }
             }else if($operate == 'edit' && $id){
                 // 判断是否重复
                 if($catalog->fetchAll("id != ".$id." and model_internal = '".$model_internal."'")->count() == 0){//type_id = ".$type_id." and series_id = ".$series_id." and 
+                    $catalogData = $catalog->fetchRow("id = ".$id)->toArray();
                     $data = array(
                             'active'            => $active,
                             'type_id'           => $type_id,
@@ -704,7 +820,8 @@ class Product_CatalogController extends Zend_Controller_Action
                             'model_customer'    => $model_customer,
                             'description_customer'     => $description_customer,
                             'update_time'       => $now,
-                            'update_user'       => $user_id
+                            'update_user'       => $user_id,
+                            'review_info'       => $catalogData['review_info'].'<br>'.$now.': '.$user_session->user_info['user_name'].' [修改]'
                     );
                     
                     $where = "id = ".$id;
@@ -712,115 +829,179 @@ class Product_CatalogController extends Zend_Controller_Action
                     try {
                         $catalog->update($data, $where);
                         
-                        $info = "产品中心新增产品型号，请登录系统审核：";
-                        $editType = "修改";
-                        
-                        if($review == 2){
-                            $info = "产品中心产品信息变更，请登录系统查看：";
-                            $editType = "变更";
-                        }
-                        
-                        $member = new Admin_Model_Member();
-                        $user = new Application_Model_User();
-                        $employee = new Hra_Model_Employee();
-                        $flow = new Admin_Model_Flow();
-                        $step = new Admin_Model_Step();
-                        $review = new Dcc_Model_Review();
-                        
-                        $flowData = $flow->fetchRow("flow_name = '产品中心-审核'")->toArray();
-                        // 获取审核阶段
-                        $stepIds = $flowData['step_ids'];
-                        $stepArr = explode(',', $stepIds);
-                        
-                        $i = 0;
-                        
-                        foreach ($stepArr as $s){
-                            $stepData = $step->fetchRow("id = ".$s)->toArray();
-                        
-                            $step_user = $stepData['user'] != '' ? $stepData['user'] : null;
-                            $step_role = $stepData['dept'] != '' ? $stepData['dept'] : null;
-                        
-                            $reviewData = array(
-                                    'type'      => 'product_add',
-                                    'file_id'   => $id,
-                                    'step_name' => $stepData['step_name'],
-                                    'plan_user' => $step_user,
-                                    'plan_dept' => $step_role,
-                                    'method'    => $stepData['method'],
-                                    'return'    => $stepData['return']
-                            );
-                        
-                            $review->insert($reviewData);
-                        
-                            // 第一阶段发送邮件通知
-                            if($i == 0){
-                                $employeeIdArr = array();
-                        
-                                if($step_user){
-                                    $tmpArr = explode(',', $stepData['user']);
-                        
-                                    foreach ($tmpArr as $t){
-                                        if(!in_array($t, $employeeIdArr)){
-                                            array_push($employeeIdArr, $t);
+                        if ($catalogData['review'] == 1){
+                            // 修改
+                            $member = new Admin_Model_Member();
+                            $user = new Application_Model_User();
+                            $employee = new Hra_Model_Employee();
+                            $flow = new Admin_Model_Flow();
+                            $step = new Admin_Model_Step();
+                            $review = new Dcc_Model_Review();
+                            
+                            $flowData = $flow->fetchRow("flow_name = '产品中心-审核'")->toArray();
+                            // 获取审核阶段
+                            $stepIds = $flowData['step_ids'];
+                            $stepArr = explode(',', $stepIds);
+                            
+                            $i = 0;
+                            
+                            foreach ($stepArr as $s){
+                                $stepData = $step->fetchRow("id = ".$s)->toArray();
+                            
+                                $step_user = $stepData['user'] != '' ? $stepData['user'] : null;
+                                $step_role = $stepData['dept'] != '' ? $stepData['dept'] : null;
+                            
+                                $reviewData = array(
+                                        'type'      => 'product_add',
+                                        'file_id'   => $id,
+                                        'step_name' => $stepData['step_name'],
+                                        'plan_user' => $step_user,
+                                        'plan_dept' => $step_role,
+                                        'method'    => $stepData['method'],
+                                        'return'    => $stepData['return']
+                                );
+                            
+                                $review->delete("type = 'product_add' AND file_id = ".$id);
+                                $review->insert($reviewData);
+                            
+                                // 第一阶段发送邮件通知
+                                if($i == 0){
+                                    $employeeIdArr = array();
+                            
+                                    if($step_user){
+                                        $tmpArr = explode(',', $stepData['user']);
+                            
+                                        foreach ($tmpArr as $t){
+                                            if(!in_array($t, $employeeIdArr)){
+                                                array_push($employeeIdArr, $t);
+                                            }
                                         }
                                     }
-                                }
-                        
-                                if($step_role){
-                                    $tmpArr = $member->getMember($stepData['dept']);
-                        
-                                    foreach ($tmpArr as $t){
-                                        if(!in_array($t, $employeeIdArr)){
-                                            array_push($employeeIdArr, $t['employee_id']);
+                            
+                                    if($step_role){
+                                        $tmpArr = $member->getMember($stepData['dept']);
+                            
+                                        foreach ($tmpArr as $t){
+                                            if(!in_array($t, $employeeIdArr)){
+                                                array_push($employeeIdArr, $t['employee_id']);
+                                            }
                                         }
                                     }
-                                }
-                        
-                                $toAddress = array();
-                                $toIds = array();
-                        
-                                foreach ($employeeIdArr as $employeeId){
-                                    $em = $employee->getInfoById($employeeId);
-                                    array_push($toAddress, $em['email']);
-                                    $u = $user->fetchRow("employee_id = ".$employeeId)->toArray();
-                                    array_push($toIds, $u['id']);
-                                }
-                        
-                                $mail = new Application_Model_Log_Mail();
-                        
-                                $mailContent = '<div>'.$info.'</div>
+                            
+                                    $toAddress = array();
+                                    $toIds = array();
+                            
+                                    foreach ($employeeIdArr as $employeeId){
+                                        $em = $employee->getInfoById($employeeId);
+                                        array_push($toAddress, $em['email']);
+                                        $u = $user->fetchRow("employee_id = ".$employeeId)->toArray();
+                                        array_push($toIds, $u['id']);
+                                    }
+                            
+                                    $mail = new Application_Model_Log_Mail();
+                            
+                                    $mailContent = '<div>产品中心-修改产品信息，请登录系统审核：</div>
                                     <div>
-                                    <p><b>标准型号：</b>'.$model_standard.'</p>
-                                    <p><b>内部型号：</b>'.$model_internal.'</p>
+                                    <p><b>标准型号：</b>'.$catalogData['model_standard'].' -> '.$model_standard.'</p>
+                                    <p><b>内部型号：</b>'.$catalogData['model_internal'].' -> '.$model_internal.'</p>
                                     <p><b>描述：</b>'.$description.'</p>
                                     <p><b>申请人：</b>'.$user_session->user_info['user_name'].'</p>
                                     <p><b>申请时间：</b>'.$now.'</p>
                                     </div>';
-                        
-                                $mailData = array(
-                                        'type'      => '消息',
-                                        'subject'   => '产品中心-'.$editType,
-                                        'to'        => implode(',', $toAddress),
-                                        //'cc'        => $user_session->user_info['user_email'],
-                                        'user_id'   => implode(',', $toIds),
-                                        'content'   => $mailContent,
-                                        'add_date'  => $now
-                                );
-                        
-                                try {
-                                    // 记录邮件日志并发送邮件
-                                    $mail->send($mail->insert($mailData));
-                                } catch (Exception $e) {
-                                    $result['success'] = false;
-                                    $result['info'] = $e->getMessage();
-                        
-                                    echo Zend_Json::encode($result);
-                        
-                                    exit;
+                            
+                                    $mailData = array(
+                                            'type'      => '消息',
+                                            'subject'   => '产品中心-修改',
+                                            'to'        => implode(',', $toAddress),
+                                            'cc'        => $user_session->user_info['user_email'],
+                                            'user_id'   => implode(',', $toIds),
+                                            'content'   => $mailContent,
+                                            'add_date'  => $now
+                                    );
+                            
+                                    try {
+                                        // 记录邮件日志并发送邮件
+                                        $mail->send($mail->insert($mailData));
+                                    } catch (Exception $e) {
+                                        $result['success'] = false;
+                                        $result['info'] = $e->getMessage();
+                            
+                                        echo Zend_Json::encode($result);
+                            
+                                        exit;
+                                    }
+                                }
+                            
+                                $i++;
+                            }
+                        }else{
+                            // 变更
+                            $noticeMails = array();
+                            $noticeUsers = array();
+                            
+                            $user = new Application_Model_User();
+                            $employee = new Hra_Model_Employee();
+                            $member = new Admin_Model_Member();
+                            $reviewModel = new Dcc_Model_Review();
+                            
+                            $reviewerInfo = $reviewModel->getReviewUserInfo('product_add', $id);// 审核人
+                            
+                            $applyEmployeeData = $user->fetchRow("id = ".$catalogData['create_user'])->toArray();
+                            $applyEmployee = $employee->fetchRow("id = ".$applyEmployeeData['employee_id'])->toArray();// 申请人
+                            
+                            $noticeTo = $member->getMemberWithManagerByName('产品中心-PM');// 管理员
+                            
+                            foreach ($noticeTo as $n){
+                                if($n['email'] != '' && !in_array($n['user_id'], $noticeUsers)){
+                                    array_push($noticeMails, $n['email']);
+                                    array_push($noticeUsers, $n['user_id']);
                                 }
                             }
-                        
-                            $i++;
+                            
+                            foreach ($reviewerInfo as $r){
+                                if($r['email'] != '' && !in_array($r['user_id'], $noticeUsers)){
+                                    array_push($noticeMails, $r['email']);
+                                    array_push($noticeUsers, $r['user_id']);
+                                }
+                            }
+                            
+                            if (!in_array($catalogData['create_user'], $noticeUsers)) {
+                                array_push($noticeMails, $applyEmployee['email']);
+                                array_push($noticeUsers, $catalogData['create_user']);
+                            }
+                            
+                            $mail = new Application_Model_Log_Mail();
+                            
+                            $mailContent = '<div>产品中心产品信息变更，请登录系统查看：</div>
+                                    <div>
+                                    <p><b>标准型号：</b>'.$catalogData['model_standard'].' -> '.$model_standard.'</p>
+                                    <p><b>内部型号：</b>'.$catalogData['model_internal'].' -> '.$model_internal.'</p>
+                                    <p><b>描述：</b>'.$description.'</p>
+                                    <p><b>申请人：</b>'.$user_session->user_info['user_name'].'</p>
+                                    <p><b>申请时间：</b>'.$now.'</p>
+                                    </div>';
+                            
+                            $mailData = array(
+                                    'type'      => '消息',
+                                    'subject'   => '产品中心-变更',
+                                    'cc'        => $user_session->user_info['user_email'],
+                                    'to'        => implode(',', $noticeMails),
+                                    'user_id'   => $user_id,
+                                    'content'   => $mailContent,
+                                    'add_date'  => $now
+                            );
+                            
+                            try {
+                                // 记录邮件日志并发送邮件
+                                $mail->send($mail->insert($mailData));
+                            } catch (Exception $e) {
+                                $result['success'] = false;
+                                $result['info'] = $e->getMessage();
+                            
+                                echo Zend_Json::encode($result);
+                            
+                                exit;
+                            }
                         }
                     } catch (Exception $e) {
                         $result['success'] = false;
@@ -855,7 +1036,8 @@ class Product_CatalogController extends Zend_Controller_Action
                             'create_time'       => $now,
                             'create_user'       => $user_id,
                             'update_time'       => $now,
-                            'update_user'       => $user_id
+                            'update_user'       => $user_id,
+                            'review_info'       => $now.': '.$user_session->user_info['user_name'].' [添加]'
                     );
                     
                     try {

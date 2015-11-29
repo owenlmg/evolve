@@ -173,17 +173,17 @@ class Dcc_CodeController extends Zend_Controller_Action {
         if ($val->id) {
             // 编辑
             if(isset($val->code) && $val->code) {
-                $auto_code = $val->code;
-                // 检查是否文件号已经存在
-                if ($code->fetchAll("id != " . $val->id . " and code = '" . $auto_code . "'")->count() > 0) {
-                    $result['result'] = false;
-                    $result['info'] = "文件编码“" . $val->code . "”已经存在";
+	            $auto_code = $val->code;
+	            // 检查是否文件号已经存在
+	            if ($code->fetchAll("id != " . $val->id . " and code = '" . $auto_code . "'")->count() > 0) {
+	                $result['result'] = false;
+	                $result['info'] = "文件编码“" . $val->code . "”已经存在";
 
-                    echo Zend_Json::encode($result);
-                    exit;
-                }
+	                echo Zend_Json::encode($result);
+	                exit;
+	            }
             } else {
-                $auto_code = "";
+            	$auto_code = "";
             }
             $data = array(
                 'code' => $auto_code,
@@ -212,12 +212,12 @@ class Dcc_CodeController extends Zend_Controller_Action {
             $typedata = $db->query("select t2.automethod from oa_doc_type t1 inner join oa_doc_auto t2 on t1.autotype=t2.id where t1.state = 1 and t1.id = ".$val->prefix)->fetchObject();
             if ($typedata && $typedata->automethod != 'H' &&  $typedata->automethod != 'A' &&  $typedata->automethod != 'F') {
                 $auto_code = $this->getCode($val->prefix, $val->project_no);
-                if (!$auto_code) {
-                    $result['result'] = false;
-                    $result['info'] = "文件编码获取失败";
-                    echo Zend_Json::encode($result);
-                    exit;
-                }
+	            if (!$auto_code) {
+	                $result['result'] = false;
+	                $result['info'] = "文件编码获取失败";
+	                echo Zend_Json::encode($result);
+	                exit;
+	            }
             } else if($typedata && $typedata->automethod == 'A' && (!isset($val->code) || !$val->code)) {
                 $auto_code = "";
                 // 需发邮件
@@ -437,9 +437,9 @@ class Dcc_CodeController extends Zend_Controller_Action {
             try {
                 $code->insert($data);
                 if($auto_code) {
-                    $result['info'] = "申请成功，文件编码：$auto_code";
+                	$result['info'] = "申请成功，文件编码：$auto_code";
                 } else {
-                    $result['info'] = "申请成功，请通知管理员分配文件编码";
+                	$result['info'] = "申请成功，请通知管理员分配文件编码";
                 }
             } catch (Exception $e) {
                 $result['result'] = false;
@@ -554,12 +554,12 @@ class Dcc_CodeController extends Zend_Controller_Action {
      * 取得项目号
      */
     public function getprojectAction() {
-        $request = $this->getRequest()->getParams();
-        $where = "1=1";
-        if(isset($request['q']) && $request['q']) {
-            $q = $request['q'];
-            $where = "t1.model_internal like '%$q%'";
-        }
+    	$request = $this->getRequest()->getParams();
+    	$where = "1=1";
+    	if(isset($request['q']) && $request['q']) {
+    		$q = $request['q'];
+    		$where = "t1.model_internal like '%$q%'";
+    	}
         $catalog = new Product_Model_Catalog();
         $data = $catalog->getAdapter()->query("select t1.id, concat(t1.model_internal,'[', t2.name, ']') as name from oa_product_catalog t1 inner join oa_product_catalog_series t2 on t1.series_id = t2.id where $where and t1.active = 1 and t2.active=1 and t1.model_internal != '' order by t1.model_internal")->fetchAll();
 
@@ -572,12 +572,12 @@ class Dcc_CodeController extends Zend_Controller_Action {
      * 取得标准产品型号
      */
     public function getprojectstandardAction() {
-        $request = $this->getRequest()->getParams();
-        $where = "1=1";
-        if(isset($request['q']) && $request['q']) {
-            $q = $request['q'];
-            $where = "t1.model_standard like '%$q%'";
-        }
+    	$request = $this->getRequest()->getParams();
+    	$where = "1=1";
+    	if(isset($request['q']) && $request['q']) {
+    		$q = $request['q'];
+    		$where = "t1.model_standard like '%$q%'";
+    	}
         $catalog = new Product_Model_Catalog();
         $data = $catalog->getAdapter()->query("select t1.id, concat(t1.model_standard,'[', t2.name, ']') as name from oa_product_catalog t1 inner join oa_product_catalog_series t2 on t1.series_id = t2.id where $where and t1.active = 1 and t2.active=1 and t1.model_standard != '' order by t1.model_standard")->fetchAll();
 

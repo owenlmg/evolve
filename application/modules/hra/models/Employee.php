@@ -12,21 +12,6 @@ class Hra_Model_Employee extends Application_Model_Db
     protected $_name = 'employee';
     protected $_primary = 'id';
     
-    public function checkEmail($email)
-    {
-        $model = new Hra_Model_Employee();
-        
-        $sql = $this->select()
-                    ->from($this->_name)
-                    ->where("active = 1 and email is not null and email != '' and email = '".$email."'");
-        
-        if ($model->fetchAll($sql)->count() == 0) {
-            return false;
-        }
-        
-        return true;
-    }
-    
     public function getManagerByUserId($user_id)
     {
         $manger = array();

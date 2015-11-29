@@ -207,13 +207,13 @@ class Dcc_Model_Upload extends Application_Model_Db {
     public function getFileByIds($ids) {
         $completionNo = explode(",", $ids);
         $sql = $this->select()
-                    ->from($this->_name, array("name" => "group_concat(name)", "path" => "group_concat(path)"))
-                    ->where("id in(?) ", $completionNo)
-                    ->order(array('name'));
+	                ->from($this->_name, array("name" => "group_concat(name)", "path" => "group_concat(path)"))
+	                ->where("id in(?) ", $completionNo)
+	                ->order(array('name'));
         $data = $this->fetchRow($sql);
 
         return $data;
-        
+    	
     }
 
 }

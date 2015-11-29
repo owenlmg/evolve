@@ -153,8 +153,8 @@ class Product_BompriceController extends Zend_Controller_Action
         foreach ($request as $k => $v) {
             if ($v) {
                 if($k == 'search_key') {
-                    $whereSearch .= " and (ifnull($faName.remark,'') like '%$v%' or ifnull($mName.name,'') like '%$v%' or ifnull($mName.description,'') like '%$v%' or ifnull($catalogName.model_internal, '') like '%$v%')";
-                } else if("search_fa" == $k && $v) {
+            		$whereSearch .= " and (ifnull($faName.remark,'') like '%$v%' or ifnull($mName.name,'') like '%$v%' or ifnull($mName.description,'') like '%$v%' or ifnull($catalogName.model_internal, '') like '%$v%')";
+            	} else if("search_fa" == $k && $v) {
                     $whereSearch .= " and $faName.code like '%$v%'";
                 } else if ("search_archive_date_from" == $k && $v) {
                     $whereSearch .= " and $faName.bom_upd_time >= '" . str_replace('T', ' ', $v) . "'";
@@ -164,10 +164,10 @@ class Product_BompriceController extends Zend_Controller_Action
                     $recordkey = "";
                     $sonData = $db->query("select group_concat(recordkey) as recordkey from oa_product_bom_son where code like '%$v%'")->fetchObject();
                     if($sonData && $sonData->recordkey) {
-                        $recordkey = $sonData->recordkey;
+                    	$recordkey = $sonData->recordkey;
                     }
                     if(!$recordkey) {
-                        $recordkey = "0";
+                    	$recordkey = "0";
                     }
                     $whereSearch .= " and $faName.recordkey in ($recordkey)";
                 } else if ("search_recordkey" == $k && $v) {
@@ -175,12 +175,12 @@ class Product_BompriceController extends Zend_Controller_Action
                 } else if ("explanded" == $k && $v) {
                     $explanded = json_decode($v);
                 } else {
-                    $col = str_replace('search_', '', $k);
-                    if ($col != $k) {
-                        // 查询条件
-                        $whereSearch .= " and ifnull($faName." . $col . ",'') like '%" . $v . "%'";
-                    }
-                }
+	                $col = str_replace('search_', '', $k);
+	                if ($col != $k) {
+	                    // 查询条件
+	                    $whereSearch .= " and ifnull($faName." . $col . ",'') like '%" . $v . "%'";
+	                }
+            	}
             }
         }
         
@@ -244,8 +244,8 @@ class Product_BompriceController extends Zend_Controller_Action
         );
         
         $join = array(
-            array(
-                'type' => LEFTJONIN,
+        	array(
+    	        'type' => LEFTJONIN,
                 'table' => $catalog->getName(),
                 'condition' => $catalog->getName().'.id = '.$fa->getName().'.project_no',
                 'cols' => array('project_no_name' => 'model_internal')
@@ -355,8 +355,8 @@ class Product_BompriceController extends Zend_Controller_Action
         foreach ($request as $k => $v) {
             if ($v) {
                 if($k == 'search_key') {
-                    $whereSearch .= " and (ifnull($faName.remark,'') like '%$v%' or ifnull($mName.name,'') like '%$v%' or ifnull($mName.description,'') like '%$v%' or ifnull($catalogName.model_internal, '') like '%$v%')";
-                } else if("search_fa" == $k && $v) {
+            		$whereSearch .= " and (ifnull($faName.remark,'') like '%$v%' or ifnull($mName.name,'') like '%$v%' or ifnull($mName.description,'') like '%$v%' or ifnull($catalogName.model_internal, '') like '%$v%')";
+            	} else if("search_fa" == $k && $v) {
                     $whereSearch .= " and $faName.code like '%$v%'";
                 } else if ("search_archive_date_from" == $k && $v) {
                     $whereSearch .= " and $faName.bom_upd_time >= '" . str_replace('T', ' ', $v) . "'";
@@ -366,10 +366,10 @@ class Product_BompriceController extends Zend_Controller_Action
                     $recordkey = "";
                     $sonData = $db->query("select group_concat(recordkey) as recordkey from oa_product_bom_son where code like '%$v%'")->fetchObject();
                     if($sonData && $sonData->recordkey) {
-                        $recordkey = $sonData->recordkey;
+                    	$recordkey = $sonData->recordkey;
                     }
                     if(!$recordkey) {
-                        $recordkey = "0";
+                    	$recordkey = "0";
                     }
                     $whereSearch .= " and $faName.recordkey in ($recordkey)";
                 } else if ("search_recordkey" == $k && $v) {
@@ -377,12 +377,12 @@ class Product_BompriceController extends Zend_Controller_Action
                 } else if ("explanded" == $k && $v) {
                     $explanded = json_decode($v);
                 } else {
-                    $col = str_replace('search_', '', $k);
-                    if ($col != $k) {
-                        // 查询条件
-                        $whereSearch .= " and ifnull($faName." . $col . ",'') like '%" . $v . "%'";
-                    }
-                }
+	                $col = str_replace('search_', '', $k);
+	                if ($col != $k) {
+	                    // 查询条件
+	                    $whereSearch .= " and ifnull($faName." . $col . ",'') like '%" . $v . "%'";
+	                }
+            	}
             }
         }
         
@@ -435,8 +435,8 @@ class Product_BompriceController extends Zend_Controller_Action
         );
         
         $join = array(
-            array(
-                'type' => LEFTJONIN,
+        	array(
+    	        'type' => LEFTJONIN,
                 'table' => $catalog->getName(),
                 'condition' => $catalog->getName().'.id = '.$fa->getName().'.project_no',
                 'cols' => array('project_no_name' => 'model_internal')
@@ -542,11 +542,11 @@ class Product_BompriceController extends Zend_Controller_Action
     }
 
     private function ifNull($array, $key) {
-        if(isset($array[$key])) {
-            return $array[$key];
-        } else {
-            return "";
-        }
+    	if(isset($array[$key])) {
+    		return $array[$key];
+    	} else {
+    		return "";
+    	}
     }
 
     /**

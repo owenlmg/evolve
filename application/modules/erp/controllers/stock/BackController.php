@@ -9,21 +9,21 @@ class Erp_Stock_BackController extends Zend_Controller_Action
 {
     public function indexAction()
     {
-        $user_session = new Zend_Session_Namespace('user');
-        
-        $this->view->accessViewTotal = 0;
-        
-        $this->view->user_id = 0;
-        
-        if(isset($user_session->user_info)){
-            $this->view->user_id = $user_session->user_info['user_id'];
-        
-            if(Application_Model_User::checkPermissionByRoleName('系统管理员') 
-            || Application_Model_User::checkPermissionByRoleName('销售人员') 
-            || Application_Model_User::checkPermissionByRoleName('财务人员')){
-                $this->view->accessViewTotal = 1;
-            }
-        }
+    	$user_session = new Zend_Session_Namespace('user');
+    	
+    	$this->view->accessViewTotal = 0;
+    	
+    	$this->view->user_id = 0;
+    	
+    	if(isset($user_session->user_info)){
+    		$this->view->user_id = $user_session->user_info['user_id'];
+    	
+    		if(Application_Model_User::checkPermissionByRoleName('系统管理员') 
+    		|| Application_Model_User::checkPermissionByRoleName('销售人员') 
+    		|| Application_Model_User::checkPermissionByRoleName('财务人员')){
+    			$this->view->accessViewTotal = 1;
+    		}
+    	}
     }
     
     public function getcanbebacklistAction()
@@ -312,26 +312,26 @@ class Erp_Stock_BackController extends Zend_Controller_Action
         $i = 0;
         $itemsTable = '<style type="text/css">
 table.gridtable {
-    font-family: verdana,arial,sans-serif;
-    font-size:11px;
-    color:#333333;
-    border-width: 1px;
-    border-color: #666666;
-    border-collapse: collapse;
+	font-family: verdana,arial,sans-serif;
+	font-size:11px;
+	color:#333333;
+	border-width: 1px;
+	border-color: #666666;
+	border-collapse: collapse;
 }
 table.gridtable th {
-    border-width: 1px;
-    padding: 8px;
-    border-style: solid;
-    border-color: #666666;
-    background-color: #dedede;
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #dedede;
 }
 table.gridtable td {
-    border-width: 1px;
-    padding: 8px;
-    border-style: solid;
-    border-color: #666666;
-    background-color: #ffffff;
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #ffffff;
 }
 </style><table class="gridtable"><tr>
                                 <th>#</th>
@@ -354,25 +354,25 @@ table.gridtable td {
                 $itemInfoData = $order->getItemDetails($val->items_order_number, $val->items_code);
                 
                 $itemInfo = '<table class="gridtable"><tr>
-                            <th>申请单号</th>
-                            <th>申请日期</th>
-                            <th>申请数量</th>
-                            <th>下单数量</th>
-                            <th>订单数量</th>
+							<th>申请单号</th>
+							<th>申请日期</th>
+							<th>申请数量</th>
+							<th>下单数量</th>
+							<th>订单数量</th>
                             <th>客户收件人地址简码</th>
                             <th>客户合同号</th>
-                            </tr>';
+							</tr>';
                 
                 foreach ($itemInfoData as $d){
                     $itemInfo .= '<tr>
-                                  <td>'.$d['req_number'].'</td>
-                                  <td>'.$d['req_item_date'].'</td>
-                                  <td>'.$d['req_item_qty'].'</td>
-                                  <td>'.$d['order_req_item_qty'].'</td>
-                                  <td>'.$d['order_item_qty'].'</td>
-                                  <td>'.$d['customer_address'].'</td>
-                                  <td>'.$d['customer_aggrement'].'</td>
-                                  </tr>';
+							      <td>'.$d['req_number'].'</td>
+							      <td>'.$d['req_item_date'].'</td>
+							      <td>'.$d['req_item_qty'].'</td>
+							      <td>'.$d['order_req_item_qty'].'</td>
+							      <td>'.$d['order_item_qty'].'</td>
+							      <td>'.$d['customer_address'].'</td>
+							      <td>'.$d['customer_aggrement'].'</td>
+							      </tr>';
                 }
                 
                 $itemInfo .= '</table>';
@@ -389,29 +389,29 @@ table.gridtable td {
             $warehouseInfo = $warehouse->getInfoByCode($val->items_warehouse_code);
              
             $itemsTable .= '<tr>
-                            <td>'.$i.'</td>
-                            <td>'.$supplier.'</td>
-                            <td>'.$val->items_order_number.'</td>
-                            <td>'.$val->items_code.'</td>
-                            <td>'.$val->items_name.'</td>
-                            <td>'.$val->items_description.'</td>
-                            <td>'.$val->items_qty.'</td>
-                            <td>'.$val->items_unit.'</td>
-                            <td>'.$val->items_warehouse_code.' '.$warehouseInfo['name'].'</td>
-                            <td>'.$val->items_remark.'</td>
-                            <td>'.$itemInfo.'</td>
-                            </tr>';
+							<td>'.$i.'</td>
+							<td>'.$supplier.'</td>
+							<td>'.$val->items_order_number.'</td>
+							<td>'.$val->items_code.'</td>
+							<td>'.$val->items_name.'</td>
+							<td>'.$val->items_description.'</td>
+							<td>'.$val->items_qty.'</td>
+							<td>'.$val->items_unit.'</td>
+							<td>'.$val->items_warehouse_code.' '.$warehouseInfo['name'].'</td>
+							<td>'.$val->items_remark.'</td>
+							<td>'.$itemInfo.'</td>
+							</tr>';
         }
         $itemsTable .= '</table>';
         
         $mailContent = '<div>采购退货，请登录系统查看：</div>
-                        <div>
-                        <p><b>退货单号：</b>'.$receiveData['number'].'</p>
-                        <p><b>收货日期：</b>'.$receiveData['date'].'</p>
-                        <p><b>收货人：</b>'.$user_session->user_info['user_name'].'</p>
-                        <p><b>描述：</b>'.$receiveData['description'].'</p>
-                        <p><b>备注：</b>'.$receiveData['remark'].'</p>
-                        </div><div>'.$itemsTable.'</div><hr>';
+					    <div>
+					    <p><b>退货单号：</b>'.$receiveData['number'].'</p>
+					    <p><b>收货日期：</b>'.$receiveData['date'].'</p>
+					    <p><b>收货人：</b>'.$user_session->user_info['user_name'].'</p>
+					    <p><b>描述：</b>'.$receiveData['description'].'</p>
+					    <p><b>备注：</b>'.$receiveData['remark'].'</p>
+					    </div><div>'.$itemsTable.'</div><hr>';
         
         $mailData = array(
                 'type'      => '通知',

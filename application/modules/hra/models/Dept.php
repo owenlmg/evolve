@@ -56,7 +56,7 @@ class Hra_Model_Dept extends Application_Model_Db
      * 获取部门列表
      * @return array $data
      */
-    public function getList($active = null)
+    public function getList()
     {
         $data = array();
 
@@ -64,10 +64,6 @@ class Hra_Model_Dept extends Application_Model_Db
                     ->from($this, array('id', 'name'))
                     //->where("id in (SELECT dept_id FROM ".$this->_dbprefix."employee GROUP BY dept_id)")
                     ->order(array('CONVERT( name USING gbk )'));
-        
-        if ($active !== null) {
-            $sql->where("active = ".$active);
-        }
 
         $data = $this->fetchAll($sql, 'name')->toArray();
 

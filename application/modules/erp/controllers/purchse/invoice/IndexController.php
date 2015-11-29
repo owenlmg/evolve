@@ -41,7 +41,7 @@ class Erp_Purchse_Invoice_IndexController extends Zend_Controller_Action
                     'date_from' => isset($request['date_from']) ? $request['date_from'] : null,
                     'date_to'   => isset($request['date_to']) ? $request['date_to'] : null,
                     'active'    => (isset($request['active']) && $request['active'] != 'null') ? $request['active'] : 1,
-                    'state'        => (isset($request['state']) && $request['state'] != 'null') ? $request['state'] : 0,
+                    'state'    	=> (isset($request['state']) && $request['state'] != 'null') ? $request['state'] : 0,
                     'type'      => (isset($request['type']) && $request['type'] != 'null') ? $request['type'] : null,
                     'dept'      => (isset($request['dept']) && $request['dept'] != 'null') ? $request['dept'] : null,
                     'page'      => isset($request['page']) ? $request['page'] : 1,
@@ -147,8 +147,8 @@ class Erp_Purchse_Invoice_IndexController extends Zend_Controller_Action
         $type = isset($request['operate']) ? $request['operate'] : '';// 操作类别
         
         $typeArr = array(
-                'new'        => '新建',
-                'edit'        => '修改'
+                'new'		=> '新建',
+                'edit'		=> '修改'
         );
         
         $now = date('Y-m-d H:i:s');

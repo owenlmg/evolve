@@ -1,12 +1,33 @@
 <html>
 <head>
+	<?php
+	$user_session = new Zend_Session_Namespace('user');
+	$user = $user_session->user_info['employee_id'];
+	$userName = $user_session->user_info['user_name'];
+	?>
 	<title>任务管理</title>
 	<?php echo SYS_HEAD; ?>
 	<link rel="stylesheet" type="text/css" href="<?php echo HOME_PATH?>/application/modules/user/views/scripts/task/calendar/resources/css/calendar.css" />
 	<link rel="stylesheet" type="text/css" href="<?php echo HOME_PATH?>/application/modules/user/views/scripts/task/calendar/resources/css/examples.css" />
 	<script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/common.js"></script>
+	<script type="text/javascript" src="<?php echo HOME_PATH ?>/public/js/comboxtree.js"></script>
 
 	<script type="text/javascript">
+		var user = <?php echo $user ?>;
+		var userName = "<?php echo $userName ?>";
+		Ext.define('process', {
+			extend: 'Ext.data.Model',
+			idProperty: 'id',
+			fields: [
+				{name: 'id', type: 'int'},
+				{name: 'task_id', type: 'int'},
+				{name: 'employee_id', type: 'int'},
+				{name: 'update_time', type: 'date', dateFormat: 'timestamp'},
+				{name: 'rate', type: 'int'},
+				{name: 'remark', type: 'string'},
+				{name: 'status', type: 'string'}
+			]
+		});
 		Ext.Loader.setConfig({
 			enabled: true,
 			paths: {

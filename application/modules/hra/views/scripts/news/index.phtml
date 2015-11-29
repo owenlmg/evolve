@@ -4,7 +4,9 @@
 <?php echo SYS_HEAD; ?>
 <?php 
 $user_session = new Zend_Session_Namespace('user');
-if(!isset($user_session->user_info) || !Application_Model_User::checkPermissionByRoleName('公告管理员')){
+if(!isset($user_session->user_info) 
+        || (!Application_Model_User::checkPermissionByRoleName('公告管理员') 
+        && !Application_Model_User::checkPermissionByRoleName('超级管理员'))){
     exit("没有权限！");
 }
 ?>

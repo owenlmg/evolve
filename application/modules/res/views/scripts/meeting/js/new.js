@@ -177,12 +177,69 @@ var meetingForm = Ext.create('Ext.form.Panel', {
             	layout: 'fit',
             	id: 'select_members_grid',
             	selType: 'checkboxmodel',
-           	 	columns: [
-           	 	          {header: 'ID',flex: 1,dataIndex: 'id',hidden: true},
-           	 	          {header: '工号',flex: 1,dataIndex: 'number'},
-           	 	          {header: '中文名',flex: 1,dataIndex: 'cname'},
-           	 	          {header: '英文名',flex: 1,dataIndex: 'ename'}
-                ]
+            	sortableColumns: false,
+           	 	columns: [{
+           	 		header: 'ID',
+           	 		flex: 1,
+           	 		dataIndex: 'id',
+           	 		hidden: true
+       	 		}, {
+       	 			header: '工号',
+       	 			flex: 1,
+       	 			dataIndex: 'number'
+ 				}, {
+ 					header: '中文名',
+ 					flex: 1,
+ 					dataIndex: 'cname'
+				}, {
+					header: '英文名',
+					flex: 1,
+					dataIndex: 'ename',
+ 					items: [{
+ 			            xtype: 'hiddenfield',
+ 			            value: 0,
+ 			            itemId: 'filter_ename_index'
+ 			        }, {
+ 			            xtype: 'textfield',
+ 			            emptyText: '...',
+ 			            listeners: {
+ 			                specialKey :function(field, e){
+ 			                    if (e.getKey() == Ext.EventObject.ENTER){
+ 			                        if(field.value != ''){
+ 			                            var grid = this.up('grid');
+ 			                            var store = grid.getStore();
+ 			                            var i = 0;
+ 			                            var filterIdx = grid.down('#filter_ename_index');
+ 			                            var idx = filterIdx.getValue();
+ 			                            
+ 			                            store.each(function(rec){
+ 			                                if(i >= idx && rec.get('ename').toLowerCase().indexOf(field.value.toLowerCase()) != -1){
+ 			                                    var rowIndex = rec.index;
+ 			                                    grid.getView().select(rowIndex);
+ 			                                    
+ 			                                    filterIdx.setValue(i + 1);
+ 			                                    
+ 			                                    return false;
+ 			                                }
+
+ 			                                i++;
+
+ 			                                if(i == store.getCount()){
+ 			                                    filterIdx.setValue(0);
+ 			                                }
+ 			                            });
+ 			                            
+ 			                            this.focus();
+ 			                        }
+ 			                    }
+ 			                },
+ 			                change: function(){
+ 			                    this.up('grid').down('#filter_ename_index').setValue(0);
+ 			                }
+ 			            },
+ 			            flex: 1
+ 			        }]
+				}]
             },
             listeners: {
             	change: function( sel, newValue, oldValue, eOpts ){

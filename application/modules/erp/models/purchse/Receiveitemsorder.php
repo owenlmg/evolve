@@ -56,11 +56,11 @@ class Erp_Model_Purchse_Receiveitemsorder extends Application_Model_Db
                         ->joinLeft(array('t3' => $this->_dbprefix."erp_pur_order"), "t1.order_number = t3.number", array('order_create_user' => 'create_user'))
                         ->joinLeft(array('t4' => $this->_dbprefix."erp_pur_req"), "t2.req_number = t4.number", array('id', 'create_user', 'apply_user'))
                         ->joinLeft(array('t5' => $this->_dbprefix.'user'), "t4.create_user = t5.id", array())
-                        ->joinLeft(array('t6' => $this->_dbprefix.'employee'), "t5.employee_id = t6.id", array('creater_email' => 'email'))
-                        ->joinLeft(array('t7' => $this->_dbprefix.'user'), "t4.apply_user = t7.id", array())
-                        ->joinLeft(array('t8' => $this->_dbprefix.'employee'), "t7.employee_id = t8.id", array('applier_email' => 'email'))
+            	    	->joinLeft(array('t6' => $this->_dbprefix.'employee'), "t5.employee_id = t6.id", array('creater_email' => 'email'))
+            	    	->joinLeft(array('t7' => $this->_dbprefix.'user'), "t4.apply_user = t7.id", array())
+            	    	->joinLeft(array('t8' => $this->_dbprefix.'employee'), "t7.employee_id = t8.id", array('applier_email' => 'email'))
                         ->joinLeft(array('t9' => $this->_dbprefix.'user'), "t3.create_user = t9.id", array())
-                        ->joinLeft(array('t10' => $this->_dbprefix.'employee'), "t9.employee_id = t10.id", array('order_creater_email' => 'email'))
+            	    	->joinLeft(array('t10' => $this->_dbprefix.'employee'), "t9.employee_id = t10.id", array('order_creater_email' => 'email'))
                         ->where("t1.order_number = '".$order."'");
             
             $data = $this->fetchRow($sql)->toArray();
@@ -138,10 +138,10 @@ class Erp_Model_Purchse_Receiveitemsorder extends Application_Model_Db
         print_r($data);
         exit; */
         for($i = 0; $i < count($data); $i++){
-            if($data[$i]['buyer_id']){
-                $buyerData = $buyer->getData($data[$i]['buyer_id']);
-                $data[$i]['order_buyer'] = $buyerData['cname'];
-            }
+        	if($data[$i]['buyer_id']){
+        		$buyerData = $buyer->getData($data[$i]['buyer_id']);
+        		$data[$i]['order_buyer'] = $buyerData['cname'];
+        	}
         }
         
         return $data;

@@ -23,30 +23,30 @@ class Product_BommeController extends Zend_Controller_Action
         $whereSearch = "1=1";
         foreach ($request as $k => $v) {
             if ($v) {
-                if($k == 'search_key') {
-                    $whereSearch .= " and ";
-                    if(preg_match('/[a-zA-Z]\d/', $v)) {
-                        // 可能是器件位置
+            	if($k == 'search_key') {
+            	    $whereSearch .= " and ";
+            	    if(preg_match('/[a-zA-Z]\d/', $v)) {
+            	        // 可能是器件位置
                         $sonData = $db->query("select group_concat(DISTINCT recordkey) as recordkey from oa_product_bom_son where partposition like '%$v%'")->fetchObject();
                         if($sonData && $sonData->recordkey) {
-                            $recordkey = $sonData->recordkey;
-                            $whereSearch .= " t1.recordkey in (".$recordkey.") and ";
+                        	$recordkey = $sonData->recordkey;
+                        	$whereSearch .= " t1.recordkey in (".$recordkey.") and ";
                         }
                         
-                    }
+            	    }
 
-                    $cols = array("t1.remark", "t5.model_internal", "t1.code", "t3.description", "t3.name");
-                    $arr=preg_split('/\s+/',trim($v));
-                    for ($i=0;$i<count($arr);$i++) {
-                        $tmp = array();
-                        foreach($cols as $c) {
-                            $tmp[] = "ifnull($c,'')";
-                        }
-                        $arr[$i] = "concat(".implode(',', $tmp).") like '%".$arr[$i]."%'";
-                    }
-                    $whereSearch .= ' '.join(' AND ', $arr);
-//                     $whereSearch .= " ifnull(t1.remark,'') like '%$v%' or ifnull(t3.name,'') like '%$v%' or ifnull(t3.description,'') like '%$v%' or ifnull(t5.model_internal, '') like '%$v%')";
-                } else if ("search_archive_date_from" == $k && $v) {
+            	    $cols = array("t1.remark", "t5.model_internal", "t1.code", "t3.description", "t3.name");
+            	    $arr=preg_split('/\s+/',trim($v));
+            	    for ($i=0;$i<count($arr);$i++) {
+            	        $tmp = array();
+            	        foreach($cols as $c) {
+            	            $tmp[] = "ifnull($c,'')";
+            	        }
+            	        $arr[$i] = "concat(".implode(',', $tmp).") like '%".$arr[$i]."%'";
+            	    }
+            	    $whereSearch .= ' '.join(' AND ', $arr);
+//             		$whereSearch .= " ifnull(t1.remark,'') like '%$v%' or ifnull(t3.name,'') like '%$v%' or ifnull(t3.description,'') like '%$v%' or ifnull(t5.model_internal, '') like '%$v%')";
+            	} else if ("search_archive_date_from" == $k && $v) {
                     $whereSearch .= " and t1.bom_upd_time >= '" . str_replace('T', ' ', $v) . "'";
                 } else if ("search_archive_date_to" == $k && $v) {
                     $whereSearch .= " and t1.bom_upd_time <= '" . str_replace('T00:00:00', ' 23:59:59', $v) . "'";
@@ -56,26 +56,26 @@ class Product_BommeController extends Zend_Controller_Action
                     $recordkey = "";
                     $sonData = $db->query("select group_concat(DISTINCT recordkey) as recordkey from oa_product_bom_son where code like '%$v%'")->fetchObject();
                     if($sonData && $sonData->recordkey) {
-                        $recordkey = $sonData->recordkey;
+                    	$recordkey = $sonData->recordkey;
                     }
                     if(!$recordkey) {
-                        $recordkey = "0";
-                        $recordkeys = array("0");
+                    	$recordkey = "0";
+                    	$recordkeys = array("0");
                     } else {
-                        $recordkeys = array();
-                        foreach(explode(',', $recordkey) as $rk) {
-                            $recordkeys = $this->getRecordkeyRecursive($rk, $recordkeys);
-                        }
-                        $recordkeys = array_unique($recordkeys);
+                    	$recordkeys = array();
+                    	foreach(explode(',', $recordkey) as $rk) {
+                    		$recordkeys = $this->getRecordkeyRecursive($rk, $recordkeys);
+                    	}
+                    	$recordkeys = array_unique($recordkeys);
                     }
                     $whereSearch .= " and t1.recordkey in (".implode(',', $recordkeys).")";
                 } else {
-                    $col = str_replace('search_', '', $k);
-                    if ($col != $k) {
-                        // 查询条件
-                        $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
-                    }
-                }
+	                $col = str_replace('search_', '', $k);
+	                if ($col != $k) {
+	                    // 查询条件
+	                    $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
+	                }
+            	}
             }
         }
 
@@ -88,32 +88,32 @@ class Product_BommeController extends Zend_Controller_Action
         $data = $fa->getListMy($whereSearch, $start, $limit, $user);
         $totalCount = $fa->getListCountMy($whereSearch, $user);
         for($i = 0; $i < count($data); $i++) {
-            if(!$data[$i]['type'] || $data[$i]['type'] == 'new') {
-                $data[$i]['archive_time'] = strtotime($data[$i]['archive_time_new']);
-                $data[$i]['remark_head'] = $data[$i]['remark_new'];
-                $data[$i]['description_head'] = $data[$i]['description_new'];
-                $data[$i]['upd_type'] = 'new';
-            } else {
-                $data[$i]['archive_time'] = strtotime($data[$i]['archive_time_upd']);
-                $data[$i]['remark_head'] = $data[$i]['remark_upd'];
-                $data[$i]['description_head'] = $data[$i]['description_upd'];
-            }
-            if(!$data[$i]['archive_time'] && $data[$i]['bom_upd_time']) {
-                $data[$i]['archive_time'] = strtotime($data[$i]['bom_upd_time']);
-            }
-            
-            if($data[$i]['bom_file']) {
-                $codes = array();
-                foreach(explode(',', $data[$i]['bom_file']) as $code) {
-                    $codes[] = "'".$code."'";
-                }
-                $sql = "select group_concat(t1.ver) as ver, group_concat(t2.description) as des from oa_doc_files t1 inner join oa_doc_code t2 on t1.code = t2.code where t1.state='Active' and t1.`code` in (".implode(',', $codes).")";
-                $res = $fa->getAdapter()->query($sql)->fetchObject();
-                if($res && $res->ver) {
-                    $data[$i]['file_ver'] = $res->ver;
-                    $data[$i]['file_desc'] = $res->des;
-                }
-            }
+        	if(!$data[$i]['type'] || $data[$i]['type'] == 'new') {
+        		$data[$i]['archive_time'] = strtotime($data[$i]['archive_time_new']);
+        		$data[$i]['remark_head'] = $data[$i]['remark_new'];
+        		$data[$i]['description_head'] = $data[$i]['description_new'];
+        		$data[$i]['upd_type'] = 'new';
+        	} else {
+        		$data[$i]['archive_time'] = strtotime($data[$i]['archive_time_upd']);
+        		$data[$i]['remark_head'] = $data[$i]['remark_upd'];
+        		$data[$i]['description_head'] = $data[$i]['description_upd'];
+        	}
+        	if(!$data[$i]['archive_time'] && $data[$i]['bom_upd_time']) {
+        		$data[$i]['archive_time'] = strtotime($data[$i]['bom_upd_time']);
+        	}
+        	
+        	if($data[$i]['bom_file']) {
+        	    $codes = array();
+        	    foreach(explode(',', $data[$i]['bom_file']) as $code) {
+        	        $codes[] = "'".$code."'";
+        	    }
+        	    $sql = "select group_concat(t1.ver) as ver, group_concat(t2.description) as des from oa_doc_files t1 inner join oa_doc_code t2 on t1.code = t2.code where t1.state='Active' and t1.`code` in (".implode(',', $codes).")";
+        	    $res = $fa->getAdapter()->query($sql)->fetchObject();
+        	    if($res && $res->ver) {
+        	        $data[$i]['file_ver'] = $res->ver;
+        	        $data[$i]['file_desc'] = $res->des;
+        	    }
+        	}
         }
         $result = array(
             "totalCount" => $totalCount,
@@ -185,9 +185,9 @@ class Product_BommeController extends Zend_Controller_Action
         $whereSearch = "1=1";
         foreach ($request as $k => $v) {
             if ($v) {
-                if($k == 'search_key') {
-                    $whereSearch .= " and (ifnull(t1.remark,'') like '%$v%' or ifnull(t3.name,'') like '%$v%' or ifnull(t3.description,'') like '%$v%' or ifnull(t5.model_internal, '') like '%$v%')";
-                } else if ("search_archive_date_from" == $k && $v) {
+            	if($k == 'search_key') {
+            		$whereSearch .= " and (ifnull(t1.remark,'') like '%$v%' or ifnull(t3.name,'') like '%$v%' or ifnull(t3.description,'') like '%$v%' or ifnull(t5.model_internal, '') like '%$v%')";
+            	} else if ("search_archive_date_from" == $k && $v) {
                     $whereSearch .= " and t1.bom_upd_time >= '" . str_replace('T', ' ', $v) . "'";
                 } else if ("search_archive_date_to" == $k && $v) {
                     $whereSearch .= " and t1.bom_upd_time <= '" . str_replace('T00:00:00', ' 23:59:59', $v) . "'";
@@ -197,10 +197,10 @@ class Product_BommeController extends Zend_Controller_Action
                     $recordkey = "";
                     $sonData = $db->query("select group_concat(recordkey) as recordkey from oa_product_bom_son where code like '%$v%'")->fetchObject();
                     if($sonData && $sonData->recordkey) {
-                        $recordkey = $sonData->recordkey;
+                    	$recordkey = $sonData->recordkey;
                     }
                     if(!$recordkey) {
-                        $recordkey = "0";
+                    	$recordkey = "0";
                     }
                     $whereSearch .= " and t1.recordkey in ($recordkey)";
                 } else if ("search_recordkey" == $k && $v) {
@@ -208,12 +208,12 @@ class Product_BommeController extends Zend_Controller_Action
                 } else if ("explanded" == $k && $v) {
                     $explanded = json_decode($v);
                 } else {
-                    $col = str_replace('search_', '', $k);
-                    if ($col != $k) {
-                        // 查询条件
-                        $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
-                    }
-                }
+	                $col = str_replace('search_', '', $k);
+	                if ($col != $k) {
+	                    // 查询条件
+	                    $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
+	                }
+            	}
             }
         }
         $updflg = false;
@@ -341,14 +341,14 @@ class Product_BommeController extends Zend_Controller_Action
             fclose($file);
         }
         /* foreach($push_data as $data) {
-            $count = $data['count'];
-            $data['count'] = "";
-            $prefix = "";
-            for($i = 0;$i < $count; $i++){
-                $prefix .= "  ";
-            }
-            $data['code'] = $prefix.$data['code'];
-            $d = $this->object_array($data);
+        	$count = $data['count'];
+        	$data['count'] = "";
+        	$prefix = "";
+        	for($i = 0;$i < $count; $i++){
+        		$prefix .= "  ";
+        	}
+        	$data['code'] = $prefix.$data['code'];
+        	$d = $this->object_array($data);
             fputcsv($file, $d);
         }
 
@@ -387,9 +387,9 @@ class Product_BommeController extends Zend_Controller_Action
         $whereSearch = "1=1";
         foreach ($request as $k => $v) {
             if ($v) {
-                if($k == 'search_key') {
-                    $whereSearch .= " and (ifnull(t1.remark,'') like '%$v%' or ifnull(t3.name,'') like '%$v%' or ifnull(t3.description,'') like '%$v%' or ifnull(t5.model_internal, '') like '%$v%')";
-                } else if ("search_archive_date_from" == $k && $v) {
+            	if($k == 'search_key') {
+            		$whereSearch .= " and (ifnull(t1.remark,'') like '%$v%' or ifnull(t3.name,'') like '%$v%' or ifnull(t3.description,'') like '%$v%' or ifnull(t5.model_internal, '') like '%$v%')";
+            	} else if ("search_archive_date_from" == $k && $v) {
                     $whereSearch .= " and t1.bom_upd_time >= '" . str_replace('T', ' ', $v) . "'";
                 } else if ("search_archive_date_to" == $k && $v) {
                     $whereSearch .= " and t1.bom_upd_time <= '" . str_replace('T00:00:00', ' 23:59:59', $v) . "'";
@@ -399,10 +399,10 @@ class Product_BommeController extends Zend_Controller_Action
                     $recordkey = "";
                     $sonData = $db->query("select group_concat(recordkey) as recordkey from oa_product_bom_son where code like '%$v%'")->fetchObject();
                     if($sonData && $sonData->recordkey) {
-                        $recordkey = $sonData->recordkey;
+                    	$recordkey = $sonData->recordkey;
                     }
                     if(!$recordkey) {
-                        $recordkey = "0";
+                    	$recordkey = "0";
                     }
                     $whereSearch .= " and t1.recordkey in ($recordkey)";
                 } else if ("search_recordkey" == $k && $v) {
@@ -410,12 +410,12 @@ class Product_BommeController extends Zend_Controller_Action
                 } else if ("explanded" == $k && $v) {
                     $explanded = json_decode($v);
                 } else {
-                    $col = str_replace('search_', '', $k);
-                    if ($col != $k) {
-                        // 查询条件
-                        $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
-                    }
-                }
+	                $col = str_replace('search_', '', $k);
+	                if ($col != $k) {
+	                    // 查询条件
+	                    $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
+	                }
+            	}
             }
         }
         $updflg = false;
@@ -516,14 +516,14 @@ class Product_BommeController extends Zend_Controller_Action
             $push_data = $this->getBomInfo($push_data, $fa, $son, $d['recordkey'], 1, $explanded);
         }
         foreach($push_data as $data) {
-            $count = $data['count'];
-            $data['count'] = "";
-            $prefix = "";
-            for($i = 0;$i < $count; $i++){
-                $prefix .= "  ";
-            }
-            $data['code'] = $prefix.$data['code'];
-            $d = $this->object_array($data);
+        	$count = $data['count'];
+        	$data['count'] = "";
+        	$prefix = "";
+        	for($i = 0;$i < $count; $i++){
+        		$prefix .= "  ";
+        	}
+        	$data['code'] = $prefix.$data['code'];
+        	$d = $this->object_array($data);
             fputcsv($file, $d);
         }
 
@@ -542,37 +542,37 @@ class Product_BommeController extends Zend_Controller_Action
             $fadata = $fa->getFa($data[$i]['code'], null);
             $faRow = "";
             if($fadata && count($fadata) > 0) {
-                $faRow = $fadata[0];
+        	    $faRow = $fadata[0];
             }
             $row = array();
             $row['cnt'] = "";
             $row['code'] = $data[$i]['code'];
             if($faRow){
                 $row['code'] = $data[$i]['code'].' V'.$faRow['ver'];
-                $row['state'] = $faRow['state'];
-                $row['name'] = $data[$i]['name'];
-                $row['description'] = $data[$i]['description'];
-                $row['project_no_name'] = $faRow['project_no_name'];
-                $row['qty'] = $data[$i]['qty'];
-                $row['replace'] = $data[$i]['replace'];
-                $row['partposition'] = $data[$i]['partposition'];
-                $row['remark'] = $data[$i]['remark'];
-                $row['count'] = $count;
+	            $row['state'] = $faRow['state'];
+	            $row['name'] = $data[$i]['name'];
+	            $row['description'] = $data[$i]['description'];
+	            $row['project_no_name'] = $faRow['project_no_name'];
+	            $row['qty'] = $data[$i]['qty'];
+	            $row['replace'] = $data[$i]['replace'];
+	            $row['partposition'] = $data[$i]['partposition'];
+	            $row['remark'] = $data[$i]['remark'];
+	            $row['count'] = $count;
                 $push_data[] = $row;
                 if(count($explanded) == 0 || in_array($data[$i]['code'], $explanded)) {
-                    $push_data = $this->getBomInfo($push_data, $fa, $son, $faRow['recordkey'], ++$count, $explanded);
-                    $count--;
+	                $push_data = $this->getBomInfo($push_data, $fa, $son, $faRow['recordkey'], ++$count, $explanded);
+	                $count--;
                 }
             }else{
-                $row['state'] = $data[$i]['mstate'];
-                $row['name'] = $data[$i]['name'];
-                $row['description'] = $data[$i]['description'];
-                $row['project_no_name'] = "";
-                $row['qty'] = $data[$i]['qty'];
-                $row['replace'] = $data[$i]['replace'];
-                $row['partposition'] = $data[$i]['partposition'];
-                $row['remark'] = $data[$i]['remark'];
-                $row['count'] = $count;
+	            $row['state'] = $data[$i]['mstate'];
+	            $row['name'] = $data[$i]['name'];
+	            $row['description'] = $data[$i]['description'];
+	            $row['project_no_name'] = "";
+	            $row['qty'] = $data[$i]['qty'];
+	            $row['replace'] = $data[$i]['replace'];
+	            $row['partposition'] = $data[$i]['partposition'];
+	            $row['remark'] = $data[$i]['remark'];
+	            $row['count'] = $count;
                 $push_data[] = $row;
             }
         }
@@ -582,11 +582,11 @@ class Product_BommeController extends Zend_Controller_Action
     }
 
     private function ifNull($array, $key) {
-        if(isset($array[$key])) {
-            return $array[$key];
-        } else {
-            return "";
-        }
+    	if(isset($array[$key])) {
+    		return $array[$key];
+    	} else {
+    		return "";
+    	}
     }
 
     /**

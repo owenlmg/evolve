@@ -56,15 +56,15 @@ class Erp_Model_Purchse_Receiveitems extends Application_Model_Db
     
     public function getReceivedOrderItems($order_number)
     {
-        $data = array();
-        
-        $res = $this->fetchAll("order_number = '".$order_number."'");
-        
-        if($res->count()){
-            $data = $res->toArray();
-        }
-        
-        return $data;
+    	$data = array();
+    	
+    	$res = $this->fetchAll("order_number = '".$order_number."'");
+    	
+    	if($res->count()){
+    		$data = $res->toArray();
+    	}
+    	
+    	return $data;
     }
     
     public function getData($receive_id)

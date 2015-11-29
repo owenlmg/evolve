@@ -8,29 +8,29 @@ class Erp_Sale_Statistics_OrderController extends Zend_Controller_Action
 {
     public function indexAction()
     {
-        $user_session = new Zend_Session_Namespace('user');
-        
-        $this->view->canReplyPlan = 0;
-        $this->view->canReplySales = 0;
-        
-        $this->view->user_id = 0;
-        
-        if(isset($user_session->user_info)){
-            $this->view->user_id = $user_session->user_info['user_id'];
-            
-            if (Application_Model_User::checkPermissionByRoleName('系统管理员')) {
-                $this->view->canReplyPlan = 1;
-                $this->view->canReplySales = 1;
-            }
-            
-            if(Application_Model_User::checkPermissionByRoleName('计划人员')){
-                $this->view->canReplyPlan = 1;
-            }
-            
-            if(Application_Model_User::checkPermissionByRoleName('销售人员')){
-                $this->view->canReplySales = 1;
-            }
-        }
+    	$user_session = new Zend_Session_Namespace('user');
+    	
+    	$this->view->canReplyPlan = 0;
+    	$this->view->canReplySales = 0;
+    	
+    	$this->view->user_id = 0;
+    	
+    	if(isset($user_session->user_info)){
+    		$this->view->user_id = $user_session->user_info['user_id'];
+    		
+    		if (Application_Model_User::checkPermissionByRoleName('系统管理员')) {
+    		    $this->view->canReplyPlan = 1;
+    		    $this->view->canReplySales = 1;
+    		}
+    		
+    		if(Application_Model_User::checkPermissionByRoleName('计划人员')){
+    			$this->view->canReplyPlan = 1;
+    		}
+    		
+    		if(Application_Model_User::checkPermissionByRoleName('销售人员')){
+    			$this->view->canReplySales = 1;
+    		}
+    	}
     }
     
     public function getorderAction()
@@ -147,79 +147,79 @@ class Erp_Sale_Statistics_OrderController extends Zend_Controller_Action
     
     public function replydeliverydateAction()
     {
-        // 返回值数组
-        $result = array(
-                'success'   => true,
-                'info'      => ''
-        );
-        
-        $request = $this->getRequest()->getParams();
-        
-        $id = isset($request['id']) ? $request['id'] : null;
-        $date = isset($request['date']) && $request['date'] != '' ? $request['date'] : null;
-        $remark = isset($request['remark']) ? $request['remark'] : null;
-        
-        if($id){
-            $item = new Erp_Model_Sale_Orderitems();
-            $itemData = $item->fetchRow("id = ".$id)->toArray();
-            $user_session = new Zend_Session_Namespace('user');
-            $user_id = $user_session->user_info['user_id'];
-            $user_name = $user_session->user_info['user_name'];
-            $now = date('Y-m-d H:i:s');
-            
-            $itemInfo = $item->fetchRow("id = ".$id)->toArray();
-            
-            $updateData = array(
-                    'delivery_date_remark'        => $remark
-            );
-            
-            if($itemInfo['delivery_date'] != $date){
-                $updateData['delivery_date'] = $date;
-                $updateData['delivery_date_update_time'] = $now;
-                
-                $params = Zend_Json::encode(array(
-                        'code'                    => $itemData['code'],
-                        'name'                    => $itemData['name'],
-                        'description'             => $itemData['description'],
-                        'delivery_date'           => $date,
-                        'delivery_date_remark'    => $remark,
-                        'user'                    => $user_name,
-                        'time'                    => $now
-                ));
-                
-                $data = array(
-                        'user_id'         => $user_id,
-                        'operate'         => '销售交期回复',
-                        'target'          => 'Sale Order Statistics',
-                        'target_id'       => $id,
-                        'computer_name'   => gethostbyaddr(getenv("REMOTE_ADDR")),
-                        'ip'              => $_SERVER['REMOTE_ADDR'],
-                        'content'         => $params,
-                        'time'            => $now
-                );
-                
-                try {
-                    $operate = new Application_Model_Log_Operate();
-                
-                    $operate->insert($data);
-                } catch (Exception $e) {
-                    $result['success'] = false;
-                    $result['info'] = $e->getMessage();
-                
-                    echo Zend_Json::encode($result);
-                
-                    exit;
-                }
-            }
-            
-            $item->update($updateData, "id = ".$id);
-        }else{
-            $result['success'] = false;
-            $result['info'] = '信息填写错误，交期回复失败！';
-        }
-        
-        echo Zend_Json::encode($result);
-        
-        exit;
+    	// 返回值数组
+    	$result = array(
+    			'success'   => true,
+    			'info'      => ''
+    	);
+    	
+    	$request = $this->getRequest()->getParams();
+    	
+    	$id = isset($request['id']) ? $request['id'] : null;
+    	$date = isset($request['date']) && $request['date'] != '' ? $request['date'] : null;
+    	$remark = isset($request['remark']) ? $request['remark'] : null;
+    	
+    	if($id){
+    		$item = new Erp_Model_Sale_Orderitems();
+    		$itemData = $item->fetchRow("id = ".$id)->toArray();
+    		$user_session = new Zend_Session_Namespace('user');
+    		$user_id = $user_session->user_info['user_id'];
+    		$user_name = $user_session->user_info['user_name'];
+    		$now = date('Y-m-d H:i:s');
+    		
+    		$itemInfo = $item->fetchRow("id = ".$id)->toArray();
+    		
+    		$updateData = array(
+    		        'delivery_date_remark'        => $remark
+    		);
+    		
+    		if($itemInfo['delivery_date'] != $date){
+    		    $updateData['delivery_date'] = $date;
+    		    $updateData['delivery_date_update_time'] = $now;
+    		    
+    		    $params = Zend_Json::encode(array(
+    		            'code'                    => $itemData['code'],
+    		            'name'                    => $itemData['name'],
+    		            'description'             => $itemData['description'],
+    		            'delivery_date'           => $date,
+    		            'delivery_date_remark'    => $remark,
+    		            'user'                    => $user_name,
+    		            'time'                    => $now
+    		    ));
+    		    
+    		    $data = array(
+    		            'user_id'         => $user_id,
+    		            'operate'         => '销售交期回复',
+    		            'target'          => 'Sale Order Statistics',
+    		            'target_id'       => $id,
+    		            'computer_name'   => gethostbyaddr(getenv("REMOTE_ADDR")),
+    		            'ip'              => $_SERVER['REMOTE_ADDR'],
+    		            'content'         => $params,
+    		            'time'            => $now
+    		    );
+    		    
+    		    try {
+    		        $operate = new Application_Model_Log_Operate();
+    		    
+    		        $operate->insert($data);
+    		    } catch (Exception $e) {
+    		        $result['success'] = false;
+    		        $result['info'] = $e->getMessage();
+    		    
+    		        echo Zend_Json::encode($result);
+    		    
+    		        exit;
+    		    }
+    		}
+    		
+    		$item->update($updateData, "id = ".$id);
+    	}else{
+    		$result['success'] = false;
+    		$result['info'] = '信息填写错误，交期回复失败！';
+    	}
+    	
+    	echo Zend_Json::encode($result);
+    	
+    	exit;
     }
 }

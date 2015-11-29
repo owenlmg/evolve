@@ -20,39 +20,39 @@ class Product_NewbomController extends Zend_Controller_Action
         $db = $fa->getAdapter();
         $whereSearch = "1=1";
 //        if(isset($request['search_state']) && $request['search_state'] != 'Active') {
-//            $whereSearch = " t1.state != 'Active'";
+//        	$whereSearch = " t1.state != 'Active'";
 //        }
         foreach ($request as $k => $v) {
             if ($v) {
-                if($k == 'search_key') {
-                    $whereSearch .= " and (ifnull(t1.remark,'') like '%$v%' or ifnull(t3.cname,'') like '%$v%' or ifnull(t1.description,'') like '%$v%')";
-                } else if ("search_fa" == $k && $v) {
+            	if($k == 'search_key') {
+            		$whereSearch .= " and (ifnull(t1.remark,'') like '%$v%' or ifnull(t3.cname,'') like '%$v%' or ifnull(t1.description,'') like '%$v%')";
+            	} else if ("search_fa" == $k && $v) {
                     $nid = "";
                     $faData = $db->query("select group_concat(nid) as nid from oa_product_bom_fa_dev where code like '%$v%'")->fetchObject();
                     if($faData && $faData->nid) {
-                        $nid = $faData->nid;
+                    	$nid = $faData->nid;
                     }
                     if(!$nid) {
-                        $nid = "0";
+                    	$nid = "0";
                     }
                     $whereSearch .= " and t1.id in ($nid)";
                 } else if ("search_son" == $k && $v) {
                     $nid = "";
                     $sonData = $db->query("select group_concat(nid) as nid from oa_product_bom_son_dev where code like '%$v%'")->fetchObject();
                     if($sonData && $sonData->nid) {
-                        $nid = $sonData->nid;
+                    	$nid = $sonData->nid;
                     }
                     if(!$nid) {
-                        $nid = "0";
+                    	$nid = "0";
                     }
                     $whereSearch .= " and t1.id in ($nid)";
                 } else {
-                    $col = str_replace('search_', '', $k);
-                    if ($col != $k) {
-                        // 查询条件
-                        $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
-                    }
-                }
+	                $col = str_replace('search_', '', $k);
+	                if ($col != $k) {
+	                    // 查询条件
+	                    $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
+	                }
+            	}
             }
         }
 
@@ -81,10 +81,10 @@ class Product_NewbomController extends Zend_Controller_Action
         $data = $newbom->getMy($myType, $whereSearch, $user, $start, $limit);
         $totalCount = $newbom->getMyCount($myType, $whereSearch, $user);
         for($i = 0; $i < count($data); $i++) {
-            $mytype = 2;
-            if($data[$i]['create_user'] == $user) {
-                $mytype = 1;
-            }
+        	$mytype = 2;
+        	if($data[$i]['create_user'] == $user) {
+        		$mytype = 1;
+        	}
             $data[$i]['create_time'] = strtotime($data[$i]['create_time']);
             $data[$i]['archive_time'] = strtotime($data[$i]['archive_time']);
             // 获取BOM
@@ -129,7 +129,7 @@ class Product_NewbomController extends Zend_Controller_Action
                                     if (!$u)
                                         continue;
                                     if($u == $user) {
-                                        $mytype = 3;
+                                    	$mytype = 3;
                                     }
                                     $e = $employee->fetchRow("id = $u");
                                     if ($reviewState)
@@ -170,13 +170,13 @@ class Product_NewbomController extends Zend_Controller_Action
         $dataT2 = array();
         $dataT1 = array();
         for($i = 0; $i < count($data); $i++) {
-            if($data[$i]['mytype'] == 3) {
-                $dataT3[] = $data[$i];
-            } else if($data[$i]['mytype'] == 2) {
-                $dataT2[] = $data[$i];
-            } else {
-                $dataT1[] = $data[$i];
-            }
+        	if($data[$i]['mytype'] == 3) {
+        		$dataT3[] = $data[$i];
+        	} else if($data[$i]['mytype'] == 2) {
+        		$dataT2[] = $data[$i];
+        	} else {
+        		$dataT1[] = $data[$i];
+        	}
         }
         $data = array_merge($dataT3, $dataT1, $dataT2);
         $resutl = array(
@@ -194,16 +194,16 @@ class Product_NewbomController extends Zend_Controller_Action
         $nid = $result['nid'];
         $data = array();
         if($nid) {
-            $fa = new Product_Model_Fadev();
-            $where = "t1.nid=".$nid;
-            $data = $fa->getList($where);
-            for($i = 0; $i < count($data); $i++) {
-                if(($typeId = $data[$i]['type']) != '') {
-                    $typeName = $this->getTypeByConnect($typeId, '');
-                    $data[$i]['type_name'] = $typeName;
-                }
-                $data[$i]['bom_file_view'] = $data[$i]['bom_file'];
-            }
+        	$fa = new Product_Model_Fadev();
+        	$where = "t1.nid=".$nid;
+        	$data = $fa->getList($where);
+        	for($i = 0; $i < count($data); $i++) {
+	            if(($typeId = $data[$i]['type']) != '') {
+	                $typeName = $this->getTypeByConnect($typeId, '');
+	                $data[$i]['type_name'] = $typeName;
+	            }
+	            $data[$i]['bom_file_view'] = $data[$i]['bom_file'];
+        	}
         }
         // 转为json格式并输出
         echo Zend_Json::encode($data);
@@ -216,8 +216,8 @@ class Product_NewbomController extends Zend_Controller_Action
         $nid = $result['nid'];
         $data = array();
         if($nid) {
-            $son = new Product_Model_Sondev();
-            $data = $son->getListById($nid);
+        	$son = new Product_Model_Sondev();
+        	$data = $son->getListById($nid);
         }
         // 转为json格式并输出
         echo Zend_Json::encode($data);
@@ -246,7 +246,7 @@ class Product_NewbomController extends Zend_Controller_Action
             'result'  => true
         );
 
-        $request = $this->getRequest()->getParams();
+    	$request = $this->getRequest()->getParams();
 
         $now = date('Y-m-d H:i:s');
         $user_session = new Zend_Session_Namespace('user');
@@ -258,31 +258,31 @@ class Product_NewbomController extends Zend_Controller_Action
         $record = new Dcc_Model_Record();
         // 保存数据
         $data = array(
-            "ver"         =>   '1.0',
-            "description" =>  isset($val->description) ? $val->description : "",
-            "state"       =>   'Draft',
-            "remark"      =>   isset($val->remark) ? $val->remark : "",
+    	    "ver"         =>   '1.0',
+    	    "description" =>  isset($val->description) ? $val->description : "",
+    	    "state"       =>   'Draft',
+    	    "remark"      =>   isset($val->remark) ? $val->remark : "",
             "create_time" => $now,
             "create_user" => $user,
             "update_time" => $now,
             "update_user" => $user
-        );
+    	);
         try {
-            $id = $newbom->insert($data);
+        	$id = $newbom->insert($data);
             if ($id) {
-                $result['nid'] = $id;
+        	    $result['nid'] = $id;
 
-                // 操作记录
-                $data = array(
-                        'type'             => "bom",
-                        'table_name'       => "oa_product_bom_new",
-                        'table_id'         => $id,
-                        'handle_user'      => $user,
-                        'handle_time'      => $now,
-                        'action'           => "新建",
-                        'ip'               => $_SERVER['REMOTE_ADDR']
-                );
-                //$record->insert($data);
+	            // 操作记录
+	            $data = array(
+	                    'type'             => "bom",
+	                    'table_name'       => "oa_product_bom_new",
+	                    'table_id'         => $id,
+	                    'handle_user'      => $user,
+	                    'handle_time'      => $now,
+	                    'action'           => "新建",
+	                    'ip'               => $_SERVER['REMOTE_ADDR']
+	            );
+	            //$record->insert($data);
 
                 // 自定义字段
                 $attrval = new Admin_Model_Formval();
@@ -302,12 +302,12 @@ class Product_NewbomController extends Zend_Controller_Action
                 }
             }
         } catch (Exception $e) {
-            $result['result'] = false;
+			$result['result'] = false;
             $result['info'] = $e->getMessage();
 
             echo Zend_Json::encode($result);
             exit;
-        }
+		}
         echo Zend_Json::encode($result);
         exit;
 
@@ -434,11 +434,11 @@ class Product_NewbomController extends Zend_Controller_Action
             $db = $materiel->getAdapter();
 
             if($type == 'dev') {
-                $fa = new Product_Model_Fadev();
+            	$fa = new Product_Model_Fadev();
                 $son = new Product_Model_Sondev();
                 $table = "oa_product_bom_fa_dev";
             } else if($type == 'bom') {
-                $fa = new Product_Model_Fa();
+            	$fa = new Product_Model_Fa();
                 $son = new Product_Model_Son();
                 $table = "oa_product_bom_fa";
             }
@@ -452,197 +452,197 @@ class Product_NewbomController extends Zend_Controller_Action
                 }
                 // 数据校验
                 if(count($data) <= 1) {
-                    $result['success'] = false;
+                	$result['success'] = false;
                     $result['info'] = "文件中无数据！";
                     fclose($file);
                     echo Zend_Json::encode($result);
                     exit;
                 }
                 for($i = 1; $i < count($data); $i++) {
-                    $num = $i+1;
-                    $row = $data[$i];
-                    if(count($row) < 3) {
-                        continue;
-                    }
-                    for($k = 0; $k < count($row); $k++) {
-                        $row[$k] = str_replace("\"", "", $row[$k]);
-                    }
-                    if($i == 1 && !$row[1]) {
-                        $result['success'] = false;
-                        $result['info'] = "请以上级物料开头：第".$num."行！";
-                        fclose($file);
-                        echo Zend_Json::encode($result);
-                        exit;
-                    }
-                    if(!$row[1] && !$row[2]) {
-                        continue;
-                    }
-                    if($row[1] && $row[2]) {
-                        $result['success'] = false;
-                        $result['info'] = "上级物料和下级物料不能同时存在：第".$num."行！";
-                        fclose($file);
-                        echo Zend_Json::encode($result);
-                        exit;
-                    }
-                     if($row[1]) {
-                         if(!$materiel->checkExist($row[1])) {
-                             $result['success'] = false;
-                            $result['info'] = "物料“".$row[1]."”不存在：第".$num."行！";
-                            fclose($file);
-                            echo Zend_Json::encode($result);
-                            exit;
-                         }
-                        $m = $materiel->getMaterielByCode($row[1]);
-                    }
-                     if($row[2]) {
-                         if(!$materiel->checkExist($row[2])) {
-                             $result['success'] = false;
-                            $result['info'] = "物料“".$row[2]."”不存在：第".$num."行！";
-                            fclose($file);
-                            echo Zend_Json::encode($result);
-                            exit;
-                         }
+                	$num = $i+1;
+                	$row = $data[$i];
+                	if(count($row) < 3) {
+                		continue;
+                	}
+                	for($k = 0; $k < count($row); $k++) {
+                		$row[$k] = str_replace("\"", "", $row[$k]);
+                	}
+                	if($i == 1 && !$row[1]) {
+	                	$result['success'] = false;
+	                    $result['info'] = "请以上级物料开头：第".$num."行！";
+	                    fclose($file);
+	                    echo Zend_Json::encode($result);
+	                    exit;
+	                }
+                	if(!$row[1] && !$row[2]) {
+	                	continue;
+	                }
+                	if($row[1] && $row[2]) {
+	                	$result['success'] = false;
+	                    $result['info'] = "上级物料和下级物料不能同时存在：第".$num."行！";
+	                    fclose($file);
+	                    echo Zend_Json::encode($result);
+	                    exit;
+	                }
+                 	if($row[1]) {
+                 		if(!$materiel->checkExist($row[1])) {
+                 			$result['success'] = false;
+		                    $result['info'] = "物料“".$row[1]."”不存在：第".$num."行！";
+		                    fclose($file);
+		                    echo Zend_Json::encode($result);
+		                    exit;
+                 		}
+                	    $m = $materiel->getMaterielByCode($row[1]);
+                	}
+                 	if($row[2]) {
+                 		if(!$materiel->checkExist($row[2])) {
+                 			$result['success'] = false;
+		                    $result['info'] = "物料“".$row[2]."”不存在：第".$num."行！";
+		                    fclose($file);
+		                    echo Zend_Json::encode($result);
+		                    exit;
+                 		}
 
-                    }
-                     if($row[2] && isset($row[7]) && $row[7]) {
-                         $replace = explode(',', $row[7]);
-                         foreach($replace as $r) {
-                             $r = iconv('utf-8', 'gbk//IGNORE', $r);
-                             if(!$materiel->checkExist($r)) {
-                                 $result['success'] = false;
-                                $result['info'] = "物料“".$r."”不存在：第".$i."行！";
-                                fclose($file);
-                                echo Zend_Json::encode($result);
-                                exit;
-                             }
-                         }
-                    }
-                    if($i > 1 && $row[1] && $data[$i-1][1]) {
-                        $result['success'] = false;
-                        $result['info'] = "BOM“".$data[$i-1][1]."”不存在子物料：第$i行！";
-                        fclose($file);
-                        echo Zend_Json::encode($result);
-                        exit;
-                    }
+                	}
+                 	if($row[2] && isset($row[7]) && $row[7]) {
+                 		$replace = explode(',', $row[7]);
+                 		foreach($replace as $r) {
+                 			$r = iconv('utf-8', 'gbk//IGNORE', $r);
+                 			if(!$materiel->checkExist($r)) {
+	                 			$result['success'] = false;
+			                    $result['info'] = "物料“".$r."”不存在：第".$i."行！";
+			                    fclose($file);
+			                    echo Zend_Json::encode($result);
+			                    exit;
+	                 		}
+                 		}
+                	}
+                	if($i > 1 && $row[1] && $data[$i-1][1]) {
+                		$result['success'] = false;
+	                    $result['info'] = "BOM“".$data[$i-1][1]."”不存在子物料：第$i行！";
+	                    fclose($file);
+	                    echo Zend_Json::encode($result);
+	                    exit;
+                	}
                 }
 
-                // 只取一次最大值，可能遇到重号
-                if($type == 'dev') {
-                    $maxkeys = $fa->getAdapter()->query("select ifnull(max(recordkey),0) as maxkey from $table")->fetchObject();
-                    $recordkey = $maxkeys->maxkey;
-                } else {
-                    $maxkeys1 = $fa->getAdapter()->query("select ifnull(max(recordkey),0) as maxkey from oa_product_bom_fa_dev")->fetchObject();
-                    $maxkeys2 = $fa->getAdapter()->query("select ifnull(max(recordkey),0) as maxkey from oa_product_bom_fa")->fetchObject();
-                    $recordkey1 = $maxkeys1->maxkey;
-                    $recordkey2 = $maxkeys2->maxkey;
-                    $recordkey = max($recordkey1, $recordkey2);
-                }
-                
-                $pid = "";
-                $faArr = array();
-                $sonArr = array();
-                $obsoleteWhere = "1=0";
+		        // 只取一次最大值，可能遇到重号
+		        if($type == 'dev') {
+		            $maxkeys = $fa->getAdapter()->query("select ifnull(max(recordkey),0) as maxkey from $table")->fetchObject();
+		            $recordkey = $maxkeys->maxkey;
+		        } else {
+		            $maxkeys1 = $fa->getAdapter()->query("select ifnull(max(recordkey),0) as maxkey from oa_product_bom_fa_dev")->fetchObject();
+		            $maxkeys2 = $fa->getAdapter()->query("select ifnull(max(recordkey),0) as maxkey from oa_product_bom_fa")->fetchObject();
+		            $recordkey1 = $maxkeys1->maxkey;
+		            $recordkey2 = $maxkeys2->maxkey;
+		            $recordkey = max($recordkey1, $recordkey2);
+		        }
+		        
+		        $pid = "";
+		        $faArr = array();
+		        $sonArr = array();
+		        $obsoleteWhere = "1=0";
                 // 校验成功，开始保存数据
                 for($i = 1; $i < count($data); $i++) {
-                    $row = $data[$i];
+                	$row = $data[$i];
 
-                    if(count($row) < 3) {
-                        continue;
-                    }
-                    for($k = 0; $k < count($row); $k++) {
-                        $row[$k] = str_replace("\"", "", $row[$k]);
-                    }
-                    if($row[1]) {
-                        $m = $materiel->getMaterielByCode($row[1]);
-                        $recordkey++;
-                        $pid = $m['id'];
-                        $faData = array(
-                            'nid'        => $nid,
-                            'recordkey'  => $recordkey,
-                            'id'         => $m['id'],
-                            'code'       => $row[1],
-                            'qty'        => 1,
-                            'state'      => $row[3] ? $row[3] : 'EBOM',
-                            'ver'        => $row[4] ? str_replace('V', '', $row[4]) : '1.0'
-                        );
-                        if($type == 'bom') {
-                            $faData['bom_upd_time'] = $now;
-                        }
-                        if($faData['ver'] > '1.0') {
-                            $obsoleteWhere .= " or (code='".$row[1]."' and ver < '".$faData['ver']."')";
-                        }
-                        // 检查是否已经存在
-                        if($type == 'dev') {
-                            $list = $fa->getFaList("nid = $nid and ver = '".$faData['ver']."' and id = ".$m['id']);
-                        } else {
-                            $list = $fa->getFaList("ver = '".$faData['ver']."' and id = ".$m['id']);
-                        }
-                        if($list && count($list) > 0) {
-                            /*$result['success'] = false;
-                            $result['info'] = "数据已存在：".$faData['code']." ".$faData['ver']."！";
-                            fclose($file);
-                            echo Zend_Json::encode($result);
-                            exit;*/
-                            // 如果已存在，直接跳过
-                            $pid = "";
-                            continue;
-                        }
-                        $faArr[] = $faData;
-                    }
-                    if($row[2] && $pid) {
-                        $m = $materiel->getMaterielByCode($row[2]);
-                        $sonData = array(
-                            'nid'        => $nid,
-                            'recordkey'  => $recordkey,
-                            'pid'        => $pid,
-                            'id'         => $m['id'],
-                            'code'       => $row[2],
-                            'qty'        => $row[5] ? $row[5] : 1,
-                            'partposition'   => isset($row[6]) ? $row[6] : '',
-                            'replace'        => isset($row[7]) ? $row[7] : '',
-                            'remark'         => isset($row[8]) ? $row[8] : ''
-                        );
-                        // 检查是否已经存在
+                	if(count($row) < 3) {
+                		continue;
+                	}
+                	for($k = 0; $k < count($row); $k++) {
+                		$row[$k] = str_replace("\"", "", $row[$k]);
+                	}
+                	if($row[1]) {
+                		$m = $materiel->getMaterielByCode($row[1]);
+                		$recordkey++;
+                		$pid = $m['id'];
+                		$faData = array(
+                    	    'nid'        => $nid,
+                    	    'recordkey'  => $recordkey,
+                    	    'id'         => $m['id'],
+                    	    'code'       => $row[1],
+                    	    'qty'        => 1,
+                    	    'state'      => $row[3] ? $row[3] : 'EBOM',
+                    	    'ver'        => $row[4] ? str_replace('V', '', $row[4]) : '1.0'
+                    	);
+                    	if($type == 'bom') {
+                    		$faData['bom_upd_time'] = $now;
+                    	}
+                    	if($faData['ver'] > '1.0') {
+                    		$obsoleteWhere .= " or (code='".$row[1]."' and ver < '".$faData['ver']."')";
+                    	}
+                		// 检查是否已经存在
+                		if($type == 'dev') {
+                		    $list = $fa->getFaList("nid = $nid and ver = '".$faData['ver']."' and id = ".$m['id']);
+                		} else {
+                		    $list = $fa->getFaList("ver = '".$faData['ver']."' and id = ".$m['id']);
+                		}
+                		if($list && count($list) > 0) {
+                			/*$result['success'] = false;
+		                    $result['info'] = "数据已存在：".$faData['code']." ".$faData['ver']."！";
+		                    fclose($file);
+		                    echo Zend_Json::encode($result);
+		                    exit;*/
+		                    // 如果已存在，直接跳过
+		                    $pid = "";
+		                    continue;
+                		}
+                    	$faArr[] = $faData;
+                	}
+                	if($row[2] && $pid) {
+                		$m = $materiel->getMaterielByCode($row[2]);
+                		$sonData = array(
+                    	    'nid'        => $nid,
+                    	    'recordkey'  => $recordkey,
+                    	    'pid'        => $pid,
+                    	    'id'         => $m['id'],
+                    	    'code'       => $row[2],
+                    	    'qty'        => $row[5] ? $row[5] : 1,
+                    	    'partposition'   => isset($row[6]) ? $row[6] : '',
+                    	    'replace'        => isset($row[7]) ? $row[7] : '',
+                    	    'remark'         => isset($row[8]) ? $row[8] : ''
+                    	);
+                		// 检查是否已经存在
 
-                        if($type == 'dev') {
-                            $list = $son->getList("nid = $nid and id = ".$m['id']);
-                        } else {
-                            $list = $son->getList("recordkey = $recordkey and id = ".$m['id']);
-                        }
+                		if($type == 'dev') {
+                		    $list = $son->getList("nid = $nid and id = ".$m['id']);
+                		} else {
+                		    $list = $son->getList("recordkey = $recordkey and id = ".$m['id']);
+                		}
 
-                        if($list && count($list) > 0) {
-                            $result['success'] = false;
-                            $result['info'] = "数据已存在：".$sonData['code']."！";
-                            fclose($file);
-                            echo Zend_Json::encode($result);
-                            exit;
-                        }
-                        $sonArr[] = $sonData;
-                    }
+                		if($list && count($list) > 0) {
+                			$result['success'] = false;
+		                    $result['info'] = "数据已存在：".$sonData['code']."！";
+		                    fclose($file);
+		                    echo Zend_Json::encode($result);
+		                    exit;
+                		}
+                    	$sonArr[] = $sonData;
+                	}
                 }
                 $db->beginTransaction();
-                try {
-                    foreach($faArr as $faData) {
-                        $fa->insert($faData);
-                    }
-                    foreach($sonArr as $sonData) {
-                        $son->insert($sonData);
-                    }
-                    // 旧版作废
-                    if($type == 'bom') {
-                        $bosoleteData = array("state" => "Obsolete");
-                        $fa->update($bosoleteData, $obsoleteWhere);
-                    }
-                    $db->commit(); //执行commit
-                } catch (Exception $e) {
-                    $db->rollBack(); //如果出现错误，执行回滚操作
-                    $result['result'] = false;
-                    $result['info'] = $e->getMessage();
+		        try {
+		        	foreach($faArr as $faData) {
+		        		$fa->insert($faData);
+		        	}
+		        	foreach($sonArr as $sonData) {
+		        		$son->insert($sonData);
+		        	}
+		        	// 旧版作废
+		        	if($type == 'bom') {
+		        		$bosoleteData = array("state" => "Obsolete");
+		        		$fa->update($bosoleteData, $obsoleteWhere);
+		        	}
+		        	$db->commit(); //执行commit
+		        } catch (Exception $e) {
+					$db->rollBack(); //如果出现错误，执行回滚操作
+					$result['result'] = false;
+		            $result['info'] = $e->getMessage();
 
-                    fclose($file);
-                    echo Zend_Json::encode($result);
-                    exit;
-                }
+		            fclose($file);
+		            echo Zend_Json::encode($result);
+		            exit;
+				}
 
                 fclose($file);
             }

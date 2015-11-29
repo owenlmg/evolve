@@ -25,17 +25,17 @@ class Dcc_Model_Record extends Application_Model_Db
     }
 
     public function getHis($id, $type, $table_name='') {
-        $where = "type='$type' and table_id = ".$id;
-        if(isset($table_name) && $table_name) {
-            $where .= " and table_name = '$table_name'";
-        }
-        $data = $this->getList($where);
-        $result = "";
-        foreach($data as $row) {
-            if($result) $result .= ",";
-            $result .= $row['handle_user']."--".$row['handle_time']."--".$row['action']."--".$row['result']."--".$row['remark'];
-        }
-        return $result;
+    	$where = "type='$type' and table_id = ".$id;
+    	if(isset($table_name) && $table_name) {
+    	    $where .= " and table_name = '$table_name'";
+    	}
+    	$data = $this->getList($where);
+    	$result = "";
+    	foreach($data as $row) {
+    		if($result) $result .= ",";
+    		$result .= $row['handle_user']."--".$row['handle_time']."--".$row['action']."--".$row['result']."--".$row['remark'];
+    	}
+    	return $result;
     }
 
     public function getEmployeeIds($table_id, $type){
@@ -45,9 +45,9 @@ class Dcc_Model_Record extends Application_Model_Db
         $data = $this->fetchAll($sql)->toArray();
         $ids = array();
         foreach($data as $row) {
-            if(!in_array($row['handle_user'], $ids)) {
-                $ids[] = $row['handle_user'];
-            }
+        	if(!in_array($row['handle_user'], $ids)) {
+        		$ids[] = $row['handle_user'];
+        	}
         }
 
         return implode(',', $ids);

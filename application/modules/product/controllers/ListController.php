@@ -25,38 +25,38 @@ class Product_ListController extends Zend_Controller_Action
         }
         foreach ($request as $k => $v) {
             if ($v) {
-                if($k == 'search_tag') {
-                    $cols = array("t1.name", "t1.remark", "t1.manufacturers", "t1.code", "t1.description", "t3.cname");
-                    $arr=preg_split('/\s+/',trim($v));
-                    for ($i=0;$i<count($arr);$i++) {
-                        $tmp = array();
-                        foreach($cols as $c) {
-                            $tmp[] = "ifnull($c,'')";
-                        }
-                        $arr[$i] = "concat(".implode(',', $tmp).") like '%".$arr[$i]."%'";
-                    }
-                    $whereSearch .= " and ".join(' AND ', $arr);
-                    
-//                     $whereSearch .= " and (ifnull(t1.name,'') like '%$v%' or ifnull(t1.remark,'') like '%$v%' or ifnull(t1.manufacturers,'') like '%$v%' or ifnull(t1.code,'') like '%$v%' or ifnull(t1.description,'') like '%$v%' or ifnull(t3.cname,'') like '%$v%')";
-                } else if($k == 'search_state' && $v == 1) {
-                    $whereSearch .= " and (state = 'Active' or state = 'APL' or state = 'Preliminary')";
-                } else if("search_type" == $k && $v) {
-//                     $ids = $type->getTypes($v);
-//                     if($ids) {
-//                         $whereSearch .= " and t1.type in ($ids)";
-//                     }
-                    $whereSearch .= " and t1.type in ($v)";
+            	if($k == 'search_tag') {
+            	    $cols = array("t1.name", "t1.remark", "t1.manufacturers", "t1.code", "t1.description", "t3.cname");
+            	    $arr=preg_split('/\s+/',trim($v));
+            	    for ($i=0;$i<count($arr);$i++) {
+            	        $tmp = array();
+            	        foreach($cols as $c) {
+            	            $tmp[] = "ifnull($c,'')";
+            	        }
+            	        $arr[$i] = "concat(".implode(',', $tmp).") like '%".$arr[$i]."%'";
+            	    }
+            	    $whereSearch .= " and ".join(' AND ', $arr);
+            	    
+//             		$whereSearch .= " and (ifnull(t1.name,'') like '%$v%' or ifnull(t1.remark,'') like '%$v%' or ifnull(t1.manufacturers,'') like '%$v%' or ifnull(t1.code,'') like '%$v%' or ifnull(t1.description,'') like '%$v%' or ifnull(t3.cname,'') like '%$v%')";
+            	} else if($k == 'search_state' && $v == 1) {
+            		$whereSearch .= " and (state = 'Active' or state = 'APL' or state = 'Preliminary')";
+            	} else if("search_type" == $k && $v) {
+//                 	$ids = $type->getTypes($v);
+//                 	if($ids) {
+//                 		$whereSearch .= " and t1.type in ($ids)";
+//                 	}
+                	$whereSearch .= " and t1.type in ($v)";
                 } else if ("search_archive_date_from" == $k && $v) {
                     $whereSearch .= " and t1.archive_time >= '" . str_replace('T', ' ', $v) . "'";
                 } else if ("search_archive_date_to" == $k && $v) {
                     $whereSearch .= " and t1.archive_time <= '" . str_replace('T00:00:00', ' 23:59:59', $v) . "'";
                 } else {
-                    $col = str_replace('search_', '', $k);
-                    if ($col != $k) {
-                        // 查询条件
-                        $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
-                    }
-                }
+	                $col = str_replace('search_', '', $k);
+	                if ($col != $k) {
+	                    // 查询条件
+	                    $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
+	                }
+            	}
             }
         }
 
@@ -92,35 +92,35 @@ class Product_ListController extends Zend_Controller_Action
         $whereSearch = "1=1";
         foreach ($request as $k => $v) {
             if ($v) {
-                if($k == 'search_tag') {
-                    $whereSearch .= " and (ifnull(t1.name,'') like '%$v%' or ifnull(t1.remark,'') like '%$v%' or ifnull(t1.manufacturers,'') like '%$v%' or ifnull(t1.code,'') like '%$v%' or ifnull(t1.description,'') like '%$v%' or ifnull(t6.name,'') like '%$v%')";
-                } else if($k == 'search_state' && $v == 1) {
-                    $whereSearch .= " and (state = 'Active' or state = 'APL' or state = 'Preliminary' or state = 'Obsolete' or state = 'Pre-Obsolete')";
-                } else if($k == 'search_state') {
-                    $whereSearch .= " and state = '$v'";
-                } else {
-                    $col = str_replace('search_', '', $k);
-                    if ($col != $k) {
-                        // 查询条件
-                        $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
-                    }
-                }
+            	if($k == 'search_tag') {
+            		$whereSearch .= " and (ifnull(t1.name,'') like '%$v%' or ifnull(t1.remark,'') like '%$v%' or ifnull(t1.manufacturers,'') like '%$v%' or ifnull(t1.code,'') like '%$v%' or ifnull(t1.description,'') like '%$v%' or ifnull(t6.name,'') like '%$v%')";
+            	} else if($k == 'search_state' && $v == 1) {
+            		$whereSearch .= " and (state = 'Active' or state = 'APL' or state = 'Preliminary' or state = 'Obsolete' or state = 'Pre-Obsolete')";
+            	} else if($k == 'search_state') {
+            		$whereSearch .= " and state = '$v'";
+            	} else {
+	                $col = str_replace('search_', '', $k);
+	                if ($col != $k) {
+	                    // 查询条件
+	                    $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
+	                }
+            	}
             }
         }
         $model = "";
         if(isset($request["model"]) && $request["model"]) {
-            $model = $request["model"];
+        	$model = $request["model"];
         }
 
         $materiel = new Product_Model_Materiel();
         $record = new Dcc_Model_Record();
         // 获取当前正在流程中的id
         if($model == 'desc' || $model == 'transfer' || $model == 'bom') {
-            $table = "oa_product_materiel_".$model;
-            if($model == 'bom') {
-                $table = "oa_product_bom_fa";
-            }
-            $whereSearch .= " and t1.id not in (select mid from $table where state = 'Reviewing' or state = 'Return')";
+        	$table = "oa_product_materiel_".$model;
+        	if($model == 'bom') {
+        		$table = "oa_product_bom_fa";
+        	}
+        	$whereSearch .= " and t1.id not in (select mid from $table where state = 'Reviewing' or state = 'Return')";
         }
         // 获取物料数据
         $data = $materiel->getList($whereSearch, 0, 100);
@@ -204,7 +204,7 @@ class Product_ListController extends Zend_Controller_Action
 
         $bpartner = new Product_Model_Bpartner();
         if(isset($result['q']) && $result['q']) {
-            $query = $result['q'];
+        	$query = $result['q'];
             $where = "code = '$query' or cname like '%$query%' or ename like '%$query%'";
         } else {
             $where = "1=1";
@@ -263,8 +263,8 @@ class Product_ListController extends Zend_Controller_Action
         $record = new Dcc_Model_Record();
         // 新增还是编辑
         if(isset($val->id) && $val->id) {
-            $row = $materiel->fetchRow("id = ".$val->id);
-            $edit_count = $row['edit_count'];
+        	$row = $materiel->fetchRow("id = ".$val->id);
+        	$edit_count = $row['edit_count'];
             $data = array(
                     'edit_count'    => $edit_count+1,
                     'state'        => $val->state,
@@ -503,16 +503,16 @@ class Product_ListController extends Zend_Controller_Action
             $publish = true;
             $code = $val->code;
             if(!$code) {
-                // 自动生成物料编码
-                $code = $this->getCode($materielData->type);
-                if(!$code) {
-                    $result['result'] = false;
-                    $result['info'] = "生成物料编码失败";
+            	// 自动生成物料编码
+            	$code = $this->getCode($materielData->type);
+            	if(!$code) {
+            		$result['result'] = false;
+		            $result['info'] = "生成物料编码失败";
 
-                    echo Zend_Json::encode($result);
+		            echo Zend_Json::encode($result);
 
-                    exit;
-                }
+		            exit;
+            	}
             }
             $mData = array(
                 "state" => "Active",
@@ -593,30 +593,30 @@ class Product_ListController extends Zend_Controller_Action
         }
 
         if(isset($subject)) {
-            $mailData = array(
-                'type' => $type,
-                'subject' => $subject,
-                'to' => $to['email'],
-                'cc' => $cc,
-                'content' => $content,
-                'send_time' => $now,
-                'add_date' => $now
-            );
+	        $mailData = array(
+	            'type' => $type,
+	            'subject' => $subject,
+	            'to' => $to['email'],
+	            'cc' => $cc,
+	            'content' => $content,
+	            'send_time' => $now,
+	            'add_date' => $now
+	        );
 
-            $mail = new Application_Model_Log_Mail();
-            try {
-                $mailId = $mail->insert($mailData);
-            } catch (Exception $e) {
-                $result['result'] = false;
-                $result['info'] = $e->getMessage();
+	        $mail = new Application_Model_Log_Mail();
+	        try {
+	            $mailId = $mail->insert($mailData);
+	        } catch (Exception $e) {
+	            $result['result'] = false;
+	            $result['info'] = $e->getMessage();
 
-                echo Zend_Json::encode($result);
+	            echo Zend_Json::encode($result);
 
-                exit;
-            }
-            if ($mailId) {
-                $mail->send($mailId);
-            }
+	            exit;
+	        }
+	        if ($mailId) {
+	            $mail->send($mailId);
+	        }
         }
 
         echo Zend_Json::encode($result);
@@ -636,19 +636,19 @@ class Product_ListController extends Zend_Controller_Action
         $data = $type->fetchRow("id = $id");
         $sn_length = $data->sn_length;
         if($code && $sn_length) {
-            $mData = $materiel->getAdapter()->query("select max(code) as maxcode from oa_product_materiel where code like '$code%'")->fetchObject();
-            $num = "";
-            if($mData && $mData->maxcode) {
-                $max = $mData->maxcode;
-                $num = str_replace($code, '', $max);
-            } else {
-                for($i = 0; $i < $sn_length;$i++) {
-                    $num .= "0";
-                }
-            }
-            // +1
-            $code .= substr((("1".$num) + 1), 1);
-            return $code;
+        	$mData = $materiel->getAdapter()->query("select max(code) as maxcode from oa_product_materiel where code like '$code%'")->fetchObject();
+        	$num = "";
+        	if($mData && $mData->maxcode) {
+        		$max = $mData->maxcode;
+        	    $num = str_replace($code, '', $max);
+        	} else {
+        		for($i = 0; $i < $sn_length;$i++) {
+        			$num .= "0";
+        		}
+        	}
+        	// +1
+        	$code .= substr((("1".$num) + 1), 1);
+        	return $code;
         } else {
             return "";
         }
@@ -727,23 +727,23 @@ class Product_ListController extends Zend_Controller_Action
         }
         foreach ($request as $k => $v) {
             if ($v) {
-                if($k == 'search_tag') {
-                    $whereSearch .= " and (t1.name like '%$v%' or t1.remark like '%$v%' or t1.manufacturers like '%$v%' or t1.code like '%$v%' or t1.description like '%$v%')";
-                } else if($k == 'search_state' && $v == 1) {
-                    $whereSearch .= " and (state = 'Active' or state = 'APL' or state = 'Preliminary')";
-                } else if($k == 'search_state') {
-                    $whereSearch .= " and state = '$v'";
-                } else if ("search_archive_date_from" == $k && $v) {
+            	if($k == 'search_tag') {
+            		$whereSearch .= " and (t1.name like '%$v%' or t1.remark like '%$v%' or t1.manufacturers like '%$v%' or t1.code like '%$v%' or t1.description like '%$v%')";
+            	} else if($k == 'search_state' && $v == 1) {
+            		$whereSearch .= " and (state = 'Active' or state = 'APL' or state = 'Preliminary')";
+            	} else if($k == 'search_state') {
+            		$whereSearch .= " and state = '$v'";
+            	} else if ("search_archive_date_from" == $k && $v) {
                     $whereSearch .= " and t1.archive_time >= '" . str_replace('T', ' ', $v) . "'";
                 } else if ("search_archive_date_to" == $k && $v) {
                     $whereSearch .= " and t1.archive_time <= '" . str_replace('T00:00:00', ' 23:59:59', $v) . "'";
                 } else {
-                    $col = str_replace('search_', '', $k);
-                    if ($col != $k) {
-                        // 查询条件
-                        $whereSearch .= " and t1." . $col . " like '%" . $v . "%'";
-                    }
-                }
+	                $col = str_replace('search_', '', $k);
+	                if ($col != $k) {
+	                    // 查询条件
+	                    $whereSearch .= " and t1." . $col . " like '%" . $v . "%'";
+	                }
+            	}
             }
         }
         print(chr(0xEF).chr(0xBB).chr(0xBF));
@@ -792,15 +792,15 @@ class Product_ListController extends Zend_Controller_Action
         $k = 0;
         for($i = 0; $i < count($data); $i++) {
             if(($typeId = $data[$i]['type']) != '') {
-                if(in_array($typeId, $typeids)) {
-                    $data[$i]['type_name'] = $typenames[$typeId];
-                } else {
-                    $typeName = $this->getTypeByConnectForExport($typeId, '');
-                    $data[$i]['type_name'] = $typeName;
+            	if(in_array($typeId, $typeids)) {
+            		$data[$i]['type_name'] = $typenames[$typeId];
+            	} else {
+	                $typeName = $this->getTypeByConnectForExport($typeId, '');
+	                $data[$i]['type_name'] = $typeName;
 
-                    $typeids[] = $typeId;
-                    $typenames[$typeId] = $typeName;
-                }
+	                $typeids[] = $typeId;
+	                $typenames[$typeId] = $typeName;
+            	}
             }
             //$data[$i]['record'] = $record->getHis($data[$i]['id'], 'materiel');
             $d = $data[$i];

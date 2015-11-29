@@ -6,7 +6,7 @@
 var user_id = <?php echo $this->user_id?>;
 var salesDisable = <?php echo $this->salesDisable;?>;
 var pmDisable = <?php echo $this->pmDisable;?>;
-var reviewDisable = <?php echo $this->reviewDisable;?>;
+var adminDisable = <?php echo $this->adminDisable;?>;
 
 Ext.Loader.setConfig({enabled: true});
 Ext.Loader.setPath('Ext.ux', homePath+'/library/ext/examples/ux');
@@ -41,6 +41,10 @@ Ext.define('Catalog', {
              {name: "description_customer"}, 
              {name: "developmode_id"}, 
              {name: "stage_id"}, 
+             {name: "reviewer"}, 
+             {name: "can_review"}, 
+             {name: "review_info"}, 
+             {name: "review_info_tip"}, 
              {name: "date_dvt",type: 'date',dateFormat: 'Y-m-d'}, 
              {name: "qa1_date",type: 'date',dateFormat: 'Y-m-d'}, 
              {name: "qa2_date",type: 'date',dateFormat: 'Y-m-d'}, 
@@ -72,7 +76,7 @@ var userStore = Ext.create('Ext.data.Store', {
 	proxy: {
         type: 'ajax',
         reader: 'json',
-        url: '<?php echo HOME_PATH; ?>/public/admin/account/getuserlist/filter_id/<?php echo $this->user_id?>/role_id/63'
+        url: homePath+'/public/admin/account/getuserlist'
     },
     autoLoad: true
 });
@@ -132,6 +136,7 @@ function loadCatalog(){
     var auditor_id = Ext.getCmp('filter_auditor_id').getValue();
     var developmode_id = Ext.getCmp('search_developmode_id').getValue();
     var series_id = Ext.getCmp('search_series_id').getValue();
+    var have_code = Ext.getCmp('search_have_code').getValue();
     var stage_id = Ext.getCmp('search_stage_id').getValue();
 	var display_deleted = Ext.getCmp('search_display_deleted').getValue();
     var active = Ext.getCmp('search_active').getValue();
@@ -158,6 +163,7 @@ function loadCatalog(){
 		auditor_id: auditor_id,
 		display_deleted: display_deleted,
 		type_id: type_id,
+		have_code: have_code,
 		developmode_id: developmode_id,
 		series_id: series_id,
 		stage_id: stage_id
@@ -187,6 +193,7 @@ var editcatalogForm = Ext.create('Ext.form.Panel', {
         id: 'operate'
     }, {
     	xtype: 'fieldcontainer',
+    	hidden: true,
     	msgTarget : 'side',
         layout: 'hbox',
         defaults: {
@@ -334,6 +341,7 @@ var editCatalogWin = Ext.create('Ext.window.Window', {
                                         Ext.MessageBox.alert('提示', data.info);
                                         editCatalogWin.hide();
                                         Ext.getCmp('catalogGrid').getView().getSelectionModel().clearSelections();
+                                        Ext.getCmp('reviewBtn').disable();
                                         catalogStore.reload();
                                     }else{
                                         Ext.MessageBox.alert('错误', data.info);
@@ -400,7 +408,7 @@ var reviewForm = Ext.create('Ext.form.Panel', {
                 inputValue: 'no',
                 name: 'review_operate'
             }, {
-                hidden: true,
+                //hidden: true,
                 boxLabel: '转审',
                 inputValue: 'transfer',
                 name: 'review_operate'
@@ -419,17 +427,44 @@ var reviewForm = Ext.create('Ext.form.Panel', {
             flex: 1,
             name: 'review_transfer_user',
             id: 'review_transfer_user',
-        	store: userStore,
-        	multiSelect: true
+        	store: userStore
         }]
     }, {
-    	xtype: 'htmleditor',
+    	xtype: 'textareafield',
     	enableFont: false,
         height: 150,
+        width: 460,
         name: 'review_remark',
         fieldLabel: '审核意见'
     }]
 });
+
+var reviewInfoWin = Ext.create('Ext.window.Window', {
+    title: '审核日志',
+    border: 0,
+    width: 400,
+    modal: true,
+    constrain: true,
+    id: 'reviewInfoWin',
+    layout: 'fit',
+    maximizable: true,
+    resizable: true,
+    closeAction: 'hide',
+    resizable: true,
+    padding: 10,
+    items: [{
+         xtype: 'displayfield',
+         id: 'reviewInfoView'
+    }]
+});
+
+//查看审核日志
+function viewReviewInfo(info)
+{
+    reviewInfoWin.show();
+    var regS = new RegExp(">","gi");
+    Ext.getCmp('reviewInfoView').setValue(info.replace(regS, '<br>'));
+}
 
 // 审核窗口
 var reviewCatalogWin = Ext.create('Ext.window.Window', {
@@ -443,6 +478,7 @@ var reviewCatalogWin = Ext.create('Ext.window.Window', {
     items: [{
         region: 'center',
         split: true,
+        border: 0,
         items: [reviewForm],
         buttons: [{
             text: '提交',
@@ -467,6 +503,7 @@ var reviewCatalogWin = Ext.create('Ext.window.Window', {
                                         Ext.MessageBox.alert('提示', data.info);
                                         reviewCatalogWin.hide();
                                         Ext.getCmp('catalogGrid').getView().getSelectionModel().clearSelections();
+                                        Ext.getCmp('reviewBtn').disable();
                                         catalogStore.reload();
                                     }else{
                                         Ext.MessageBox.alert('错误', data.info);
@@ -525,20 +562,24 @@ var catalogGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
     xtype: 'locking-grid',
     id: 'catalogGrid',
     store: catalogStore,
+    selType: 'checkboxmodel',
     columnLines: true,
     tbar: [{
     	xtype: 'combobox',
         id: 'search_active',
         value: 1,
+        fieldLabel: '是否作废',
         editable: false,
         displayField: 'text',
         valueField: 'val',
-        width: 70,
+        labelAlign: 'right',
+        labelWidth: 60,
+        width: 110,
         store: Ext.create('Ext.data.Store', {
             fields: ['text', 'val'],
             data: [
-                {"text": "启用", "val": 1},
-                {"text": "停用", "val": 0}
+                {"text": "是", "val": 0},
+                {"text": "否", "val": 1}
             ]
         }),
         listeners: {
@@ -670,34 +711,123 @@ var catalogGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
                 var record = selection[0];
                 var id = record.get('id');
 
-                Ext.MessageBox.confirm('确认', '确定删除？', function(button, text){
-                    if(button == 'yes'){
-                    	Ext.Msg.wait('提交中，请稍后...', '提示');
-                        Ext.Ajax.request({
-                            url: homePath+'/public/product/catalog/editcatalog/operate/delete/id/'+id,
-                            params: {},
-                            method: 'POST',
-                            success: function(response, options) {
-                                var data = Ext.JSON.decode(response.responseText);
-                
-                                if(data.success){
-                                    Ext.MessageBox.alert('提示', data.info);
-                                    catalogStore.reload(1);
-                                }else{
-                                    Ext.MessageBox.alert('错误', data.info);
+                if(record.get('review') == 2){
+                	Ext.MessageBox.alert('错误', '当前型号已审批，不允许删除！');
+                }else{
+                	Ext.MessageBox.confirm('确认', '确定删除？', function(button, text){
+                        if(button == 'yes'){
+                        	Ext.Msg.wait('提交中，请稍后...', '提示');
+                            Ext.Ajax.request({
+                                url: homePath+'/public/product/catalog/editcatalog/operate/delete/id/'+id,
+                                params: {},
+                                method: 'POST',
+                                success: function(response, options) {
+                                    var data = Ext.JSON.decode(response.responseText);
+                    
+                                    if(data.success){
+                                        Ext.MessageBox.alert('提示', data.info);
+                                        catalogStore.reload(1);
+                                    }else{
+                                        Ext.MessageBox.alert('错误', data.info);
+                                    }
+                                },
+                                failure: function(response){
+                                    Ext.MessageBox.alert('错误', '提交失败');
                                 }
-                            },
-                            failure: function(response){
-                                Ext.MessageBox.alert('错误', '提交失败');
-                            }
-                        });
+                            });
+                        }
+                	});
+                }
+            }
+        }, {
+            text: '作废',
+            id: 'disableBtn',
+            disabled: true,
+            tooltip: '只能作废已审核产品',
+            handler: function(){
+            	Ext.MessageBox.confirm('确认', '确定作废？', function(button, text){
+                    if(button == 'yes'){
+                    	var selection = Ext.getCmp('catalogGrid').getSelectionModel().getSelection();
+
+                    	if(selection.length == 0){
+                    		Ext.MessageBox.alert('错误', '请选择产品！');
+                    	}else{
+                    		var ids = selection[0].get('id').toString();
+
+                    		for(var i = 1; i < selection.length; i++){
+                    		    ids += ',' + selection[i].get('id');
+                    		}
+
+                    		Ext.Msg.wait('提交中，请稍后...', '提示');
+                            Ext.Ajax.request({
+                                url: homePath+'/public/product/catalog/editcatalog/operate/disable',
+                                params: {ids: ids},
+                                method: 'POST',
+                                success: function(response, options) {
+                                    var data = Ext.JSON.decode(response.responseText);
+                    
+                                    if(data.success){
+                                        Ext.MessageBox.alert('提示', data.info);
+                                        catalogStore.reload(1);
+                                    }else{
+                                        Ext.MessageBox.alert('错误', data.info);
+                                    }
+                                },
+                                failure: function(response){
+                                    Ext.MessageBox.alert('错误', '提交失败');
+                                }
+                            });
+                        }
+                    }
+            	});
+            }
+        }, {
+            text: '启用',
+            id: 'enableBtn',
+            disabled: true,
+            tooltip: '只能启用已作废产品',
+            handler: function(){
+            	Ext.MessageBox.confirm('确认', '确定启用？', function(button, text){
+                    if(button == 'yes'){
+                    	var selection = Ext.getCmp('catalogGrid').getSelectionModel().getSelection();
+
+                    	if(selection.length == 0){
+                    		Ext.MessageBox.alert('错误', '请选择产品！');
+                    	}else{
+                    		var ids = selection[0].get('id').toString();
+
+                    		for(var i = 1; i < selection.length; i++){
+                    		    ids += ',' + selection[i].get('id');
+                    		}
+
+                    		Ext.Msg.wait('提交中，请稍后...', '提示');
+                            Ext.Ajax.request({
+                                url: homePath+'/public/product/catalog/editcatalog/operate/enable',
+                                params: {ids: ids},
+                                method: 'POST',
+                                success: function(response, options) {
+                                    var data = Ext.JSON.decode(response.responseText);
+                    
+                                    if(data.success){
+                                        Ext.MessageBox.alert('提示', data.info);
+                                        catalogStore.reload(1);
+                                    }else{
+                                        Ext.MessageBox.alert('错误', data.info);
+                                    }
+                                },
+                                failure: function(response){
+                                    Ext.MessageBox.alert('错误', '提交失败');
+                                }
+                            });
+                        }
                     }
             	});
             }
         }]
     }, {
     	text: '审核',
-    	disabled: reviewDisable,
+    	id: 'reviewBtn',
+    	disabled: true,
         iconCls: 'icon-accept',
         handler: function(){
         	var selection = Ext.getCmp('catalogGrid').getSelectionModel().getSelection();
@@ -709,7 +839,13 @@ var catalogGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
         	}else{
         		reviewCatalogWin.show();
 
-        		Ext.getCmp('review_id').setValue(selection[0].get('id'));
+        		var ids = selection[0].get('id').toString();
+
+        		for(var i = 1; i < selection.length; i++){
+        		    ids += ',' + selection[i].get('id');
+        		}
+
+        		Ext.getCmp('review_id').setValue(ids);
             }
         }
     }, {
@@ -764,12 +900,13 @@ var catalogGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
         xtype: 'splitbutton',
         iconCls: 'icon-form-edit',
     	text: '产品分类',
-    	disabled: salesDisable,
+    	disabled: adminDisable,
         handler: function(){
         	typeWin.show();
         },
         menu: [{
         	text: '产品系列',
+        	disabled: adminDisable,
             handler: function(){
                 seriesWin.show();
             }
@@ -855,10 +992,10 @@ var catalogGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
         locked: true,
         dataIndex: 'review',
         align: 'center',
-        renderer: function(val, meta){
+        renderer: function(val, meta, record){
             if(val == 0){
             	meta.style = 'background-color: #ffe2e2';
-                return '未审核';
+            	return record.get('reviewer') + '：未审核';
             }else if(val == 1){
             	meta.style = 'background-color: #FF4500';
                 return '拒绝';
@@ -867,7 +1004,7 @@ var catalogGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
             	return '已审核';
             }
         },
-        width: 80
+        width: 180
     }, {
         text: '标准品型号 *',
         dataIndex: 'model_standard',
@@ -876,7 +1013,28 @@ var catalogGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
         text: '产品代码',
         align: 'center',
         dataIndex: 'code',
-        width: 80
+        items: {
+        	xtype: 'combobox',
+            id: 'search_have_code',
+            emptyText: '是否分配产品代码...',
+            displayField: 'text',
+            valueField: 'val',
+            width: 130,
+            store: Ext.create('Ext.data.Store', {
+                fields: ['text', 'val'],
+                data: [
+                    {"text": "是", "val": 1},
+                    {"text": "否", "val": 0}
+                ]
+            }),
+            queryMode: 'local',
+            listeners: {
+                change: function(){
+                	catalogStore.loadPage(1);
+                }
+            }
+        },
+        width: 130
     }, {
         text: '旧产品代码',
         align: 'center',
@@ -1114,7 +1272,60 @@ var catalogGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
         align: 'center',
         renderer : Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
         width: 140
+    }, {
+        text: '审核日志',
+        dataIndex: 'review_info',
+        renderer: function(val, cellmeta, record){
+            cellmeta.tdAttr = 'data-qtip="' + record.get('review_info_tip') + '"';
+            return '<span style="cursor:pointer;" onclick="viewReviewInfo(\''+val+'\');">'+val+'</span>';
+        },
+        width: 300
     }],
+    listeners: {
+        selectionchange: function( sel, selected, eOpts ){
+            if(selected.length > 0){
+                var chkReview = true;
+                var chkDisable = true;
+                var chkEnable = true;
+
+                for(var i = 0; i < selected.length; i++){
+                	if(selected[i].get('can_review') == 0){
+                		chkReview = false;
+                    }
+
+                    if(!selected[i].get('active') || selected[i].get('review') != 2){
+                    	chkDisable = false;
+                    }
+
+                    if(selected[i].get('active') || selected[i].get('review') != 2){
+                    	chkEnable = false;
+                    }
+                }
+                
+                if(chkReview){
+                    Ext.getCmp('reviewBtn').enable();
+                }else{
+                    Ext.getCmp('reviewBtn').disable();
+                }
+
+                if(chkDisable && !adminDisable){
+                    Ext.getCmp('disableBtn').enable();
+                }else{
+                    Ext.getCmp('disableBtn').disable();
+                }
+
+                if(chkEnable && !adminDisable){
+                    Ext.getCmp('enableBtn').enable();
+                }else{
+                    Ext.getCmp('enableBtn').disable();
+                }
+            }else{
+                Ext.getCmp('reviewBtn').disable();
+                Ext.getCmp('disableBtn').disable();
+                Ext.getCmp('enableBtn').disable();
+            }
+        }
+    },
     bbar: Ext.create('Ext.PagingToolbar', {
         store: catalogStore,
         displayInfo: true,

@@ -15,7 +15,7 @@ class Product_BomviewController extends Zend_Controller_Action
     public function getlistAction() {
         $request = $this->getRequest()->getParams();
         if(!isset($request['recordkey']) || !$request['recordkey']) {
-            exit;
+        	exit;
         }
         $recordkey = $request['recordkey'];
         $fa = new Product_Model_Fa();
@@ -25,29 +25,29 @@ class Product_BomviewController extends Zend_Controller_Action
         $data = $fa->getOne($recordkey);
         $bom = array();
         for($i = 0; $i < count($data); $i++) {
-            if($i == 0){
-                $row = $data[$i];
-                $bom = array(
-                        'sid'            => $row['sid'],
-                        'nid'            => $row['nid'],
-                        'recordkey'      => $row['recordkey'],
-                        'id'             => $row['id'],
-                        'name'          => $row['name'],
-                        'description'   => $row['description'],
-                        'remark'        => $row['remark'],
-                        'project_no_name' => $row['project_no_name'],
-                        'bom_file' => $row['bom_file'],
-                        'code'        => $row['code'],
-                        'qty'        => $row['qty'],
-                        'ver'        => $row['ver'],
-                        'partposition'        => "",
-                        'replace'        => "",
-                        'state'         => $row['state'],
-                        'count'          => 1,
-                        'leaf'          => false,
-                        'children'      => $this->getData($fa, $son, $recordkey, 2)
-                );
-            }
+        	if($i == 0){
+        		$row = $data[$i];
+	            $bom = array(
+	                    'sid'            => $row['sid'],
+	                    'nid'            => $row['nid'],
+	                    'recordkey'      => $row['recordkey'],
+	                    'id'             => $row['id'],
+	                    'name'          => $row['name'],
+	                    'description'   => $row['description'],
+	                    'remark'        => $row['remark'],
+	                    'project_no_name' => $row['project_no_name'],
+	                    'bom_file' => $row['bom_file'],
+	                    'code'        => $row['code'],
+	                    'qty'        => $row['qty'],
+	                    'ver'        => $row['ver'],
+	                    'partposition'        => "",
+	                    'replace'        => "",
+	                    'state'         => $row['state'],
+	                    'count'          => 1,
+	                    'leaf'          => false,
+	                    'children'      => $this->getData($fa, $son, $recordkey, 2)
+	            );
+	        }
         }
         $result = array(
                 'sid'            => '',
@@ -88,7 +88,7 @@ class Product_BomviewController extends Zend_Controller_Action
             $fadata = $fa->getFa($data[$i]['code'], null);
             $faRow = "";
             if($fadata && count($fadata) > 0) {
-                $faRow = $fadata[0];
+        	    $faRow = $fadata[0];
             }
             if($faRow){
                 $data[$i]['ver'] = $faRow['ver'];

@@ -21,23 +21,23 @@ class Product_ApplyController extends Zend_Controller_Action {
         foreach ($request as $k => $v) {
             if ($v) {
                 if ($k == 'search_tag') {
-                    $cols = array("t1.name", "t1.remark", "t1.manufacturers", "t1.code", "t1.description", "t3.cname");
-                    $arr=preg_split('/\s+/',trim($v));
-                    for ($i=0;$i<count($arr);$i++) {
-                        $tmp = array();
-                        foreach($cols as $c) {
-                            $tmp[] = "ifnull($c,'')";
-                        }
-                        $arr[$i] = "concat(".implode(',', $tmp).") like '%".$arr[$i]."%'";
-                    }
-                    $whereSearch .= " and ".join(' AND ', $arr);
+            	    $cols = array("t1.name", "t1.remark", "t1.manufacturers", "t1.code", "t1.description", "t3.cname");
+            	    $arr=preg_split('/\s+/',trim($v));
+            	    for ($i=0;$i<count($arr);$i++) {
+            	        $tmp = array();
+            	        foreach($cols as $c) {
+            	            $tmp[] = "ifnull($c,'')";
+            	        }
+            	        $arr[$i] = "concat(".implode(',', $tmp).") like '%".$arr[$i]."%'";
+            	    }
+            	    $whereSearch .= " and ".join(' AND ', $arr);
 //                     $whereSearch .= " and (ifnull(t1.name,'') like '%$v%' or ifnull(t1.remark,'') like '%$v%' or ifnull(t1.manufacturers,'') like '%$v%' or ifnull(t1.code,'') like '%$v%' or ifnull(t1.description,'') like '%$v%' or ifnull(t3.cname,'') like '%$v%')";
                 } else if ("search_archive_date_from" == $k && $v) {
                     $whereSearch .= " and t1.archive_time >= '" . str_replace('T', ' ', $v) . "'";
                 } else if ("search_archive_date_to" == $k && $v) {
                     $whereSearch .= " and t1.archive_time <= '" . str_replace('T00:00:00', ' 23:59:59', $v) . "'";
                 } else if("search_type" == $k && $v) {
-                    $whereSearch .= " and t1.type in ($v)";
+                	$whereSearch .= " and t1.type in ($v)";
                 } else {
                     $col = str_replace('search_', '', $k);
                     if ($col != $k) {
@@ -554,134 +554,134 @@ class Product_ApplyController extends Zend_Controller_Action {
                     // 把阶段信息插入review记录
                     $first = true;
                     if(count($stepRows) > 0) {
-                        foreach ($stepRows as $s) {
-                            $plan_user = $s['user'];
-                            if ($s['dept']) {
-                                $tmpUser = array();
-                                $plan_dept = $s['dept'];
-                                foreach (explode(',', $plan_dept) as $role) {
-                                    $tmpRole = $member->getMemberWithNoManager($role);
-                                    foreach ($tmpRole as $m) {
-                                        $tmpUser[] = $m['user_id'];
-                                    }
-                                }
-                                if (count($tmpUser) == 0 && !$plan_user) {
-                                    $tmpUser = $member->getUserids("系统管理员");
-                                }
-                                if (count($tmpUser) > 0) {
-                                    $tmpUser = $employee->getAdapter()->query("select group_concat(employee_id) as users from oa_user where active = 1 and id in ( " . implode(',', $tmpUser) . ")")->fetchObject();
-                                    $users = $tmpUser->users;
-                                }
-                                if (isset($users) && $users) {
-                                    if ($plan_user)
-                                        $plan_user .= ",";
-                                    $plan_user .= $users;
-                                }
-                            }
-                            $repeatUser = explode(',', $plan_user);
-                            $plan_user = array();
-                            foreach ($repeatUser as $u) {
-                                if ($u && !in_array($u, $plan_user)) {
-                                    $plan_user[] = $u;
-                                }
-                            }
-                            $plan_user = implode(',', $plan_user);
-    
-                            $reviewData = array(
-                                'type' => "materiel",
-                                'file_id' => $id,
-                                'plan_user' => $plan_user,
-                                'method' => $s['method'],
-                                'return' => $s['return'],
-                                'step_name' => $s['step_name'],
-                                'step_ename' => $s['step_ename']
-                            );
-                            $review->insert($reviewData);
-    
-                            // 邮件任务
-                            if ($first) {
-                                $to = $employee->getAdapter()->query("select group_concat(email) as mail_to from oa_employee where id in ( " . $plan_user . ")")->fetchObject();
-                                $mailData = array(
-                                    'type' => '物料号归档审批',
-                                    'subject' => '物料号归档审批',
-                                    'to' => $to->mail_to,
-                                    'cc' => '',
-                                    'content' => '你有新物料号归档申请需要审核，请登录系统查看详情',
-                                    'send_time' => $now,
-                                    'add_date' => $now
-                                );
-    
-                                $mailId = $mail->insert($mailData);
-                                if ($mailId) {
-                                    $mail->send($mailId);
-                                }
-                            }
-                            $first = false;
-                        }
+	                    foreach ($stepRows as $s) {
+	                        $plan_user = $s['user'];
+	                        if ($s['dept']) {
+	                            $tmpUser = array();
+	                            $plan_dept = $s['dept'];
+	                            foreach (explode(',', $plan_dept) as $role) {
+	                                $tmpRole = $member->getMemberWithNoManager($role);
+	                                foreach ($tmpRole as $m) {
+	                                    $tmpUser[] = $m['user_id'];
+	                                }
+	                            }
+	                            if (count($tmpUser) == 0 && !$plan_user) {
+	                                $tmpUser = $member->getUserids("系统管理员");
+	                            }
+	                            if (count($tmpUser) > 0) {
+	                                $tmpUser = $employee->getAdapter()->query("select group_concat(employee_id) as users from oa_user where active = 1 and id in ( " . implode(',', $tmpUser) . ")")->fetchObject();
+	                                $users = $tmpUser->users;
+	                            }
+	                            if (isset($users) && $users) {
+	                                if ($plan_user)
+	                                    $plan_user .= ",";
+	                                $plan_user .= $users;
+	                            }
+	                        }
+	                        $repeatUser = explode(',', $plan_user);
+	                        $plan_user = array();
+	                        foreach ($repeatUser as $u) {
+	                            if ($u && !in_array($u, $plan_user)) {
+	                                $plan_user[] = $u;
+	                            }
+	                        }
+	                        $plan_user = implode(',', $plan_user);
+	
+	                        $reviewData = array(
+	                            'type' => "materiel",
+	                            'file_id' => $id,
+	                            'plan_user' => $plan_user,
+	                            'method' => $s['method'],
+	                            'return' => $s['return'],
+	                            'step_name' => $s['step_name'],
+	                            'step_ename' => $s['step_ename']
+	                        );
+	                        $review->insert($reviewData);
+	
+	                        // 邮件任务
+	                        if ($first) {
+	                            $to = $employee->getAdapter()->query("select group_concat(email) as mail_to from oa_employee where id in ( " . $plan_user . ")")->fetchObject();
+	                            $mailData = array(
+	                                'type' => '物料号归档审批',
+	                                'subject' => '物料号归档审批',
+	                                'to' => $to->mail_to,
+	                                'cc' => '',
+	                                'content' => '你有新物料号归档申请需要审核，请登录系统查看详情',
+	                                'send_time' => $now,
+	                                'add_date' => $now
+	                            );
+	
+	                            $mailId = $mail->insert($mailData);
+	                            if ($mailId) {
+	                                $mail->send($mailId);
+	                            }
+	                        }
+	                        $first = false;
+	                    }
                     } else {
-                        // 自动生成物料编码
-                        $code = $data['code'];
-                        $materielData = $materiel->getById($id);
-                        if(!$code) {
-                            $code = $this->getCode($materielData->type, $materielData->project_no);
-                        }
-                        if (!$code) {
-                            $result['result'] = false;
-                            $result['info'] = "生成物料编码失败";
-    
-                            echo Zend_Json::encode($result);
-    
-                            exit;
-                        } else {
-                            $mData = array(
-                                "state" => "Active",
-                                "code" => $code,
-                                "archive_time" => $now
-                            );
-                            $fileWhere = "id = $id";
-                            // 如果有ds等文件，这些文件也设置为已归档
-                            $data_file_id = $materielData->data_file_id;
-                            $tsr_id = $materielData->tsr_id;
-                            $first_report_id = $materielData->first_report_id;
-                            if($data_file_id || $tsr_id || $first_report_id) {
-                                $uploadUpdWhere = " archive = 0 and (1=0 ";
-                                if($data_file_id) {
-                                    $uploadUpdWhere .= " or id = ".$data_file_id;
-                                }
-                                if($tsr_id) {
-                                    $uploadUpdWhere .= " or id = ".$tsr_id;
-                                }
-                                if($first_report_id) {
-                                    $uploadUpdWhere .= " or id = ".$first_report_id;
-                                }
-                                $uploadUpdWhere .= ")";
-                                $uploadUpdData = array(
-                                    'archive' => 1,
-                                    'archive_time' => $now
-                                );
-                            }
-                            try {
-                                // 更新文件
-                                if (isset($fileWhere)) {
-                                    $materiel->update($mData, $fileWhere);
-                                }
-                                // 更新上传文件
-                                if (isset($uploadUpdData)) {
-                                    $upload = new Dcc_Model_Upload();
-                                    $upload->update($uploadUpdData, $uploadUpdWhere);
-                                }
-                                
-                                $result['info'] .= "，物料代码：".$code;
-                            } catch (Exception $e) {
-                                $result['result'] = false;
-                                $result['info'] = $e->getMessage();
-                
-                                echo Zend_Json::encode($result);
-                
-                                exit;
-                            }
-                        }
-                    
+	                    // 自动生成物料编码
+	                    $code = $data['code'];
+	                    $materielData = $materiel->getById($id);
+	                    if(!$code) {
+	                        $code = $this->getCode($materielData->type, $materielData->project_no);
+	                    }
+	                    if (!$code) {
+	                        $result['result'] = false;
+	                        $result['info'] = "生成物料编码失败";
+	
+	                        echo Zend_Json::encode($result);
+	
+	                        exit;
+	                    } else {
+	                        $mData = array(
+			                    "state" => "Active",
+			                    "code" => $code,
+			                    "archive_time" => $now
+			                );
+		                	$fileWhere = "id = $id";
+		                	// 如果有ds等文件，这些文件也设置为已归档
+			                $data_file_id = $materielData->data_file_id;
+			                $tsr_id = $materielData->tsr_id;
+			                $first_report_id = $materielData->first_report_id;
+			                if($data_file_id || $tsr_id || $first_report_id) {
+			                    $uploadUpdWhere = " archive = 0 and (1=0 ";
+			                    if($data_file_id) {
+			                	    $uploadUpdWhere .= " or id = ".$data_file_id;
+			                    }
+			                    if($tsr_id) {
+			                	    $uploadUpdWhere .= " or id = ".$tsr_id;
+			                    }
+			                    if($first_report_id) {
+			                	    $uploadUpdWhere .= " or id = ".$first_report_id;
+			                    }
+			                    $uploadUpdWhere .= ")";
+			                    $uploadUpdData = array(
+			                        'archive' => 1,
+			                        'archive_time' => $now
+			                    );
+			                }
+			                try {
+				                // 更新文件
+				                if (isset($fileWhere)) {
+				                    $materiel->update($mData, $fileWhere);
+				                }
+				                // 更新上传文件
+				                if (isset($uploadUpdData)) {
+				                	$upload = new Dcc_Model_Upload();
+				                    $upload->update($uploadUpdData, $uploadUpdWhere);
+				                }
+				                
+				                $result['info'] .= "，物料代码：".$code;
+				            } catch (Exception $e) {
+				                $result['result'] = false;
+				                $result['info'] = $e->getMessage();
+				
+				                echo Zend_Json::encode($result);
+				
+				                exit;
+				            }
+	                    }
+	                
                     }
                 }
             } catch (Exception $e) {
@@ -1131,8 +1131,8 @@ class Product_ApplyController extends Zend_Controller_Action {
             );
             // 增加记录
             $record->insert($recordData);
-            // 通过方式
-            $method = $reviewRow['method'];
+	        // 通过方式
+	        $method = $reviewRow['method'];
 
             if ($pass == 1) {
                 if ($method == 2) {
@@ -1172,28 +1172,28 @@ class Product_ApplyController extends Zend_Controller_Action {
             } else if ($pass == 3) {
                 // 转审
                 $finish_flg = 0;
-                if($method == 2) {
-                    // 处理方式为任意时，一个人转审之后其他人员也删除
-                    $plan_user = str_replace('E', '', $val->transfer_id);
-                } else {
-                    // 更改审核情况中的审核人
-                    $plan_users = explode(',', $reviewRow['plan_user']);
-                    
-                    // 审核人不在审核人列表中，并且是管理员，则替换所有人
-                    if(!in_array($user, $plan_users) &&
-                        (Application_Model_User::checkPermissionByRoleName('物料管理员') ||
-                            Application_Model_User::checkPermissionByRoleName('系统管理员'))) {
-                        $plan_users = array(str_replace('E', '', $val->transfer_id));
-                    } else {
-                        for ($i = 0; $i < count($plan_users); $i++) {
-                            if ($plan_users[$i] == $user) {
-                                $plan_users[$i] = str_replace('E', '', $val->transfer_id);
-                                break;
-                            }
-                        }
-                    }
-                    $plan_user = implode(',', $plan_users);
-                }
+	            if($method == 2) {
+	            	// 处理方式为任意时，一个人转审之后其他人员也删除
+	            	$plan_user = str_replace('E', '', $val->transfer_id);
+	            } else {
+	                // 更改审核情况中的审核人
+	                $plan_users = explode(',', $reviewRow['plan_user']);
+	                
+	                // 审核人不在审核人列表中，并且是管理员，则替换所有人
+	                if(!in_array($user, $plan_users) &&
+	                    (Application_Model_User::checkPermissionByRoleName('物料管理员') ||
+	                        Application_Model_User::checkPermissionByRoleName('系统管理员'))) {
+	                    $plan_users = array(str_replace('E', '', $val->transfer_id));
+	                } else {
+    	                for ($i = 0; $i < count($plan_users); $i++) {
+    	                    if ($plan_users[$i] == $user) {
+    	                        $plan_users[$i] = str_replace('E', '', $val->transfer_id);
+    	                        break;
+    	                    }
+    	                }
+	                }
+	                $plan_user = implode(',', $plan_users);
+	            }
 
                 // 审核情况
                 $reviewData = array(
@@ -1303,13 +1303,13 @@ class Product_ApplyController extends Zend_Controller_Action {
                 if($data_file_id || $tsr_id || $first_report_id) {
                     $uploadUpdWhere = " archive = 0 and (1=0 ";
                     if($data_file_id) {
-                        $uploadUpdWhere .= " or id = ".$data_file_id;
+                	    $uploadUpdWhere .= " or id = ".$data_file_id;
                     }
                     if($tsr_id) {
-                        $uploadUpdWhere .= " or id = ".$tsr_id;
+                	    $uploadUpdWhere .= " or id = ".$tsr_id;
                     }
                     if($first_report_id) {
-                        $uploadUpdWhere .= " or id = ".$first_report_id;
+                	    $uploadUpdWhere .= " or id = ".$first_report_id;
                     }
                     $uploadUpdWhere .= ")";
                     $uploadUpdData = array(
@@ -1328,7 +1328,7 @@ class Product_ApplyController extends Zend_Controller_Action {
                 }
                 // 更新上传文件
                 if (isset($uploadUpdData)) {
-                    $upload = new Dcc_Model_Upload();
+                	$upload = new Dcc_Model_Upload();
                     $upload->update($uploadUpdData, $uploadUpdWhere);
                 }
                 $this->operate("物料评审");
@@ -1367,14 +1367,14 @@ class Product_ApplyController extends Zend_Controller_Action {
                 $cc = $cc['email'];
                 $config = new Zend_Config_Ini(CONFIGS_PATH.'/application.ini', 'production');
                 if(isset($config) && isset($config->email->apply->publish)) {
-                    $to_plus = $config->email->apply->publish;
-                    if($to_plus) {
-                        if($cc) {
-                            $cc .= ",".$to_plus;
-                        } else {
-                            $cc = $to_plus;
-                        }
-                    }
+	                $to_plus = $config->email->apply->publish;
+	                if($to_plus) {
+	                	if($cc) {
+	                		$cc .= ",".$to_plus;
+	                	} else {
+	                		$cc = $to_plus;
+	                	}
+	                }
                 }
 //                 $cc = "";
                 $his = "<p><b>审核记录：</b><br>" . str_replace(',','<br>',$record->getHis($materielData['id'], 'materiel'))."</p>";

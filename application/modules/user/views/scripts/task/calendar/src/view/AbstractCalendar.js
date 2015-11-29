@@ -650,8 +650,8 @@ Ext.define('Ext.calendar.view.AbstractCalendar', {
         var M = Ext.calendar.data.EventMappings,
             data = evt.data || evt,
             start = this.viewStart.getTime(),
-            end = this.viewEnd.getTime(),
-            evStart = data[M.StartDate.name].getTime(),
+            end = this.viewEnd.getTime();
+        var evStart = data[M.StartDate.name].getTime(),
             evEnd = data[M.EndDate.name].getTime();
             evEnd = Ext.calendar.util.Date.add(data[M.EndDate.name], {seconds: -1}).getTime();
 

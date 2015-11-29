@@ -80,63 +80,69 @@ class Product_Model_Catalog extends Application_Model_Db
         }
         
         if($condition['key']){
-            $sql = $sql->where("t1.model_standard like '%".$condition['key']."%' or t1.model_internal like '%".$condition['key']."%' or t1.code like '%".$condition['key']."%' or t1.description like '%".$condition['key']."%' or t1.code_customer like '%".$condition['key']."%'");
+            $sql->where("t1.model_standard like '%".$condition['key']."%' or t1.model_internal like '%".$condition['key']."%' or t1.code like '%".$condition['key']."%' or t1.description like '%".$condition['key']."%' or t1.code_customer like '%".$condition['key']."%'");
         }
         
         if($condition['date_from']){
-            $sql = $sql->where("t1.create_time >= '".$condition['date_from']." 00:00:00'");
+            $sql->where("t1.create_time >= '".$condition['date_from']." 00:00:00'");
         }
         
         if($condition['date_to']){
-            $sql = $sql->where("t1.create_time <= '".$condition['date_to']." 23:59:59'");
+            $sql->where("t1.create_time <= '".$condition['date_to']." 23:59:59'");
         }
         
         if($condition['type_id'] && $condition['type_id'] != 'undefined'){
-            $sql = $sql->where("t1.type_id = ".$condition['type_id']);
+            $sql->where("t1.type_id = ".$condition['type_id']);
         }
         
-        if($condition['series_id']){
-            $sql = $sql->where("t1.series_id = ".$condition['series_id']);
+        if($condition['series_id'] != 'undefined' && $condition['series_id']){
+            $sql->where("t1.series_id = ".$condition['series_id']);
         }
         
         if($condition['stage_id']){
-            $sql = $sql->where("t1.stage_id = ".$condition['stage_id']);
+            $sql->where("t1.stage_id = ".$condition['stage_id']);
+        }
+        
+        if(isset($condition['have_code']) && $condition['have_code'] === '0'){
+            $sql->where("t1.code = '' or t1.code is null");
+        }else if (isset($condition['have_code']) && $condition['have_code'] === '1'){
+            $sql->where("t1.code != '' and t1.code is not null");
         }
         
         if($condition['developmode_id'] && $condition['developmode_id'] != 'null'){
-            $sql = $sql->where("t1.developmode_id = ".$condition['developmode_id']);
+            $sql->where("t1.developmode_id = ".$condition['developmode_id']);
         }
         
         if($condition['create_user'] && $condition['create_user'] != 'null'){
-            $sql = $sql->where("t1.create_user = ".$condition['create_user']);
+            $sql->where("t1.create_user = ".$condition['create_user']);
         }
         
         if($condition['auditor_id'] && $condition['auditor_id'] != 'null'){
-            $sql = $sql->where("t1.auditor_id = ".$condition['auditor_id']);
+            $sql->where("t1.auditor_id = ".$condition['auditor_id']);
         }
         
         if($condition['evt_date']){
-            $sql = $sql->where("t1.evt_date = '".$condition['evt_date']."'");
+            $sql->where("t1.evt_date = '".$condition['evt_date']."'");
         }
         
         if($condition['dvt_date']){
-            $sql = $sql->where("t1.date_dvt = '".$condition['dvt_date']."'");
+            $sql->where("t1.date_dvt = '".$condition['dvt_date']."'");
         }
         
         if($condition['dvt_date']){
-            $sql = $sql->where("t1.date_dvt = '".$condition['dvt_date']."'");
+            $sql->where("t1.date_dvt = '".$condition['dvt_date']."'");
         }
         
         if($condition['qa1_date']){
-            $sql = $sql->where("t1.qa1_date = '".$condition['qa1_date']."'");
+            $sql->where("t1.qa1_date = '".$condition['qa1_date']."'");
         }
         
         if($condition['qa2_date']){
-            $sql = $sql->where("t1.qa2_date = '".$condition['qa2_date']."'");
+            $sql->where("t1.qa2_date = '".$condition['qa2_date']."'");
         }
         
         if($condition['mass_production_date']){
-            $sql = $sql->where("t1.mass_production_date = '".$condition['mass_production_date']."'");
+            $sql->where("t1.mass_production_date = '".$condition['mass_production_date']."'");
         }
         /* echo $sql;
         exit; */
@@ -156,7 +162,7 @@ class Product_Model_Catalog extends Application_Model_Db
             $data[$i]['update_time'] = strtotime($data[$i]['update_time']);
             $data[$i]['auditor_time'] = strtotime($data[$i]['auditor_time']);
             $data[$i]['active'] = $data[$i]['active'] == 1 ? true : false;
-            
+            $data[$i]['review_info'] = isset($data[$i]['review_info']) ? $data[$i]['review_info'] : '';
             $data[$i]['description'] = $h->deletehtml($data[$i]['description']);
             $data[$i]['remark'] = $h->deletehtml($data[$i]['remark']);
             $data[$i]['review_info_tip'] = $data[$i]['review_info'];

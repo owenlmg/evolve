@@ -57,7 +57,7 @@ Ext.define('Ext.calendar.data.EventModel', {
             var Data = Ext.calendar.data,
                 Mappings = Data.EventMappings,
                 proto = Data.EventModel.prototype,
-                fields = [];
+                fields = ['id','cid','title','start','end','startDate','endDate','Location','notes','Url','IsAllDay','Reminder','IsNew','OperateType','Important', 'Priority', 'State','Responsible_id','Responsible','Follow_id','Follow','Parent','Owner','Follower','Relation','Process','Type'];
             
             // It is critical that the id property mapping is updated in case it changed, since it
             // is used elsewhere in the data package to match records on CRUD actions:

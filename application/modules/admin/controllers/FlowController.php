@@ -51,8 +51,8 @@ class Admin_FlowController extends Zend_Controller_Action {
         for ($i = 0; $i < count($data); $i++) {
             if ($data[$i]['step_ids']) {
                 $stepData = $step->getListByFlow($data[$i]['step_ids']);
-                
-                $tips = "<table class='eoa_table'><tr><th width='80'>阶段</th><th>人员</th><th>角色</th></tr>";
+	            
+	            $tips = "<table class='eoa_table'><tr><th width='80'>阶段</th><th>人员</th><th>角色</th></tr>";
                 $step_name = "";
                 for ($k = 0; $k < count($stepData); $k++) {
                     if ($step_name)
@@ -63,17 +63,17 @@ class Admin_FlowController extends Zend_Controller_Action {
                     $users = $stepData[$k]['user'];
                     $roles = $stepData[$k]['dept'];
                     if($users) {
-                        $userData = $employee->getAdapter()->query("select group_concat(cname) as names from oa_employee where id in ( " . $users . ")")->fetchObject();
-                        $user_name = $userData->names;
-                        $tips .= $user_name;
-                    }
-                    $tips .= "</td><td>";
-                    if($roles) {
-                        $deptData = $employee->getAdapter()->query("select group_concat(name) as names from oa_user_role where id in ( " . $roles . ")")->fetchObject();
-                        $role_name = $deptData->names;
-                        $tips .= $role_name;
-                    }
-                    $tips .= "</td></tr>";
+	                    $userData = $employee->getAdapter()->query("select group_concat(cname) as names from oa_employee where id in ( " . $users . ")")->fetchObject();
+	                    $user_name = $userData->names;
+	                    $tips .= $user_name;
+	                }
+	                $tips .= "</td><td>";
+	                if($roles) {
+	                    $deptData = $employee->getAdapter()->query("select group_concat(name) as names from oa_user_role where id in ( " . $roles . ")")->fetchObject();
+	                    $role_name = $deptData->names;
+	                    $tips .= $role_name;
+	                }
+	                $tips .= "</td></tr>";
                 }
                 $data[$i]['tips'] = $tips;
                 $data[$i]['step_names'] = $step_name;

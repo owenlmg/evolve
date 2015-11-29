@@ -322,7 +322,7 @@ class Dcc_Model_FileCovert {
 
         $oWriterDoc->close(true);
 
-        //        $osm->dispose();
+        //		$osm->dispose();
 
         return true;
     }
@@ -349,8 +349,8 @@ class Dcc_Model_FileCovert {
     /**
      * convert html to pdf
      *
-     * @param string $doc_src    path to source file, include filename
-     * @param string $doc_dst    path to output file, include filename
+     * @param string $doc_src	path to source file, include filename
+     * @param string $doc_dst	path to output file, include filename
      */
     function html2pdf($doc_src, $doc_dst) {
         require_once(LIB_PATH . 'html2fpdf/html2fpdf.php');

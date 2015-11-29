@@ -19,15 +19,15 @@ class Product_PriceController extends Zend_Controller_Action
         $whereSearch = "1=1";
         foreach ($request as $k => $v) {
             if ($v) {
-                if($k == 'search_tag') {
-                    $whereSearch .= " and (ifnull(t1.code,'') like '%$v%' or ifnull(t2.name,'') like '%$v%' or ifnull(t2.description,'') like '%$v%' or ifnull(t3.code,'') like '%$v%' or ifnull(t3.cname,'') like '%$v%')";
-                } else {
-                    $col = str_replace('search_', '', $k);
-                    if ($col != $k) {
-                        // 查询条件
-                        $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
-                    }
-                }
+            	if($k == 'search_tag') {
+            		$whereSearch .= " and (ifnull(t1.code,'') like '%$v%' or ifnull(t2.name,'') like '%$v%' or ifnull(t2.description,'') like '%$v%' or ifnull(t3.code,'') like '%$v%' or ifnull(t3.cname,'') like '%$v%')";
+            	} else {
+	                $col = str_replace('search_', '', $k);
+	                if ($col != $k) {
+	                    // 查询条件
+	                    $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
+	                }
+            	}
             }
         }
 
@@ -84,7 +84,7 @@ class Product_PriceController extends Zend_Controller_Action
 
         $bpartner = new Product_Model_Bpartner();
         if(isset($result['q']) && $result['q']) {
-            $query = $result['q'];
+        	$query = $result['q'];
             $where = "code like '%$query%' or cname like '%$query%' or ename like '%$query%'";
         } else {
             $where = "1=1";
@@ -94,7 +94,7 @@ class Product_PriceController extends Zend_Controller_Action
         $result = array();
         for($i = 0; $i < count($data); $i++) {
             if(($code = $data[$i]['code']) != '') {
-                $result[$i] = array();
+            	$result[$i] = array();
                 $result[$i]['supply_code'] = $code;
                 if(($cname = $data[$i]['cname']) != '') {
                     $result[$i]['supply_name'] = $cname;
@@ -123,7 +123,7 @@ class Product_PriceController extends Zend_Controller_Action
 
         $materiel = new Product_Model_Materiel();
         if(isset($result['q']) && $result['q']) {
-            $query = $result['q'];
+        	$query = $result['q'];
             $where = "code like '%$query%' or name like '%$query%' or description like '%$query%'";
         } else {
             $where = "1=1";
@@ -185,49 +185,49 @@ class Product_PriceController extends Zend_Controller_Action
 
         if(count($updated) > 0){
             foreach ($updated as $val){
-                if($val->id) {
-                    // 检查数据是否重复
-                    $this->checkExtists($val);
+            	if($val->id) {
+	            	// 检查数据是否重复
+		            $this->checkExtists($val);
 
-                    $data = array(
-                            'code'          => $val->code,
-                            'supply_code'   => $val->supply_code,
-                            'min_num'       => $val->min_num,
-                            'max_num'       => $val->max_num,
-                            'currency'      => $val->currency,
-                            'price'         => $val->price,
-                            'update_user'   => $user,
-                            'update_time'   => $now
-                    );
+	                $data = array(
+	                        'code'          => $val->code,
+	                        'supply_code'   => $val->supply_code,
+	                        'min_num'       => $val->min_num,
+	                        'max_num'       => $val->max_num,
+	                        'currency'      => $val->currency,
+	                        'price'         => $val->price,
+	                        'update_user'   => $user,
+	                        'update_time'   => $now
+	                );
 
-                    $where = "id = ".$val->id;
+	                $where = "id = ".$val->id;
 
-                    try {
-                        $price->update($data, $where);
-                    } catch (Exception $e) {
-                        $result['result'] = false;
-                        $result['info'] = $e->getMessage();
-                        echo Zend_Json::encode($result);
-                        exit;
-                    }
-                }
+	                try {
+	                    $price->update($data, $where);
+	                } catch (Exception $e) {
+	                    $result['result'] = false;
+	                    $result['info'] = $e->getMessage();
+	                    echo Zend_Json::encode($result);
+	                    exit;
+	                }
+            	}
             }
         }
 
         if(count($inserted) > 0){
             foreach ($inserted as $val){
-                // 检查数据是否重复
-                $this->checkExtists($val);
+            	// 检查数据是否重复
+	            $this->checkExtists($val);
                 $data = array(
-                            'code'          => $val->code,
-                            'supply_code'   => $val->supply_code,
-                            'min_num'       => $val->min_num,
-                            'max_num'       => $val->max_num,
-                            'currency'      => $val->currency,
-                            'price'         => $val->price,
-                            'update_user'   => $user,
-                            'update_time'   => $now
-                    );
+	                        'code'          => $val->code,
+	                        'supply_code'   => $val->supply_code,
+	                        'min_num'       => $val->min_num,
+	                        'max_num'       => $val->max_num,
+	                        'currency'      => $val->currency,
+	                        'price'         => $val->price,
+	                        'update_user'   => $user,
+	                        'update_time'   => $now
+	                );
 
                 try{
                     $price->insert($data);
@@ -257,49 +257,49 @@ class Product_PriceController extends Zend_Controller_Action
     }
 
     private function checkExtists($data) {
-        $code = $data->code;
-        $supply_code = $data->supply_code;
-        $min_num = $data->min_num;
-        $max_num = $data->max_num;
-        $price = $data->price;
-        if(isset($data->id) && $data->id) {
-            $id = $data->id;
-        }
-        $now = date('Y-m-d H:i:s');
+    	$code = $data->code;
+    	$supply_code = $data->supply_code;
+    	$min_num = $data->min_num;
+    	$max_num = $data->max_num;
+    	$price = $data->price;
+    	if(isset($data->id) && $data->id) {
+    		$id = $data->id;
+    	}
+    	$now = date('Y-m-d H:i:s');
 
-        $priceModel = new Product_Model_Price();
+    	$priceModel = new Product_Model_Price();
 
-        $result = array(
+    	$result = array(
                 'success'   => true,
                 'info'      => '保存成功'
         );
-        if(!$code) {
-            $result['result'] = false;
+    	if(!$code) {
+    		$result['result'] = false;
             $result['info'] = '物料代码未填写！';
             echo Zend_Json::encode($result);
             exit;
-        }
-        if(!$price) {
-            $result['result'] = false;
+    	}
+    	if(!$price) {
+    		$result['result'] = false;
             $result['info'] = '价格未填写！';
             echo Zend_Json::encode($result);
             exit;
-        }
-        $where = "t1.code='$code' and !(min_num > $max_num or max_num < $min_num)";
-        if(isset($id)) {
-            $where .= " and t1.id!=$id";
-        }
-        if($supply_code) {
-            $where .= " and supply_code = '$supply_code'";
-        }
-        if(count($priceModel->getList($where, $now, null, null)) > 0) {
-            $result['result'] = false;
+    	}
+    	$where = "t1.code='$code' and !(min_num > $max_num or max_num < $min_num)";
+    	if(isset($id)) {
+    		$where .= " and t1.id!=$id";
+    	}
+    	if($supply_code) {
+    		$where .= " and supply_code = '$supply_code'";
+    	}
+    	if(count($priceModel->getList($where, $now, null, null)) > 0) {
+    		$result['result'] = false;
             $result['info'] = '此物料代码的价格已存在！';
             echo Zend_Json::encode($result);
             exit;
-        }
+    	}
 
-        return true;
+    	return true;
     }
 
 }

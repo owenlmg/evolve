@@ -209,7 +209,7 @@ class Dcc_UploadController extends Zend_Controller_Action {
 //
 //                    exit;
 //                }
-//                $savepath = $_SERVER['DOCUMENT_ROOT']."/evolve/upload/files/".date('Y-m-d')."/";
+//		        $savepath = $_SERVER['DOCUMENT_ROOT']."/evolve/upload/files/".date('Y-m-d')."/";
                 $savepath = "../upload/files/" . date('Y-m-d') . "/";
                 $fujian_name_tmp = $this->randomkeys(15) . strtolower($fileType);
                 if (!is_dir($savepath)) {

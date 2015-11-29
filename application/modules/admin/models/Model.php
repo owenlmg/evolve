@@ -78,24 +78,24 @@ class Admin_Model_Model extends Application_Model_Db
      * @return      null
      */
     public function getLeafValue($id) {
-        $data = array();
-        $name = "";
-        $sql = $this->select()
-                    ->from($this, array('id', 'parentid', 'name'))
-                    ->where("state = 1 and id = ?", $id);
-        $data = $this->fetchRow($sql);
-        $parentId = $data['parentid'];
-        $name = $data['name'];
-        while($parentId > 0) {
-            $sql = $this->select()
-                        ->from($this, array('id', 'parentid', 'name'))
-                        ->where("state = 1 and id = ?", $parentId);
-            $data = $this->fetchRow($sql);
-            
-            $parentId = $data['parentid'];
-            $name = $data['name']. '_'.$name;
-        }
-        return array('id' => $id, 'name' => $name);
+    	$data = array();
+    	$name = "";
+    	$sql = $this->select()
+    	            ->from($this, array('id', 'parentid', 'name'))
+    	            ->where("state = 1 and id = ?", $id);
+    	$data = $this->fetchRow($sql);
+    	$parentId = $data['parentid'];
+    	$name = $data['name'];
+    	while($parentId > 0) {
+    		$sql = $this->select()
+    	                ->from($this, array('id', 'parentid', 'name'))
+    	                ->where("state = 1 and id = ?", $parentId);
+    	    $data = $this->fetchRow($sql);
+    	    
+    	    $parentId = $data['parentid'];
+    	    $name = $data['name']. '_'.$name;
+    	}
+    	return array('id' => $id, 'name' => $name);
     }
 
     /**
@@ -136,7 +136,7 @@ class Admin_Model_Model extends Application_Model_Db
             if($this->fetchAll("parentId = ".$data[$i]['id'])->count() > 0){
                 $data[$i]['leaf'] = false;
                 if($expanded == $data[$i]['id']) {
-                    $data[$i]['expanded'] = true;
+                	$data[$i]['expanded'] = true;
                 }
                 $data[$i]['children'] = $this->getData($data[$i]['id'], false, $expanded);
             }else{

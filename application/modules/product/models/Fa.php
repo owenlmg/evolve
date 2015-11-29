@@ -24,7 +24,7 @@ class Product_Model_Fa extends Application_Model_Db
                     ->where($where)
                     ->order(array('state', 'sid desc', 'code desc', 'ver desc'));
         if(isset($limit) && $limit) {
-            $sql = $sql->limit($limit, $start);
+        	$sql = $sql->limit($limit, $start);
         }
 
         $data = $this->fetchAll($sql)->toArray();
@@ -144,7 +144,7 @@ class Product_Model_Fa extends Application_Model_Db
                     ->joinLeft(array('t5' => $this->_dbprefix.'product_catalog'), "t1.project_no = t5.id", array('project_no_name' => 'model_internal'))
                     ->where("t1.code = '$code'");
         if(isset($ver) && $ver) {
-            $sql = $sql->where("ver='$ver'");
+        	$sql = $sql->where("ver='$ver'");
         }
         $sql = $sql->order("ver desc");
 

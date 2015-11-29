@@ -37,22 +37,22 @@ class Admin_BacklogController extends Zend_Controller_Action {
         $data = $review->getBacklogList($user);
         $updcount = 0;
         for($i = 0; $i < count($data); $i++) {
-            if($data[$i]['type'] == 'devbom') {
-                $updcount += $data[$i]['count'];
-            } else if($data[$i]['type'] == 'ecobom') {
-                $updcount += $data[$i]['count'];
-            } else if($data[$i]['type'] == 'updbom') {
-                $updcount += $data[$i]['count'];
-            }
+        	if($data[$i]['type'] == 'devbom') {
+        		$updcount += $data[$i]['count'];
+        	} else if($data[$i]['type'] == 'ecobom') {
+        		$updcount += $data[$i]['count'];
+        	} else if($data[$i]['type'] == 'updbom') {
+        		$updcount += $data[$i]['count'];
+        	}
         }
         $result = array();
         for($i = 0; $i < count($data); $i++) {
-            if($data[$i]['type'] != 'devbom' && $data[$i]['type'] != 'ecobom' && $data[$i]['type'] != 'updbom') {
-                $result[] = $data[$i];
-            }
+        	if($data[$i]['type'] != 'devbom' && $data[$i]['type'] != 'ecobom' && $data[$i]['type'] != 'updbom') {
+        		$result[] = $data[$i];
+        	}
         }
         if($updcount > 0) {
-            $result[] = array("count" => $updcount, "type" => "updbom");
+        	$result[] = array("count" => $updcount, "type" => "updbom");
         }
 
 

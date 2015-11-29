@@ -25,6 +25,7 @@ Ext.define('Ext.calendar.App', {
     ],
     
     constructor : function() {
+        var me;
         // Minor workaround for OSX Lion scrollbars
         this.checkScrollOffset();
         
@@ -36,9 +37,58 @@ Ext.define('Ext.calendar.App', {
         // A sample event store that loads static JSON from a local file. Obviously a real
         // implementation would likely be loading remote data via an HttpProxy, but the
         // underlying store functionality is the same.
-        this.eventStore = Ext.create('Ext.calendar.data.MemoryEventStore', {
-            data: Ext.calendar.data.Events.getData()
+        this.eventStore = Ext.create('Ext.calendar.data.MemoryEventStore', {});
+        this.responsible = Ext.create('Ext.data.Store', {
+            model: Ext.define('employee', {
+                extend: 'Ext.data.Model',
+                idProperty: 'id',
+                fields: [{name: "id"},
+                    {name: "number"},
+                    {name: "cname"},
+                    {name: "email"}
+                ]
+            }),
+            proxy: {
+                type: 'ajax',
+                reader: {
+                    root: 'rows',
+                    totalProperty: 'total'
+                },
+                url: getRootPath() + '/public/user/task/getsubusers'
+            },
+            autoLoad: true
         });
+        this.processStore = Ext.create('Ext.data.Store', {
+            model: 'process',
+            proxy: {
+                type: 'ajax',
+                reader: 'json',
+                url: getRootPath() + '/public/user/task/process'
+            },
+            autoLoad: false
+        });
+        this.employeeStore = Ext.create('Ext.data.Store', {
+            model: Ext.define('employee', {
+                extend: 'Ext.data.Model',
+                idProperty: 'id',
+                fields: [{name: "id"},
+                    {name: "number"},
+                    {name: "cname"},
+                    {name: "email"}
+                ]
+            }),
+            proxy: {
+                type: 'ajax',
+                reader: {
+                    root: 'rows',
+                    totalProperty: 'total'
+                },
+                url: getRootPath() + '/public/hra/employee/getEmployeeforsel'
+            },
+            autoLoad: true
+        });
+
+        me = this;
         
         // This is the app UI layout code.  All of the calendar views are subcomponents of
         // CalendarPanel, but the app title bar and sidebar/navigation calendar are separate
@@ -80,12 +130,12 @@ Ext.define('Ext.calendar.App', {
                                 scope: this
                             }
                         }
-                    }, Ext.create('Ext.tree.Panel', {
+                    },Ext.create('Ext.tree.Panel', {
                         store: Ext.create('Ext.data.TreeStore', {
                             root: {
-                                id       : '/',
+                                id       : user,
                                 expanded : false,
-                                cname     : '监控列表',
+                                cname     : userName,
                                 root     : true
                             },
                             model: Ext.define('employee', {
@@ -110,6 +160,7 @@ Ext.define('Ext.calendar.App', {
                         hideHeaders: true,
                         bodyPadding: 2,
                         title: '任务监控列表',
+                        id: 'westList',
                         region: 'west',
                         border:0,
                         height: 380,
@@ -128,10 +179,26 @@ Ext.define('Ext.calendar.App', {
                         listeners: {
                             selectionchange: function(model, records) {
                                 if (records[0]) {
-                                    record= records[0];
+                                    var record= records[0];
+                                    this.eventStore.removeAll();
+                                    //this.eventStore.sync();
+                                    var employeeId = record.data.id;
+                                    if(record.data.id == '/') {
+                                        if(records.length > 1) {
+                                            employeeId = record[1].data.id;
+                                        } else {
+                                            employeeId = '';
+                                        }
+                                    }
+                                    this.eventStore.load({
+                                        params:{
+                                            employeeId: employeeId
+                                        }
+                                    });
 
                                 }
-                            }
+                            },
+                            scope: this
                         }
                     })]
                 },{
@@ -196,6 +263,9 @@ Ext.define('Ext.calendar.App', {
                         },
                         'dayclick': {
                             fn: function(vw, dt, ad, el){
+                                if(vw.title == 'Month') {
+                                    dt = Ext.calendar.util.Date.add(dt, {hours: 9});
+                                }
                                 this.showEditWindow({
                                     StartDate: dt,
                                     IsAllDay: ad
@@ -257,17 +327,75 @@ Ext.define('Ext.calendar.App', {
     // it altogether. Because of this, it's up to the application code to tie the pieces together.
     // Note that this function is called from various event handlers in the CalendarPanel above.
     showEditWindow : function(rec, animateTarget){
+        // 读取当前人信息
+        var editable = true;
+        var responsible = String(user);
+        if(!rec.data) {
+            var view = Ext.getCmp('westList').getView();
+            var model = view.getSelectionModel();
+            if (model) {
+                var record = model.getLastSelected();
+                if(record) {
+                    responsible = record.data.id;
+                }
+            }
+            rec.initData = {};
+            rec.initData.Responsible_id = responsible;
+            rec.initData.Responsible = responsible;
+
+            this.processStore.removeAll();
+        } else {
+            // 编辑
+            var id = rec.data.id;
+            this.processStore.load({
+                params: {
+                    'task_id' : id,
+                    'employee_id' : user
+                }
+            });
+            if(rec.data.owner == '0') {
+                editable = false;
+            }
+        }
+        rec.readOnly = !editable;
         if(!this.editWin){
             this.editWin = Ext.create('Ext.calendar.form.EventWindow', {
                 calendarStore: this.calendarStore,
+                responsible: this.responsible,
+                processStore: this.processStore,
+                employeeStore: this.employeeStore,
+                readOnly: !editable,
                 listeners: {
                     'eventadd': {
                         fn: function(win, rec){
-                            win.hide();
+                            Ext.Msg.wait('提交中，请稍后...', '提示');
+                            rec.data.CalendarId = 1;
+
                             rec.data.IsNew = false;
-                            this.eventStore.add(rec);
-                            this.eventStore.sync();
-                            this.showMsg('Event '+ rec.data.Title +' was added');
+                            if(rec.data.id) {
+                                rec.setDirty();
+                                this.eventStore.add(rec);
+                            } else {
+                                rec.data.Relation = 1; // TODO
+                                this.eventStore.add(rec);
+                            }
+                            var me = this;
+                            this.eventStore.sync({
+                                rollback:function() {
+                                    Ext.MessageBox.hide();
+                                },
+                                success:function(a){
+                                    Ext.Msg.hide();
+                                    var json = Ext.JSON.decode(a.operations[0].response.responseText);
+                                    if(json.success) {
+                                        rec.data.id = json.id;
+                                        me.eventStore.removeAll();
+                                        me.eventStore.reload();
+                                        win.hide();
+                                    }
+                                }
+                            });
+                            this.showMsg('任务 '+ rec.data.Title +' 已添加');
                         },
                         scope: this
                     },
@@ -276,7 +404,7 @@ Ext.define('Ext.calendar.App', {
                             win.hide();
                             rec.commit();
                             this.eventStore.sync();
-                            this.showMsg('Event '+ rec.data.Title +' was updated');
+                            this.showMsg('任务 '+ rec.data.Title +' 已更新');
                         },
                         scope: this
                     },
@@ -285,7 +413,7 @@ Ext.define('Ext.calendar.App', {
                             this.eventStore.remove(rec);
                             this.eventStore.sync();
                             win.hide();
-                            this.showMsg('Event '+ rec.data.Title +' was deleted');
+                            this.showMsg('任务 '+ rec.data.Title +' 已删除');
                         },
                         scope: this
                     },

@@ -61,10 +61,10 @@ class Product_RateController extends Zend_Controller_Action
         $json = json_decode($request['json']);
         $result = array();
         foreach($json as $val) {
-            if($val) {
-                $rate = $this->getExchangeRate($val,"cny");
-                $result[$val] = $rate;
-            }
+        	if($val) {
+        		$rate = $this->getExchangeRate($val,"cny");
+        		$result[$val] = $rate;
+        	}
         }
 
         // 转为json格式并输出
@@ -101,53 +101,53 @@ class Product_RateController extends Zend_Controller_Action
 
         if(count($updated) > 0){
             foreach ($updated as $val){
-                if($val->id) {
-                    // 检查数据是否重复
-                    $this->checkExtists($val);
+            	if($val->id) {
+	            	// 检查数据是否重复
+		            $this->checkExtists($val);
 
-                    $start_time = date('Y-m-d H:i:s');
-                    if(isset($val->start_time)) {
-                        $start_time = str_replace("T", " ", $val->start_time);
-                    }
+			    	$start_time = date('Y-m-d H:i:s');
+			    	if(isset($val->start_time)) {
+			    		$start_time = str_replace("T", " ", $val->start_time);
+			    	}
 
-                    $data = array(
-                            'currency'      => $val->currency,
-                            'rate'          => $val->rate,
-                            'start_time'    => $start_time,
-                            'update_user'   => $user,
-                            'update_time'   => $now
-                    );
+	                $data = array(
+	                        'currency'      => $val->currency,
+	                        'rate'          => $val->rate,
+	                        'start_time'    => $start_time,
+	                        'update_user'   => $user,
+	                        'update_time'   => $now
+	                );
 
-                    $where = "id = ".$val->id;
+	                $where = "id = ".$val->id;
 
-                    try {
-                        $rate->update($data, $where);
-                    } catch (Exception $e) {
-                        $result['result'] = false;
-                        $result['info'] = $e->getMessage();
-                        echo Zend_Json::encode($result);
-                        exit;
-                    }
-                }
+	                try {
+	                    $rate->update($data, $where);
+	                } catch (Exception $e) {
+	                    $result['result'] = false;
+	                    $result['info'] = $e->getMessage();
+	                    echo Zend_Json::encode($result);
+	                    exit;
+	                }
+            	}
             }
         }
 
         if(count($inserted) > 0){
             foreach ($inserted as $val){
-                // 检查数据是否重复
-                $this->checkExtists($val);
+            	// 检查数据是否重复
+	            $this->checkExtists($val);
 
-                $start_time = date('Y-m-d H:i:s');
-                if(isset($val->start_time)) {
-                    $start_time = $start_time = str_replace("T", " ", $val->start_time);
-                }
+		    	$start_time = date('Y-m-d H:i:s');
+		    	if(isset($val->start_time)) {
+		    		$start_time = $start_time = str_replace("T", " ", $val->start_time);
+		    	}
                 $data = array(
-                            'currency'      => $val->currency,
-                            'rate'          => $val->rate,
-                            'start_time'    => $start_time,
-                            'update_user'   => $user,
-                            'update_time'   => $now
-                    );
+	                        'currency'      => $val->currency,
+	                        'rate'          => $val->rate,
+	                        'start_time'    => $start_time,
+	                        'update_user'   => $user,
+	                        'update_time'   => $now
+	                );
 
                 try{
                     $rate->insert($data);
@@ -177,43 +177,43 @@ class Product_RateController extends Zend_Controller_Action
     }
 
     private function checkExtists($data) {
-        $currency = $data->currency;
-        $rate = $data->rate;
+    	$currency = $data->currency;
+    	$rate = $data->rate;
 
-        if(isset($data->id) && $data->id) {
-            $id = $data->id;
-        }
+    	if(isset($data->id) && $data->id) {
+    		$id = $data->id;
+    	}
 
-        $rateModel = new Product_Model_Rate();
+    	$rateModel = new Product_Model_Rate();
 
-        $result = array(
+    	$result = array(
                 'success'   => true,
                 'info'      => '保存成功'
         );
-        if(!$currency) {
-            $result['result'] = false;
+    	if(!$currency) {
+    		$result['result'] = false;
             $result['info'] = '币种未填写！';
             echo Zend_Json::encode($result);
             exit;
-        }
-        if(!$rate) {
-            $result['result'] = false;
+    	}
+    	if(!$rate) {
+    		$result['result'] = false;
             $result['info'] = '汇率未填写！';
             echo Zend_Json::encode($result);
             exit;
-        }
-        $where = "t1.currency='$currency'";
-        if(isset($id)) {
-            $where .= " and t1.id!=$id";
-        }
-        if(count($rateModel->getList($where)) > 0) {
-            $result['result'] = false;
+    	}
+    	$where = "t1.currency='$currency'";
+    	if(isset($id)) {
+    		$where .= " and t1.id!=$id";
+    	}
+    	if(count($rateModel->getList($where)) > 0) {
+    		$result['result'] = false;
             $result['info'] = '此币种的汇率已存在！';
             echo Zend_Json::encode($result);
             exit;
-        }
+    	}
 
-        return true;
+    	return true;
     }
 
 }

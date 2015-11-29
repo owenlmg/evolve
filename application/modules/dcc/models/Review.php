@@ -14,32 +14,32 @@ class Dcc_Model_Review extends Application_Model_Db
     
     public function getReviewUserInfo($type, $file_id)
     {
-        $reviewerInfo = array();
-        
-        $sql = $this->select()
-                    ->from($this, array('plan_user' => new Zend_Db_Expr("GROUP_CONCAT(plan_user SEPARATOR ',')")))
-                    ->where("type = '".$type."' and file_id = ".$file_id)
-                    ->group("file_id");
-        
-        if($this->fetchAll($sql)->count() > 0){
-            $data = $this->fetchRow($sql)->toArray();
-             
-            $reviewers = array_unique(explode(',', $data['plan_user']));
-             
-            $user = new Application_Model_User();
-             
-            foreach ($reviewers as $r){
-                $userData = $user->fetchRow("employee_id = ".$r)->toArray();
-                $user_id = $userData['id'];
-            
-                $userInfo = $user->getEmployeeInfoById($user_id);
-                $user_email = $userInfo['email'];
-            
-                array_push($reviewerInfo, array('user_id' => $user_id, 'email' => $user_email));
-            }
-        }
-        
-        return $reviewerInfo;
+    	$reviewerInfo = array();
+    	
+    	$sql = $this->select()
+			    	->from($this, array('plan_user' => new Zend_Db_Expr("GROUP_CONCAT(plan_user SEPARATOR ',')")))
+			    	->where("type = '".$type."' and file_id = ".$file_id)
+			    	->group("file_id");
+    	
+    	if($this->fetchAll($sql)->count() > 0){
+    	    $data = $this->fetchRow($sql)->toArray();
+    	     
+    	    $reviewers = array_unique(explode(',', $data['plan_user']));
+    	     
+    	    $user = new Application_Model_User();
+    	     
+    	    foreach ($reviewers as $r){
+    	        $userData = $user->fetchRow("employee_id = ".$r)->toArray();
+    	        $user_id = $userData['id'];
+    	    
+    	        $userInfo = $user->getEmployeeInfoById($user_id);
+    	        $user_email = $userInfo['email'];
+    	    
+    	        array_push($reviewerInfo, array('user_id' => $user_id, 'email' => $user_email));
+    	    }
+    	}
+    	
+    	return $reviewerInfo;
     }
 
     public function getList($where, $type){

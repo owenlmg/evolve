@@ -416,8 +416,8 @@ class Erp_Model_Sale_Order extends Application_Model_Db
                 $data[$i]['delivery_reply_log'] = implode(',', $logInfo);
             }
             
-            $data[$i]['order_customer'] = $data[$i]['order_customer_code'].$data[$i]['order_customer_name'];
-            
+        	$data[$i]['order_customer'] = $data[$i]['order_customer_code'].$data[$i]['order_customer_name'];
+        	
             $data[$i]['qty_send'] = 0;
             $data[$i]['send_info'] = '';
             if($data[$i]['id']){

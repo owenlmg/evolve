@@ -165,26 +165,26 @@ class Product_UpddetailController extends Zend_Controller_Action
     }
 
     private function getRowFromArrayByCode($array, $code) {
-        foreach($array as $row) {
-            if($row['code'] == $code) {
-                return $row;
-            }
-        }
-        return array("qty" => "",
-                     "code" => "",
-                     "partposition" => "",
-                     "replace" => ""
-                    );
+    	foreach($array as $row) {
+    		if($row['code'] == $code) {
+    			return $row;
+    		}
+    	}
+    	return array("qty" => "",
+    	             "code" => "",
+    	             "partposition" => "",
+    	             "replace" => ""
+    	            );
     }
 
     private function removeFromArray($array, $code) {
-        $result = array();
-        foreach($array as $row) {
-            if($code != $row['code']) {
-                $result[] = $row;
-            }
-        }
-        return $result;
+    	$result = array();
+    	foreach($array as $row) {
+    		if($code != $row['code']) {
+    			$result[] = $row;
+    		}
+    	}
+    	return $result;
     }
 
 
