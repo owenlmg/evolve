@@ -60,79 +60,79 @@ class Erp_BpartnerController extends Zend_Controller_Action
     
     public function importcontactAction()
     {
-        $result = array(
-                'success'   => true,
-                'data'      => array(),
-                'info'      => '导入成功'
-        );
-        
-        if(isset($_FILES['csv'])){
-            $file = $_FILES['csv'];
-        
-            $file_extension = strrchr($file['name'], ".");
-        
-            $h = new Application_Model_Helpers();
-            $tmp_file_name = $h->getMicrotimeStr().$file_extension;
-        
-            $savepath = "../temp/";
-            $tmp_file_path = $savepath.$tmp_file_name;
-            move_uploaded_file($file["tmp_name"], $tmp_file_path);
-        
-            $file = fopen($tmp_file_path, "r");
-            $i = 0;
-        
-            $materiel = new Product_Model_Materiel();
-        
-            while(! feof($file))
-            {
-                $csv_data = fgetcsv($file);
-                
-                $name = isset($csv_data[1]) ? $csv_data[1] : '';
-                $post = isset($csv_data[2]) ? $csv_data[2] : '';
-                $tel = isset($csv_data[3]) ? $csv_data[3] : '';
-                $fax = isset($csv_data[4]) ? $csv_data[4] : '';
-                $email = isset($csv_data[5]) ? $csv_data[5] : '';
-                $person_liable = isset($csv_data[6]) ? $csv_data[6] : '';
-                $area_code = isset($csv_data[7]) ? $csv_data[7] : '';
-                $country = isset($csv_data[8]) ? $csv_data[8] : '';
-                $area = isset($csv_data[9]) ? $csv_data[9] : '';
-                $area_city = isset($csv_data[10]) ? $csv_data[10] : '';
-                $address = isset($csv_data[11]) ? $csv_data[11] : '';
-                $zip_code = isset($csv_data[12]) ? $csv_data[12] : '';
-                $remark = isset($csv_data[13]) ? $csv_data[13] : '';
-        
-                if($i > 0 && $name != ''){
-                    array_push($result['data'], array(
-                        'name'          => $name,
-                        'post'           => $post,
-                        'tel'             => $tel,
-                        'fax'            => $fax,
-                        'email'           => $email,
-                        'person_liable'    => $person_liable,
-                        'area_code'      => $area_code,
-                        'country'        => $country,
-                        'area'          => $area,
-                        'area_city'        => $area_city,
-                        'address'          => $address,
-                        'zip_code'        => $zip_code,
-                        'remark'          => $remark
-                    ));
-                }
-        
-                $i++;
-            }
-        
-            fclose($file);
-        }else{
-            $result['success'] = false;
-            $result['info'] = '没有选择文件，导入失败！';
-        }
-        /* echo '<pre>';
-        print_r($result);
-        exit; */
-        echo Zend_Json::encode($result);
-        
-        exit;
+    	$result = array(
+    			'success'   => true,
+    			'data'      => array(),
+    			'info'      => '导入成功'
+    	);
+    	
+    	if(isset($_FILES['csv'])){
+    		$file = $_FILES['csv'];
+    	
+    		$file_extension = strrchr($file['name'], ".");
+    	
+    		$h = new Application_Model_Helpers();
+    		$tmp_file_name = $h->getMicrotimeStr().$file_extension;
+    	
+    		$savepath = "../temp/";
+    		$tmp_file_path = $savepath.$tmp_file_name;
+    		move_uploaded_file($file["tmp_name"], $tmp_file_path);
+    	
+    		$file = fopen($tmp_file_path, "r");
+    		$i = 0;
+    	
+    		$materiel = new Product_Model_Materiel();
+    	
+    		while(! feof($file))
+    		{
+    			$csv_data = fgetcsv($file);
+    			
+    			$name = isset($csv_data[1]) ? $csv_data[1] : '';
+    			$post = isset($csv_data[2]) ? $csv_data[2] : '';
+    			$tel = isset($csv_data[3]) ? $csv_data[3] : '';
+    			$fax = isset($csv_data[4]) ? $csv_data[4] : '';
+    			$email = isset($csv_data[5]) ? $csv_data[5] : '';
+    			$person_liable = isset($csv_data[6]) ? $csv_data[6] : '';
+    			$area_code = isset($csv_data[7]) ? $csv_data[7] : '';
+    			$country = isset($csv_data[8]) ? $csv_data[8] : '';
+    			$area = isset($csv_data[9]) ? $csv_data[9] : '';
+    			$area_city = isset($csv_data[10]) ? $csv_data[10] : '';
+    			$address = isset($csv_data[11]) ? $csv_data[11] : '';
+    			$zip_code = isset($csv_data[12]) ? $csv_data[12] : '';
+    			$remark = isset($csv_data[13]) ? $csv_data[13] : '';
+    	
+    			if($i > 0 && $name != ''){
+    				array_push($result['data'], array(
+	    				'name'      	=> $name,
+	    				'post'       	=> $post,
+	    				'tel'         	=> $tel,
+	    				'fax'        	=> $fax,
+	    				'email'       	=> $email,
+	    				'person_liable'	=> $person_liable,
+	    				'area_code'  	=> $area_code,
+	    				'country'    	=> $country,
+	    				'area'      	=> $area,
+	    				'area_city'    	=> $area_city,
+	    				'address'      	=> $address,
+	    				'zip_code'    	=> $zip_code,
+	    				'remark'      	=> $remark
+    				));
+    			}
+    	
+    			$i++;
+    		}
+    	
+    		fclose($file);
+    	}else{
+    		$result['success'] = false;
+    		$result['info'] = '没有选择文件，导入失败！';
+    	}
+    	/* echo '<pre>';
+    	print_r($result);
+    	exit; */
+    	echo Zend_Json::encode($result);
+    	
+    	exit;
     }
     
     /**

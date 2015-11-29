@@ -55,7 +55,7 @@ class Admin_StepController extends Zend_Controller_Action {
             }
             // 重新检索角色信息
             if ($data[$i]['dept']) {
-                $role = $data[$i]['dept'];
+            	$role = $data[$i]['dept'];
                 $sql = "select GROUP_CONCAT(name) as step_dept_name from oa_user_role where id in ($role)";
                 $db = $step->getAdapter();
                 $result = $db->query($sql)->fetchObject();

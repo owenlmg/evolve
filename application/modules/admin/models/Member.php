@@ -187,10 +187,10 @@ class Admin_Model_Member extends Application_Model_Db
 //        $managers = $this->getUserids("系统管理员");
 //        $tmp = array();
 //        foreach ($data as $m){
-//            if(in_array($m['user_id'], $managers)) {
-//                continue;
-//            }
-//            $tmp[] = $m;
+//        	if(in_array($m['user_id'], $managers)) {
+//        		continue;
+//        	}
+//        	$tmp[] = $m;
 //        }
 
         return $data;
@@ -250,7 +250,7 @@ class Admin_Model_Member extends Application_Model_Db
      */
     public function getUserids($roleName)
     {
-        $sql = $this->select()
+    	$sql = $this->select()
                     ->setIntegrityCheck(false)
                     ->from(array('t1' => $this->_name), array('ids' => 'group_concat(user_id)'))
                     ->join(array('t2' => $this->_dbprefix.'user_role'), "t1.role_id = t2.id", array())

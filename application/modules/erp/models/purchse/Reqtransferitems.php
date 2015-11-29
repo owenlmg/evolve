@@ -25,26 +25,26 @@ class Erp_Model_Purchse_Reqtransferitems extends Application_Model_Db
             //$qty_order = $item->getQty('req', $d['id']);
         
             array_push($result, array(
-                'items_id'                  => $d['id'],
-                'items_req_id'              => $d['req_id'],
-                'items_active'              => $active,
-                'items_code'                => $d['code'],
-                'items_name'                => $d['name'],
-                'items_description'         => $d['description'],
-                'items_qty'                 => $d['qty'],
-                //'items_qty_order'         => $qty_order,
-                'items_unit'                => $d['unit'],
-                'items_price'               => $d['price'],
-                'items_line_total'          => $d['line_total'],
-                'items_date_req'            => $d['date_req'],
-                'items_supplier'            => $d['supplier'],
-                'items_dept_id'             => $d['dept_id'],
-                'items_model'               => $d['model'],
-                'items_project_info'        => $d['project_info'],
+                'items_id'          		=> $d['id'],
+                'items_req_id'      		=> $d['req_id'],
+                'items_active'      		=> $active,
+                'items_code'        		=> $d['code'],
+                'items_name'        		=> $d['name'],
+                'items_description' 		=> $d['description'],
+                'items_qty'         		=> $d['qty'],
+                //'items_qty_order' 		=> $qty_order,
+                'items_unit'        		=> $d['unit'],
+                'items_price'       		=> $d['price'],
+                'items_line_total'  		=> $d['line_total'],
+                'items_date_req'    		=> $d['date_req'],
+                'items_supplier'    		=> $d['supplier'],
+                'items_dept_id'     		=> $d['dept_id'],
+                'items_model'       		=> $d['model'],
+                'items_project_info'		=> $d['project_info'],
                 'items_order_req_num'       => $d['order_req_num'],
                 'items_customer_address'    => $d['customer_address'],
-                'items_customer_aggrement'    => $d['customer_aggrement'],
-                'items_remark'              => $d['remark']
+                'items_customer_aggrement'	=> $d['customer_aggrement'],
+                'items_remark'      		=> $d['remark']
             ));
         }
         

@@ -23,7 +23,7 @@ class Product_Model_BomPrice extends Application_Model_Db
                     ->where($where)
                     ->order(array('state', 'sid desc', 'code desc', 'ver desc'));
         if(isset($limit) && $limit) {
-            $sql = $sql->limit($limit, $start);
+        	$sql = $sql->limit($limit, $start);
         }
 
         $data = $this->fetchAll($sql)->toArray();
@@ -70,8 +70,8 @@ class Product_Model_BomPrice extends Application_Model_Db
         $sonData = $son->getJoinList("recordkey = ".$recordkey, array(), array('recordkey', 'code', 'qty'));
         foreach($sonData as $sonRow) {
             if(0 && isset($_SESSION['bomprice'.$currency][$sonRow['recordkey']])) {
-                // session 中存在
-                $price = $_SESSION['bomprice'.$currency][$sonRow['recordkey']];
+            	// session 中存在
+            	$price = $_SESSION['bomprice'.$currency][$sonRow['recordkey']];
             } else {
                 // 检查是否有BOM数据，如果没有，当作物料处理
                 $sonFaData = $fa->getJoinList("code = '".$sonRow['code']."'", array(), array('recordkey'), array('ver desc'));

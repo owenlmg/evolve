@@ -156,39 +156,39 @@ class Product_Model_Type extends Application_Model_Db
     }
 
     public function getInfo($sid, $column) {
-        if($column) {
-            $sql = $this->select()
-                        ->from($this->_name, array("parent_id", $column))
-                        ->where("id=?", $sid);
-            $data = $this->fetchRow($sql);
-            if($data[$column] || $data['parent_id'] == 0) {
-                return $data[$column];
-            } else {
-                return $this->getInfo($data['parent_id'], $column);
-            }
-        } else {
-            return "";
-        }
+    	if($column) {
+	        $sql = $this->select()
+	                    ->from($this->_name, array("parent_id", $column))
+	                    ->where("id=?", $sid);
+	        $data = $this->fetchRow($sql);
+	        if($data[$column] || $data['parent_id'] == 0) {
+	        	return $data[$column];
+	        } else {
+	        	return $this->getInfo($data['parent_id'], $column);
+	        }
+    	} else {
+    		return "";
+    	}
     }
 
     public function getFlowId($sid, $t) {
-        if($t == 'new' || $t == 'upd' || $t == 'del') {
-            $column = $t."_flow_id";
-        }
-        if($column) {
-            $sql = $this->select()
-                        ->from($this->_name, array("parent_id", 'flow_id' => $column))
-                        ->where("id=?", $sid);
-            $data = $this->fetchRow($sql);
-            if($data['flow_id']) {
-                return $data['flow_id'];
-            } else {
-//                return $this->getFlowId($data['parent_id'], $t);
-                return "";
-            }
-        } else {
-            return "";
-        }
+    	if($t == 'new' || $t == 'upd' || $t == 'del') {
+    		$column = $t."_flow_id";
+    	}
+    	if($column) {
+	        $sql = $this->select()
+	                    ->from($this->_name, array("parent_id", 'flow_id' => $column))
+	                    ->where("id=?", $sid);
+	        $data = $this->fetchRow($sql);
+	        if($data['flow_id']) {
+	        	return $data['flow_id'];
+	        } else {
+//	        	return $this->getFlowId($data['parent_id'], $t);
+	        	return "";
+	        }
+    	} else {
+    		return "";
+    	}
     }
 
     public function getTypeByConnect($id, $name) {
@@ -206,28 +206,28 @@ class Product_Model_Type extends Application_Model_Db
     }
 
     public function getTypes($value) {
-        $ids = array();
-        $types = $this->getAdapter()->query("select id, parent_id from oa_product_type where name like '%$value%'")->fetchAll();
-        foreach($types as $t) {
-            $ids[] = $t['id'];
-            $ids = $this->getIdByConnect($t['id'], $ids);
-        }
-        if(count($ids) > 0) {
-            return implode(',', $ids);
-        }
-        return "";
+    	$ids = array();
+    	$types = $this->getAdapter()->query("select id, parent_id from oa_product_type where name like '%$value%'")->fetchAll();
+    	foreach($types as $t) {
+    		$ids[] = $t['id'];
+    		$ids = $this->getIdByConnect($t['id'], $ids);
+    	}
+    	if(count($ids) > 0) {
+    		return implode(',', $ids);
+    	}
+    	return "";
     }
 
     private function getIdByConnect($id, $ids) {
         if ($id) {
             $row = $this->fetchAll("parent_id = $id")->toArray();
             if(count($row) > 0) {
-                foreach($row as $r) {
-                    $ids[] = $r['id'];
-                    $ids = $this->getIdByConnect($r['id'], $ids);
-                }
+	            foreach($row as $r) {
+	            	$ids[] = $r['id'];
+	            	$ids = $this->getIdByConnect($r['id'], $ids);
+	            }
             } else {
-                return $ids;
+            	return $ids;
             }
         }
         return $ids;

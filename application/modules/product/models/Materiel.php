@@ -24,7 +24,7 @@ class Product_Model_Materiel extends Application_Model_Db
                     ->setIntegrityCheck(false)
                     ->from(array('t1' => $this->_name), array('id', 'code', 'mpq', 'moq', 'name', 'description'))
                     ->joinLeft(array('t2' => $this->_dbprefix.'codemaster'), "t1.unit = t2.id", array('unit' => 'text'))
-                    ->where("t1.state != 'Deleted' and t1.code != '' and t2.type_name = '单位'")
+                    ->where("t1.state = 'Active' and t1.code != '' and t2.type_name = '单位'")
                     ->order("t1.code");
         
         if($key){
@@ -89,10 +89,10 @@ class Product_Model_Materiel extends Application_Model_Db
                     ->joinLeft(array('t5' => $this->_dbprefix.'bpartner'), "t5.id = t1.supply2", array('supply_code2' => 'code', 'supply_cname2' => 'cname', 'supply_ename2' => 'ename'))
                     ->joinLeft(array('t6' => $this->_dbprefix.'product_type'), "t1.type = t6.id", array('type_name' => 'name', 'auto', 'example', 'datafile_flg', 'checkreport_flg', 'tsr_flg'))
                     ->joinLeft(array('t7' => $this->_dbprefix.'codemaster'), "t1.unit = t7.id and t7.type=1", array('unit_name' => 'text'))
-                    ->joinLeft(array('t8' => $this->_dbprefix.'doc_upload'), "t1.data_file_id = t8.id", array('data_file' => 'name', 'data_file_path' => 'path'))
-                    ->joinLeft(array('t9' => $this->_dbprefix.'doc_upload'), "t1.first_report_id = t9.id", array('first_report' => 'name', 'first_report_path' => 'path'))
-                    ->joinLeft(array('t10' => $this->_dbprefix.'doc_upload'), "t1.tsr_id = t10.id", array('tsr' => 'name', 'tsr_path' => 'path'))
-                    ->joinLeft(array('t11' => $this->_dbprefix . 'product_catalog'), "t1.project_no = t11.id", array('project_name' => 'model_internal'))
+	                ->joinLeft(array('t8' => $this->_dbprefix.'doc_upload'), "t1.data_file_id = t8.id", array('data_file' => 'name', 'data_file_path' => 'path'))
+	                ->joinLeft(array('t9' => $this->_dbprefix.'doc_upload'), "t1.first_report_id = t9.id", array('first_report' => 'name', 'first_report_path' => 'path'))
+	                ->joinLeft(array('t10' => $this->_dbprefix.'doc_upload'), "t1.tsr_id = t10.id", array('tsr' => 'name', 'tsr_path' => 'path'))
+	                ->joinLeft(array('t11' => $this->_dbprefix . 'product_catalog'), "t1.project_no = t11.id", array('project_name' => 'model_internal'))
                     ->where("t1.state != 'Deleted'")
                     ->where($where)
                     ->order(array('t1.archive_time desc', 't1.code desc'));
@@ -112,10 +112,10 @@ class Product_Model_Materiel extends Application_Model_Db
                     ->joinLeft(array('t5' => $this->_dbprefix.'bpartner'), "t5.id = t1.supply2", array('supply_code2' => 'code', 'supply_cname2' => 'cname', 'supply_ename2' => 'ename'))
                     ->joinLeft(array('t6' => $this->_dbprefix.'product_type'), "t1.type = t6.id", array('type_name' => 'name', 'auto', 'example', 'datafile_flg', 'checkreport_flg', 'tsr_flg'))
                     ->joinLeft(array('t7' => $this->_dbprefix.'codemaster'), "t1.unit = t7.id and t7.type=1", array('unit_name' => 'text'))
-                    ->joinLeft(array('t8' => $this->_dbprefix.'doc_upload'), "t1.data_file_id = t8.id", array('data_file' => 'name', 'data_file_path' => 'path'))
-                    ->joinLeft(array('t9' => $this->_dbprefix.'doc_upload'), "t1.first_report_id = t9.id", array('first_report' => 'name', 'first_report_path' => 'path'))
-                    ->joinLeft(array('t10' => $this->_dbprefix.'doc_upload'), "t1.tsr_id = t10.id", array('tsr' => 'name', 'tsr_path' => 'path'))
-                    ->joinLeft(array('t11' => $this->_dbprefix . 'product_catalog'), "t1.project_no = t11.id", array('project_name' => 'model_internal'))
+	                ->joinLeft(array('t8' => $this->_dbprefix.'doc_upload'), "t1.data_file_id = t8.id", array('data_file' => 'name', 'data_file_path' => 'path'))
+	                ->joinLeft(array('t9' => $this->_dbprefix.'doc_upload'), "t1.first_report_id = t9.id", array('first_report' => 'name', 'first_report_path' => 'path'))
+	                ->joinLeft(array('t10' => $this->_dbprefix.'doc_upload'), "t1.tsr_id = t10.id", array('tsr' => 'name', 'tsr_path' => 'path'))
+	                ->joinLeft(array('t11' => $this->_dbprefix . 'product_catalog'), "t1.project_no = t11.id", array('project_name' => 'model_internal'))
                     ->where("t1.state != 'Deleted' and t1.state != 'Reviewing' and t1.state != 'Return'")
                     ->where($where)
                     ->order(array('id desc'));
@@ -163,8 +163,8 @@ class Product_Model_Materiel extends Application_Model_Db
                 ->joinLeft(array('t7' => $this->_dbprefix.'codemaster'), "t1.unit = t7.id and t7.type=1", array('unit_name' => 'text'))
                 ->joinLeft(array('t8' => $this->_dbprefix.'doc_upload'), "t1.data_file_id = t8.id", array('data_file' => 'name', 'data_file_path' => 'path'))
                 ->joinLeft(array('t9' => $this->_dbprefix.'doc_upload'), "t1.first_report_id = t9.id", array('first_report' => 'name', 'first_report_path' => 'path'))
-                ->joinLeft(array('t10' => $this->_dbprefix.'doc_upload'), "t1.tsr_id = t10.id", array('tsr' => 'name', 'tsr_path' => 'path'))
-                ->joinLeft(array('t11' => $this->_dbprefix . 'product_catalog'), "t1.project_no = t11.id", array('project_name' => 'model_internal'))
+	            ->joinLeft(array('t10' => $this->_dbprefix.'doc_upload'), "t1.tsr_id = t10.id", array('tsr' => 'name', 'tsr_path' => 'path'))
+	            ->joinLeft(array('t11' => $this->_dbprefix . 'product_catalog'), "t1.project_no = t11.id", array('project_name' => 'model_internal'))
                 ->where("t1.state = 'Reviewing' and (t2.actual_user is null or !(FIND_IN_SET($myId,t2.actual_user))) and (FIND_IN_SET($myId, t2.plan_user))")
                 ->where($where)
                 ->where("t2.id in (select min(id) from oa_review where finish_flg = 0 and type = 'materiel' GROUP BY file_id)");
@@ -179,8 +179,8 @@ class Product_Model_Materiel extends Application_Model_Db
                 ->joinLeft(array('t7' => $this->_dbprefix.'codemaster'), "t1.unit = t7.id and t7.type=1", array('unit_name' => 'text'))
                 ->joinLeft(array('t8' => $this->_dbprefix.'doc_upload'), "t1.data_file_id = t8.id", array('data_file' => 'name', 'data_file_path' => 'path'))
                 ->joinLeft(array('t9' => $this->_dbprefix.'doc_upload'), "t1.first_report_id = t9.id", array('first_report' => 'name', 'first_report_path' => 'path'))
-                ->joinLeft(array('t10' => $this->_dbprefix.'doc_upload'), "t1.tsr_id = t10.id", array('tsr' => 'name', 'tsr_path' => 'path'))
-                ->joinLeft(array('t11' => $this->_dbprefix . 'product_catalog'), "t1.project_no = t11.id", array('project_name' => 'model_internal'))
+	            ->joinLeft(array('t10' => $this->_dbprefix.'doc_upload'), "t1.tsr_id = t10.id", array('tsr' => 'name', 'tsr_path' => 'path'))
+	            ->joinLeft(array('t11' => $this->_dbprefix . 'product_catalog'), "t1.project_no = t11.id", array('project_name' => 'model_internal'))
                 ->where("t1.state != 'Deleted'")
                 ->where($where);
 
@@ -194,32 +194,32 @@ class Product_Model_Materiel extends Application_Model_Db
                 ->joinLeft(array('t7' => $this->_dbprefix.'codemaster'), "t1.unit = t7.id and t7.type=1", array('unit_name' => 'text'))
                 ->joinLeft(array('t8' => $this->_dbprefix.'doc_upload'), "t1.data_file_id = t8.id", array('data_file' => 'name', 'data_file_path' => 'path'))
                 ->joinLeft(array('t9' => $this->_dbprefix.'doc_upload'), "t1.first_report_id = t9.id", array('first_report' => 'name', 'first_report_path' => 'path'))
-                ->joinLeft(array('t10' => $this->_dbprefix.'doc_upload'), "t1.tsr_id = t10.id", array('tsr' => 'name', 'tsr_path' => 'path'))
-                ->joinLeft(array('t11' => $this->_dbprefix . 'product_catalog'), "t1.project_no = t11.id", array('project_name' => 'model_internal'))
+	            ->joinLeft(array('t10' => $this->_dbprefix.'doc_upload'), "t1.tsr_id = t10.id", array('tsr' => 'name', 'tsr_path' => 'path'))
+	            ->joinLeft(array('t11' => $this->_dbprefix . 'product_catalog'), "t1.project_no = t11.id", array('project_name' => 'model_internal'))
                 ->where("t1.state != 'Deleted'")
                 ->where($where);
 
         if($type == 1) {
-            $sqlArray = array($sql1);
+        	$sqlArray = array($sql1);
         } else if($type == 2) {
-            $ids = $this->getMyId($myId);
-            if($ids) {
-                $sql2 = $sql2->where("t1.id in ($ids)");
-            }
-            $sqlArray = array($sql2);
+        	$ids = $this->getMyId($myId);
+        	if($ids) {
+        		$sql2 = $sql2->where("t1.id in ($ids)");
+        	}
+        	$sqlArray = array($sql2);
         } else if($type == 3) {
-            $sqlArray = array($sql3);
+        	$sqlArray = array($sql3);
         } else {
-            $ids = $this->getMyId($myId);
-            if($ids) {
-                $sql2 = $sql2->where("t1.id in ($ids)");
-            }
-            $sqlArray = array($sql1, $sql2, $sql3);
+        	$ids = $this->getMyId($myId);
+        	if($ids) {
+        		$sql2 = $sql2->where("t1.id in ($ids)");
+        	}
+        	$sqlArray = array($sql1, $sql2, $sql3);
         }
-        $selectUnion = $this->select()->union($sqlArray, Zend_Db_Select::SQL_UNION)
-                            ->order('state DESC')
-                            ->order('update_time desc')
-                            ->limit($limit, $start);
+    	$selectUnion = $this->select()->union($sqlArray, Zend_Db_Select::SQL_UNION)
+    	                    ->order('state DESC')
+    	                    ->order('update_time desc')
+    	                    ->limit($limit, $start);
 
         $data = $this->fetchAll($selectUnion)->toArray();
 
@@ -251,25 +251,25 @@ class Product_Model_Materiel extends Application_Model_Db
                 ->where($where);
 
         if($type == 1) {
-            $sqlArray = array($sql1);
+        	$sqlArray = array($sql1);
         } else if($type == 2) {
-            $ids = $this->getMyId($myId);
-            if($ids) {
-                $sql2 = $sql2->where("t1.id in ($ids)");
-            }
-            $sqlArray = array($sql2);
+        	$ids = $this->getMyId($myId);
+        	if($ids) {
+        		$sql2 = $sql2->where("t1.id in ($ids)");
+        	}
+        	$sqlArray = array($sql2);
         } else if($type == 3) {
-            $sqlArray = array($sql3);
+        	$sqlArray = array($sql3);
         } else {
-            $ids = $this->getMyId($myId);
-            if($ids) {
-                $sql2 = $sql2->where("t1.id in ($ids)");
-            }
-            $sqlArray = array($sql1, $sql2, $sql3);
+        	$ids = $this->getMyId($myId);
+        	if($ids) {
+        		$sql2 = $sql2->where("t1.id in ($ids)");
+        	}
+        	$sqlArray = array($sql1, $sql2, $sql3);
         }
-        $selectUnion = $this->select()->union($sqlArray, Zend_Db_Select::SQL_UNION)
-                            ->order('state DESC')
-                            ->order('update_time desc');
+    	$selectUnion = $this->select()->union($sqlArray, Zend_Db_Select::SQL_UNION)
+    	                    ->order('state DESC')
+    	                    ->order('update_time desc');
 
         $data = $this->fetchAll($selectUnion)->count();
 
@@ -277,13 +277,13 @@ class Product_Model_Materiel extends Application_Model_Db
     }
 
     function getMyId($myId) {
-        if($myId) {
-            $idsData = $this->getAdapter()->query("SELECT group_concat(table_id) as ids from oa_record where handle_user = $myId and table_name = 'oa_product_materiel' and action = '审批'")->fetchObject();
-            if($idsData && $idsData->ids) {
-                return $idsData->ids;
-            }
-        }
-        return "";
+    	if($myId) {
+    	    $idsData = $this->getAdapter()->query("SELECT group_concat(table_id) as ids from oa_record where handle_user = $myId and table_name = 'oa_product_materiel' and action = '审批'")->fetchObject();
+    	    if($idsData && $idsData->ids) {
+    	    	return $idsData->ids;
+    	    }
+    	}
+    	return "";
     }
 
     public function getArchiveList($where, $start, $limit){

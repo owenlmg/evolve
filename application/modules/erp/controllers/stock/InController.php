@@ -8,19 +8,19 @@ class Erp_Stock_InController extends Zend_Controller_Action
 {
     public function indexAction()
     {
-        $user_session = new Zend_Session_Namespace('user');
-        
-        $this->view->accessViewTotal = 0;
-        
-        $this->view->user_id = 0;
-        
-        if(isset($user_session->user_info)){
-            $this->view->user_id = $user_session->user_info['user_id'];
-        
-            if(Application_Model_User::checkPermissionByRoleName('系统管理员') || Application_Model_User::checkPermissionByRoleName('财务人员')){
-                $this->view->accessViewTotal = 1;
-            }
-        }
+    	$user_session = new Zend_Session_Namespace('user');
+    	
+    	$this->view->accessViewTotal = 0;
+    	
+    	$this->view->user_id = 0;
+    	
+    	if(isset($user_session->user_info)){
+    		$this->view->user_id = $user_session->user_info['user_id'];
+    	
+    		if(Application_Model_User::checkPermissionByRoleName('系统管理员') || Application_Model_User::checkPermissionByRoleName('财务人员')){
+    			$this->view->accessViewTotal = 1;
+    		}
+    	}
     }
     
     // 获取打印内容
@@ -492,50 +492,50 @@ class Erp_Stock_InController extends Zend_Controller_Action
                 
                 $mailContent .= '<div><style type="text/css">
 table.gridtable {
-    font-family: verdana,arial,sans-serif;
-    font-size:12px;
-    color:#333333;
-    border-width: 1px;
-    border-color: #666666;
-    border-collapse: collapse;
+	font-family: verdana,arial,sans-serif;
+	font-size:12px;
+	color:#333333;
+	border-width: 1px;
+	border-color: #666666;
+	border-collapse: collapse;
 }
 table.gridtable th {
-    border-width: 1px;
-    padding: 8px;
-    border-style: solid;
-    border-color: #666666;
-    background-color: #dedede;
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #dedede;
 }
 table.gridtable td {
-    border-width: 1px;
-    padding: 8px;
-    border-style: solid;
-    border-color: #666666;
-    background-color: #ffffff;
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #ffffff;
 }
 .delete{
-    text-decoration: line-through;
-    color: #FF0000;
+	text-decoration: line-through;
+	color: #FF0000;
 }
 .update{
-    font-weight: bold;
-    color: #000093;
+	font-weight: bold;
+	color: #000093;
 }
 .inactive{
-    font-weight: bold;
-    color: #999999;
+	font-weight: bold;
+	color: #999999;
 }
 </style><table class="gridtable">
-                            <tr>
-                            <th>#</th>
-                            <th>物料号</th>
-                            <th>名称</th>
-                            <th>描述</th>
-                            <th>数量</th>
-                            <th>单位</th>
-                            <th>收货仓位</th>
-                            <th>备注</th>
-                            </tr>';
+                			<tr>
+                			<th>#</th>
+                			<th>物料号</th>
+                			<th>名称</th>
+                			<th>描述</th>
+                			<th>数量</th>
+                			<th>单位</th>
+                			<th>收货仓位</th>
+                			<th>备注</th>
+                			</tr>';
                 
                 $itemsData = $items->getData($receive_id);
                 $i = 0;

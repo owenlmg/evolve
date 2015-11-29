@@ -24,17 +24,17 @@ class Dcc_MineController extends Zend_Controller_Action {
         foreach ($request as $k => $v) {
             if ($v) {
                 if ($k == 'search_tag') {
-                    $cols = array("t1.project_info", "t1.code", "t1.name", "t1.description", "t1.remark", "t2.cname");
-                    $arr=preg_split('/\s+/',trim($v));
-                    for ($i=0;$i<count($arr);$i++) {
-                        $tmp = array();
-                        foreach($cols as $c) {
-                            $tmp[] = "ifnull($c,'')";
-                        }
-                        $arr[$i] = "concat(".implode(',', $tmp).") like '%".$arr[$i]."%'";
-                    }
-                    $whereSearch .= " and ".join(' AND ', $arr);
-                    
+            	    $cols = array("t1.project_info", "t1.code", "t1.name", "t1.description", "t1.remark", "t2.cname");
+            	    $arr=preg_split('/\s+/',trim($v));
+            	    for ($i=0;$i<count($arr);$i++) {
+            	        $tmp = array();
+            	        foreach($cols as $c) {
+            	            $tmp[] = "ifnull($c,'')";
+            	        }
+            	        $arr[$i] = "concat(".implode(',', $tmp).") like '%".$arr[$i]."%'";
+            	    }
+            	    $whereSearch .= " and ".join(' AND ', $arr);
+            	    
 //                     $whereSearch .= " and (ifnull(t1.project_info,'') like '%$v%' or ifnull(t1.code,'') like '%$v%' or ifnull(t1.name,'') like '%$v%' or ifnull(t1.description,'') like '%$v%' or ifnull(t1.remark,'') like '%$v%' or ifnull(t2.cname,'') like '%$v%')";
                 } else if ("search_category" == $k && $v) {
                     $whereSearch .= " and t.category = '$v'";
@@ -100,7 +100,7 @@ class Dcc_MineController extends Zend_Controller_Action {
             if ($tmp['create_user'] == $myId) {
                 $mytype = 1;
             } else if(in_array($tmp['id'], $file_ids)) {
-                $mytype = 4;
+            	$mytype = 4;
             }
 
             $tmp['create_time'] = strtotime($tmp['create_time']);
@@ -132,7 +132,7 @@ class Dcc_MineController extends Zend_Controller_Action {
 
                             // 第一条未审核记录就是当前待审核记录
                             if ($first) {
-                                $tmp['review_id'] = $row['id'];
+                    	        $tmp['review_id'] = $row['id'];
                                 $first = false;
 
                                 $step_name .= "<b>" . $row['step_name'] . "</b>";
@@ -674,35 +674,35 @@ class Dcc_MineController extends Zend_Controller_Action {
                     }
                     // 没有审批流程，旧版文件自动作废
                     if(!isset($state)) {
-                        $sids = array($id);
-                        if (isset($sids) && count($sids) > 0) {
-                            if(count($code_file_code) > 0) {
-                                $codes = array();
-                                foreach($code_file_code as $c) {
-                                    $codes[] = $c;
-                                }
-                            }
-                            if(isset($codes) && count($codes) > 0)
-                                for($i = 0; $i < count($codes); $i++) {
-                                    $codes[$i] = "'".$codes[$i]."'";
-                                }
-                                $obsoluteWhere = " id not in (" . implode(',', $sids) . ") and code in (".implode(',', $codes).")";
-                        }
-                        $obsoluteData = array(
-                            "state" => "Obsolete"
-                        );
-                        if (isset($obsoluteWhere)) {
-                            $files->update($obsoluteData, $obsoluteWhere);
-                        }
+                    	$sids = array($id);
+                    	if (isset($sids) && count($sids) > 0) {
+                    		if(count($code_file_code) > 0) {
+                    			$codes = array();
+                    			foreach($code_file_code as $c) {
+                    				$codes[] = $c;
+                    			}
+                    		}
+                    		if(isset($codes) && count($codes) > 0)
+                    		    for($i = 0; $i < count($codes); $i++) {
+                    		        $codes[$i] = "'".$codes[$i]."'";
+                    		    }
+		                        $obsoluteWhere = " id not in (" . implode(',', $sids) . ") and code in (".implode(',', $codes).")";
+		                }
+		                $obsoluteData = array(
+		                    "state" => "Obsolete"
+		                );
+		                if (isset($obsoluteWhere)) {
+			                $files->update($obsoluteData, $obsoluteWhere);
+			            }
 
-                        // 更改文件状态为归档
-                        $uploadData = array(
-                            "archive" => 1,
-                            "archive_time" => $now
-                        );
-                        $uploadWhere = "id in (".implode(',', $code_file_file_id).")";
-                        // 更新文件
-                        $upload->update($uploadData, $uploadWhere);
+			            // 更改文件状态为归档
+			            $uploadData = array(
+			                "archive" => 1,
+			                "archive_time" => $now
+			            );
+			            $uploadWhere = "id in (".implode(',', $code_file_file_id).")";
+			            // 更新文件
+			            $upload->update($uploadData, $uploadWhere);
                     }
                 }
             } catch (Exception $e) {
@@ -785,7 +785,7 @@ class Dcc_MineController extends Zend_Controller_Action {
             $d = $files->getAdapter()->query("select max(ver)+0.1 as ver from oa_doc_files where code = :code and state = 'Active' and del_flg = 0", array('code' => $c))->fetch();
             $v = round($d['ver'], 1);
             if(strcmp($v , (int)$v) === 0) {
-                $v .= ".0";
+            	$v .= ".0";
             }
             $vers[] = $v;
         }
@@ -1314,26 +1314,26 @@ class Dcc_MineController extends Zend_Controller_Action {
             // 转审
             $finish_flg = 0;
             if($method == 2) {
-                // 处理方式为任意时，一个人转审之后其他人员也删除
-                $plan_user = str_replace('E', '', $val->transfer_id);
+            	// 处理方式为任意时，一个人转审之后其他人员也删除
+            	$plan_user = str_replace('E', '', $val->transfer_id);
             } else {
-                // 更改审核情况中的审核人
-                $plan_users = explode(',', $reviewRow['plan_user']);
-                    
+	            // 更改审核情况中的审核人
+	            $plan_users = explode(',', $reviewRow['plan_user']);
+	                
                 // 审核人不在审核人列表中，并且是管理员，则替换所有人
                 if(!in_array($user, $plan_users) &&
                     (Application_Model_User::checkPermissionByRoleName('文件管理员') ||
                         Application_Model_User::checkPermissionByRoleName('系统管理员'))) {
                     $plan_users = array(str_replace('E', '', $val->transfer_id));
                 } else {
-                    for ($i = 0; $i < count($plan_users); $i++) {
-                        if ($plan_users[$i] == $user) {
-                            $plan_users[$i] = str_replace('E', '', $val->transfer_id);
-                            break;
-                        }
-                    }
+	                for ($i = 0; $i < count($plan_users); $i++) {
+	                    if ($plan_users[$i] == $user) {
+	                        $plan_users[$i] = str_replace('E', '', $val->transfer_id);
+	                        break;
+	                    }
+	                }
                 }
-                $plan_user = implode(',', $plan_users);
+	            $plan_user = implode(',', $plan_users);
             }
 
             // 审核情况

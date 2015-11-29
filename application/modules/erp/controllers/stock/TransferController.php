@@ -8,19 +8,19 @@ class Erp_Stock_TransferController extends Zend_Controller_Action
 {
     public function indexAction()
     {
-        $user_session = new Zend_Session_Namespace('user');
-        
-        $this->view->accessViewTotal = 0;
-        
-        $this->view->user_id = 0;
-        
-        if(isset($user_session->user_info)){
-            $this->view->user_id = $user_session->user_info['user_id'];
-        
-            if(Application_Model_User::checkPermissionByRoleName('系统管理员') || Application_Model_User::checkPermissionByRoleName('财务人员')){
-                $this->view->accessViewTotal = 1;
-            }
-        }
+    	$user_session = new Zend_Session_Namespace('user');
+    	
+    	$this->view->accessViewTotal = 0;
+    	
+    	$this->view->user_id = 0;
+    	
+    	if(isset($user_session->user_info)){
+    		$this->view->user_id = $user_session->user_info['user_id'];
+    	
+    		if(Application_Model_User::checkPermissionByRoleName('系统管理员') || Application_Model_User::checkPermissionByRoleName('财务人员')){
+    			$this->view->accessViewTotal = 1;
+    		}
+    	}
     }
     
     /**
@@ -457,26 +457,26 @@ class Erp_Stock_TransferController extends Zend_Controller_Action
             
                 $itemsTable = '<style type="text/css">
 table.gridtable {
-    font-family: verdana,arial,sans-serif;
-    font-size:11px;
-    color:#333333;
-    border-width: 1px;
-    border-color: #666666;
-    border-collapse: collapse;
+	font-family: verdana,arial,sans-serif;
+	font-size:11px;
+	color:#333333;
+	border-width: 1px;
+	border-color: #666666;
+	border-collapse: collapse;
 }
 table.gridtable th {
-    border-width: 1px;
-    padding: 8px;
-    border-style: solid;
-    border-color: #666666;
-    background-color: #dedede;
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #dedede;
 }
 table.gridtable td {
-    border-width: 1px;
-    padding: 8px;
-    border-style: solid;
-    border-color: #666666;
-    background-color: #ffffff;
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #ffffff;
 }
 </style><table class="gridtable"><tr>
                                 <th>#</th>
@@ -500,30 +500,30 @@ table.gridtable td {
                     $stockTransferQty = $stock->getStockQty($val->items_code, array($val->items_warehouse_code_transfer));
             
                     $itemsTable .= '<tr>
-                            <td>'.$i.'</td>
-                            <td>'.$val->items_code.'</td>
-                            <td>'.$val->items_name.'</td>
-                            <td>'.$val->items_description.'</td>
-                            <td>'.$val->items_qty.'</td>
-                            <td>'.$val->items_unit.'</td>
-                            <td>'.$val->items_warehouse_code.' '.$warehouseInfo['name'].' ['.$stockQty['total'].']</td>
-                            <td>'.$val->items_warehouse_code_transfer.' '.$warehouseTransferInfo['name'].' ['.$stockTransferQty['total'].']</td>
-                            <td>'.$val->items_remark.'</td>
-                            </tr>';
+							<td>'.$i.'</td>
+							<td>'.$val->items_code.'</td>
+							<td>'.$val->items_name.'</td>
+							<td>'.$val->items_description.'</td>
+							<td>'.$val->items_qty.'</td>
+							<td>'.$val->items_unit.'</td>
+							<td>'.$val->items_warehouse_code.' '.$warehouseInfo['name'].' ['.$stockQty['total'].']</td>
+							<td>'.$val->items_warehouse_code_transfer.' '.$warehouseTransferInfo['name'].' ['.$stockTransferQty['total'].']</td>
+							<td>'.$val->items_remark.'</td>
+							</tr>';
                 }
                 $itemsTable .= '</table>';
             
                 $title = '库存调拨 - '.$receiveData['transaction_type'].' ['.$order_data['supplier_code'].' '.$order_data['supplier_ename'].']';
             
                 $mailContent = '<div>'.$title.'，请登录系统查看：</div>
-                        <div>
-                        <p><b>单据号：</b>'.$receiveData['number'].'</p>
-                        <p><b>日期：</b>'.$receiveData['date'].'</p>
-                        <p><b>采购订单：</b>'.$order_data['number'].'</p>
-                        <p><b>制单人：</b>'.$user_session->user_info['user_name'].'</p>
-                        <p><b>描述：</b>'.$receiveData['description'].'</p>
-                        <p><b>备注：</b>'.$receiveData['remark'].'</p>
-                        </div><div>'.$itemsTable.'</div><hr>';
+					    <div>
+					    <p><b>单据号：</b>'.$receiveData['number'].'</p>
+					    <p><b>日期：</b>'.$receiveData['date'].'</p>
+					    <p><b>采购订单：</b>'.$order_data['number'].'</p>
+					    <p><b>制单人：</b>'.$user_session->user_info['user_name'].'</p>
+					    <p><b>描述：</b>'.$receiveData['description'].'</p>
+					    <p><b>备注：</b>'.$receiveData['remark'].'</p>
+					    </div><div>'.$itemsTable.'</div><hr>';
             
                 $mailData = array(
                         'type'      => '通知',
@@ -573,51 +573,51 @@ table.gridtable td {
                 
                     $mailContent .= '<div><style type="text/css">
     table.gridtable {
-        font-family: verdana,arial,sans-serif;
-        font-size:12px;
-        color:#333333;
-        border-width: 1px;
-        border-color: #666666;
-        border-collapse: collapse;
+    	font-family: verdana,arial,sans-serif;
+    	font-size:12px;
+    	color:#333333;
+    	border-width: 1px;
+    	border-color: #666666;
+    	border-collapse: collapse;
     }
     table.gridtable th {
-        border-width: 1px;
-        padding: 8px;
-        border-style: solid;
-        border-color: #666666;
-        background-color: #dedede;
+    	border-width: 1px;
+    	padding: 8px;
+    	border-style: solid;
+    	border-color: #666666;
+    	background-color: #dedede;
     }
     table.gridtable td {
-        border-width: 1px;
-        padding: 8px;
-        border-style: solid;
-        border-color: #666666;
-        background-color: #ffffff;
+    	border-width: 1px;
+    	padding: 8px;
+    	border-style: solid;
+    	border-color: #666666;
+    	background-color: #ffffff;
     }
     .delete{
-        text-decoration: line-through;
-        color: #FF0000;
+    	text-decoration: line-through;
+    	color: #FF0000;
     }
     .update{
-        font-weight: bold;
-        color: #000093;
+    	font-weight: bold;
+    	color: #000093;
     }
     .inactive{
-        font-weight: bold;
-        color: #999999;
+    	font-weight: bold;
+    	color: #999999;
     }
     </style><table class="gridtable">
-                                <tr>
-                                <th>#</th>
-                                <th>物料号</th>
-                                <th>名称</th>
-                                <th>描述</th>
-                                <th>数量</th>
-                                <th>单位</th>
-                                <th>出库仓位</th>
-                                <th>入货仓位</th>
-                                <th>备注</th>
-                                </tr>';
+                    			<tr>
+                    			<th>#</th>
+                    			<th>物料号</th>
+                    			<th>名称</th>
+                    			<th>描述</th>
+                    			<th>数量</th>
+                    			<th>单位</th>
+                    			<th>出库仓位</th>
+                    			<th>入货仓位</th>
+                    			<th>备注</th>
+                    			</tr>';
                 
                     $itemsData = $items->getData($receive_id);
                     $i = 0;

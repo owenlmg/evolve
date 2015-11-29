@@ -14,17 +14,17 @@ class Erp_Model_Warehouse_Warehouse extends Application_Model_Db
     
     public function getInfoByCode($code)
     {
-        $info = array();
-        
-        $res = $this->fetchAll("code = '".$code."'");
-        
-        if($res->count() > 0){
-            $data = $res->toArray();
-            
-            $info = $data[0];
-        }
-        
-        return $info;
+    	$info = array();
+    	
+    	$res = $this->fetchAll("code = '".$code."'");
+    	
+    	if($res->count() > 0){
+    		$data = $res->toArray();
+    		
+    		$info = $data[0];
+    	}
+    	
+    	return $info;
     }
     
     // 获取仓库列表

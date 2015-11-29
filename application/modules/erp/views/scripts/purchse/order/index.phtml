@@ -3,7 +3,7 @@
 <?php echo SYS_HEAD; ?>
 <script type="text/javascript">
 var user_id = <?php echo $this->user_id?>;
-var buyerFunctionDisable = <?php echo $this->buyerFunctionDisable;?>;
+var typeEditDisable = <?php echo $this->typeEditDisable;?>;
 var defaultCurrency = '<?php echo $this->defaultCurrency;?>';
 var accessViewOrder = '<?php echo $this->accessViewOrder;?>';
 
@@ -700,7 +700,6 @@ var orderGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
     }, {
         xtype: 'splitbutton',
         text: '新订单',
-        disabled: buyerFunctionDisable,
         iconCls: 'icon-doc',
         handler: function(){
             orderForm.getForm().reset();
@@ -731,7 +730,7 @@ var orderGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
                     Ext.MessageBox.alert('错误', '当前订单已取消，不能修改！');
                 }else if(selection[0].get('state') != 1){
                     Ext.MessageBox.alert('错误', '只允许编辑被拒绝的申请！');
-                }else if(selection[0].get('create_user') != user_id){
+                }else if(typeEditDisable == 1 && selection[0].get('create_user') != user_id){
                     Ext.MessageBox.alert('错误', '没有权限修改当前订单！');
                 }else{
                     orderForm.getForm().reset();
@@ -775,7 +774,7 @@ var orderGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
                     Ext.MessageBox.alert('错误', '没有选择订单！');
                 }else if(selection[0].get('state') != 2){
                     Ext.MessageBox.alert('错误', '只允许变更已批准的订单！');
-                }else if(selection[0].get('create_user') != user_id){
+                }else if(typeEditDisable == 1 && selection[0].get('create_user') != user_id){
                     Ext.MessageBox.alert('错误', '没有权限修改当前订单！');
                 }else{
                     orderForm.getForm().reset();
@@ -802,7 +801,6 @@ var orderGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
         }, {
             text: '删除',
             iconCls: 'icon-delete',
-            disabled: buyerFunctionDisable,
             tooltip: '删除被拒绝的新订单或已取消订单',
             handler: function(){
             	var selection = Ext.getCmp('orderGrid').getView().getSelectionModel().getSelection();
@@ -901,7 +899,6 @@ var orderGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
     }, {
         text: '采购员',
         iconCls: 'icon-user-edit',
-        disabled: buyerFunctionDisable,
         handler: function(){
             buyerWin.show();
             buyerStore.load();
@@ -1094,11 +1091,7 @@ var orderGrid = Ext.define('KitchenSink.view.grid.LockingGrid', {
                     Ext.getCmp('reviewBtn').disable();
                 }
 
-                if(!buyerFunctionDisable){
-                    Ext.getCmp('attachBtn').enable();
-                }else{
-                    Ext.getCmp('attachBtn').disable();
-                }
+                Ext.getCmp('attachBtn').enable();
             }else{
                 Ext.getCmp('attachBtn').disable();
             }

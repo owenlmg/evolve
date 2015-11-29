@@ -160,20 +160,11 @@ var contactGrid = Ext.create('Ext.grid.Panel', {
             }
         }
     }, {
-        xtype: 'splitbutton',
         text: '查询',
         iconCls: 'icon-search',
         handler: function(){
         	contactStore.loadPage(1);
-        },
-        menu: [{
-            text: '导出',
-            iconCls: 'icon-export',
-            handler: function(){
-                var key = Ext.getCmp('search_key').getValue();
-                window.open(homePath+'/public/erp/bpartner_customercontact/getcontact/option/csv/key/'+key);
-            }
-        }]
+        }
     }, {
         text: '添加',
         disabled: adminBtnDisabled,

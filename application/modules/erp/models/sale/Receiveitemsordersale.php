@@ -94,10 +94,10 @@ class Erp_Model_Sale_Receiveitemsordersale extends Application_Model_Db
         print_r($data);
         exit; */
         for($i = 0; $i < count($data); $i++){
-            if($data[$i]['sales_id']){
-                $salesData = $sales->getData($data[$i]['sales_id']);
-                $data[$i]['order_sales'] = $salesData['cname'];
-            }
+        	if($data[$i]['sales_id']){
+        		$salesData = $sales->getData($data[$i]['sales_id']);
+        		$data[$i]['order_sales'] = $salesData['cname'];
+        	}
         }
         
         return $data;

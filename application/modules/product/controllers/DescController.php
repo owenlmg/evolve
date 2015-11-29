@@ -26,15 +26,15 @@ class Product_DescController extends Zend_Controller_Action
         }
         foreach ($request as $k => $v) {
             if ($v) {
-                if($k == 'search_tag') {
-                    $whereSearch .= " and (ifnull($descName.remark,'') like '%$v%' or ifnull($descName.manufacturers_before,'') like '%$v%' or ifnull($descName.manufacturers_after,'') like '%$v%' or ifnull($descName.desc_before,'') like '%$v%' or ifnull($descName.desc_after,'') like '%$v%')";
-                } else {
-                    $col = str_replace('search_', '', $k);
-                    if ($col != $k) {
-                        // 查询条件
-                        $whereSearch .= " and ifnull($descName." . $col . ",'') like '%" . $v . "%'";
-                    }
-                }
+            	if($k == 'search_tag') {
+            		$whereSearch .= " and (ifnull($descName.remark,'') like '%$v%' or ifnull($descName.manufacturers_before,'') like '%$v%' or ifnull($descName.manufacturers_after,'') like '%$v%' or ifnull($descName.desc_before,'') like '%$v%' or ifnull($descName.desc_after,'') like '%$v%')";
+            	} else {
+	                $col = str_replace('search_', '', $k);
+	                if ($col != $k) {
+	                    // 查询条件
+	                    $whereSearch .= " and ifnull($descName." . $col . ",'') like '%" . $v . "%'";
+	                }
+            	}
             }
         }
 
@@ -116,10 +116,10 @@ class Product_DescController extends Zend_Controller_Action
         $fileIds = array();
         // 获取物料数据
         for($i = 0; $i < count($data); $i++) {
-            $mytype = 2;
-            if($data[$i]['create_user'] == $user) {
-                $mytype = 1;
-            }
+        	$mytype = 2;
+        	if($data[$i]['create_user'] == $user) {
+        		$mytype = 1;
+        	}
             if(($typeId = $data[$i]['type_before']) != '') {
                 $typeName = $type->getTypeByConnect($typeId, '');
                 $data[$i]['type_name'] = $typeName;
@@ -184,7 +184,7 @@ class Product_DescController extends Zend_Controller_Action
                                     if (!$u)
                                         continue;
                                     if($u == $user) {
-                                        $mytype = 3;
+                                    	$mytype = 3;
                                     }
                                     $e = $employee->fetchRow("id = $u");
                                     if ($reviewState)
@@ -262,9 +262,9 @@ class Product_DescController extends Zend_Controller_Action
         $request = $this->getRequest()->getParams();
         $data = "";
         if(isset($request['id']) && $request['id']) {
-            $id = $request['id'];
-            $materiel = new Product_Model_Materiel();
-            $data = $materiel->getById($id);
+        	$id = $request['id'];
+        	$materiel = new Product_Model_Materiel();
+        	$data = $materiel->getById($id);
         }
         // 转为json格式并输出
         echo Zend_Json::encode($data);
@@ -302,8 +302,8 @@ class Product_DescController extends Zend_Controller_Action
         $desc = new Product_Model_Desc();
 
         if(isset($val->mid) && $val->mid) {
-            $mid = $val->mid;
-            $md = $materiel->fetchRow("id = $mid");
+        	$mid = $val->mid;
+        	$md = $materiel->fetchRow("id = $mid");
         } else {
             $result['result'] = false;
             $result['info'] = "数据加载失败";
@@ -390,19 +390,19 @@ class Product_DescController extends Zend_Controller_Action
                             $tmpUser = array();
                             $plan_dept = $s['dept'];
                             foreach(explode(',', $plan_dept) as $role) {
-                                $tmpRole = $member->getMemberWithNoManager($role);
-                                foreach ($tmpRole as $m){
-                                    $tmpUser[] = $m['user_id'];
-                                }
-                            }
-                            if(count($tmpUser) == 0 && !$plan_user) {
-                                $tmpUser = $member->getUserids("系统管理员");
-                            }
+	                            $tmpRole = $member->getMemberWithNoManager($role);
+		                        foreach ($tmpRole as $m){
+		                            $tmpUser[] = $m['user_id'];
+		                        }
+	                        }
+	                        if(count($tmpUser) == 0 && !$plan_user) {
+	                        	$tmpUser = $member->getUserids("系统管理员");
+	                        }
                             if(count($tmpUser) > 0) {
-                                $tmpUser = $employee->getAdapter()->query("select group_concat(employee_id) as users from oa_user where active = 1 and id in ( " . implode(',', $tmpUser) . ")")->fetchObject();
-                                $users = $tmpUser->users;
+                            	$tmpUser = $employee->getAdapter()->query("select group_concat(employee_id) as users from oa_user where active = 1 and id in ( " . implode(',', $tmpUser) . ")")->fetchObject();
+                            	$users = $tmpUser->users;
                             }
-                            if ($users) {
+	                        if ($users) {
                                 if ($plan_user)
                                     $plan_user .= ",";
                                 $plan_user .= $users;
@@ -490,19 +490,19 @@ class Product_DescController extends Zend_Controller_Action
                             $tmpUser = array();
                             $plan_dept = $s['dept'];
                             foreach(explode(',', $plan_dept) as $role) {
-                                $tmpRole = $member->getMemberWithNoManager($role);
-                                foreach ($tmpRole as $m){
-                                    $tmpUser[] = $m['user_id'];
-                                }
-                            }
-                            if(count($tmpUser) == 0 && !$plan_user) {
-                                $tmpUser = $member->getUserids("系统管理员");
-                            }
+	                            $tmpRole = $member->getMemberWithNoManager($role);
+		                        foreach ($tmpRole as $m){
+		                            $tmpUser[] = $m['user_id'];
+		                        }
+	                        }
+	                        if(count($tmpUser) == 0 && !$plan_user) {
+	                        	$tmpUser = $member->getUserids("系统管理员");
+	                        }
                             if(count($tmpUser) > 0) {
-                                $tmpUser = $employee->getAdapter()->query("select group_concat(employee_id) as users from oa_user where active = 1 and id in ( " . implode(',', $tmpUser) . ")")->fetchObject();
-                                $users = $tmpUser->users;
+                            	$tmpUser = $employee->getAdapter()->query("select group_concat(employee_id) as users from oa_user where active = 1 and id in ( " . implode(',', $tmpUser) . ")")->fetchObject();
+                            	$users = $tmpUser->users;
                             }
-                            if ($users) {
+	                        if ($users) {
                                 if ($plan_user)
                                     $plan_user .= ",";
                                 $plan_user .= $users;
@@ -574,24 +574,24 @@ class Product_DescController extends Zend_Controller_Action
         $review = new Dcc_Model_Review();
         $where = "finish_flg=0";
         if(isset($req['id']) && $req['id']) {
-            $id = $req['id'];
+        	$id = $req['id'];
             $where .= " and file_id = $id";
         }
 
         $data = $review->getList($where, "materiel_desc");
         if(count($data) == 1) {
-            $method = $data[0]['method'];
-            // 所有人审批
-            if($method == 1) {
+        	$method = $data[0]['method'];
+        	// 所有人审批
+        	if($method == 1) {
                 $actual_user = explode(',', $data[0]['actual_user']);
                 $plan_user = explode(',', $data[0]['plan_user']);
                 $diff = array_diff($plan_user, $actual_user);
                 if(count($diff) > 1) {
-                    $result['result'] = false;
+                	$result['result'] = false;
                 }
-            }
+        	}
         } else {
-            $result['result'] = false;
+        	$result['result'] = false;
         }
         // 转为json格式并输出
         echo Zend_Json::encode($result);
@@ -724,18 +724,18 @@ class Product_DescController extends Zend_Controller_Action
                 // 转审
                 $finish_flg = 0;
                 if($method == 2) {
-                    // 处理方式为任意时，一个人转审之后其他人员也删除
-                    $plan_user = str_replace('E', '', $val->transfer_id);
+                	// 处理方式为任意时，一个人转审之后其他人员也删除
+                	$plan_user = str_replace('E', '', $val->transfer_id);
                 } else {
-                    // 更改审核情况中的审核人
-                    $plan_users = explode(',', $reviewRow['plan_user']);
-                    for ($i = 0; $i < count($plan_users); $i++) {
-                        if ($plan_users[$i] == $user) {
-                            $plan_users[$i] = str_replace('E', '', $val->transfer_id);
-                            break;
-                        }
-                    }
-                    $plan_user = implode(',', $plan_users);
+    	            // 更改审核情况中的审核人
+    	            $plan_users = explode(',', $reviewRow['plan_user']);
+    	            for ($i = 0; $i < count($plan_users); $i++) {
+    	                if ($plan_users[$i] == $user) {
+    	                    $plan_users[$i] = str_replace('E', '', $val->transfer_id);
+    	                    break;
+    	                }
+    	            }
+    	            $plan_user = implode(',', $plan_users);
                 }
     
                 // 审核情况
@@ -943,30 +943,30 @@ class Product_DescController extends Zend_Controller_Action
             }
     
             if(isset($subject)) {
-                $mailData = array(
-                    'type' => $type,
-                    'subject' => $subject,
-                    'to' => $to['email'],
-                    'cc' => $cc,
-                    'content' => $content,
-                    'send_time' => $now,
-                    'add_date' => $now
-                );
+    	        $mailData = array(
+    	            'type' => $type,
+    	            'subject' => $subject,
+    	            'to' => $to['email'],
+    	            'cc' => $cc,
+    	            'content' => $content,
+    	            'send_time' => $now,
+    	            'add_date' => $now
+    	        );
     
-                $mail = new Application_Model_Log_Mail();
-                try {
-                    $mailId = $mail->insert($mailData);
-                } catch (Exception $e) {
-                    $result['result'] = false;
-                    $result['info'] = $e->getMessage();
+    	        $mail = new Application_Model_Log_Mail();
+    	        try {
+    	            $mailId = $mail->insert($mailData);
+    	        } catch (Exception $e) {
+    	            $result['result'] = false;
+    	            $result['info'] = $e->getMessage();
     
-                    echo Zend_Json::encode($result);
+    	            echo Zend_Json::encode($result);
     
-                    exit;
-                }
-                if ($mailId) {
-                    $mail->send($mailId);
-                }
+    	            exit;
+    	        }
+    	        if ($mailId) {
+    	            $mail->send($mailId);
+    	        }
             }
         }
 

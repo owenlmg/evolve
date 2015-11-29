@@ -341,7 +341,7 @@ class Erp_Stock_IndexController extends Zend_Controller_Action
     
     public function refreshtotalAction()
     {
-        $receive = new Erp_Model_Stock_receive();
+    	$receive = new Erp_Model_Stock_receive();
         $items = new Erp_Model_Purchse_Receiveitems();
         
         $data = $receive->fetchAll("total = 0")->toArray();
@@ -454,13 +454,13 @@ class Erp_Stock_IndexController extends Zend_Controller_Action
                 
                 // 记录此次收货的采购订单号
                 if($val->items_order_number != ''){
-                    $orderNumberTmp = explode(',', $val->items_order_number);
-                    
-                    foreach ($orderNumberTmp as $number){
-                        if(!in_array($number, $orderNumArr)){
-                            array_push($orderNumArr, $number);
-                        }
-                    }
+                	$orderNumberTmp = explode(',', $val->items_order_number);
+                	
+                	foreach ($orderNumberTmp as $number){
+                	    if(!in_array($number, $orderNumArr)){
+                	        array_push($orderNumArr, $number);
+                	    }
+                	}
                 }
     
                 try {
@@ -512,17 +512,17 @@ class Erp_Stock_IndexController extends Zend_Controller_Action
         $noticeUsers = array();
         
         foreach ($noticeTo as $n){
-            if($n['email'] != '' && !in_array($n['user_id'], $noticeUsers)){
-                array_push($noticeMails, $n['email']);
-                array_push($noticeUsers, $n['user_id']);
-            }
+        	if($n['email'] != '' && !in_array($n['user_id'], $noticeUsers)){
+        		array_push($noticeMails, $n['email']);
+        		array_push($noticeUsers, $n['user_id']);
+        	}
         }
         
         foreach ($relatedUserInfo as $n){
-            if($n['email'] != '' && !in_array($n['user_id'], $noticeUsers)){
-                array_push($noticeMails, $n['email']);
-                array_push($noticeUsers, $n['user_id']);
-            }
+        	if($n['email'] != '' && !in_array($n['user_id'], $noticeUsers)){
+        		array_push($noticeMails, $n['email']);
+        		array_push($noticeUsers, $n['user_id']);
+        	}
         }
         
         $mail = new Application_Model_Log_Mail();
@@ -532,26 +532,26 @@ class Erp_Stock_IndexController extends Zend_Controller_Action
         $i = 0;
         $itemsTable = '<style type="text/css">
 table.gridtable {
-    font-family: verdana,arial,sans-serif;
-    font-size:11px;
-    color:#333333;
-    border-width: 1px;
-    border-color: #666666;
-    border-collapse: collapse;
+	font-family: verdana,arial,sans-serif;
+	font-size:11px;
+	color:#333333;
+	border-width: 1px;
+	border-color: #666666;
+	border-collapse: collapse;
 }
 table.gridtable th {
-    border-width: 1px;
-    padding: 8px;
-    border-style: solid;
-    border-color: #666666;
-    background-color: #dedede;
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #dedede;
 }
 table.gridtable td {
-    border-width: 1px;
-    padding: 8px;
-    border-style: solid;
-    border-color: #666666;
-    background-color: #ffffff;
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #ffffff;
 }
 </style><table class="gridtable"><tr>
                                 <th>#</th>
@@ -569,89 +569,89 @@ table.gridtable td {
                                 </tr>';
         
         foreach ($items_inserted as $val){
-            $itemInfo = '';
+        	$itemInfo = '';
         
-            if($val->items_order_number){
-                $itemInfoData = $order->getItemDetails($val->items_order_number, $val->items_code);
-              
-                $itemInfo = '<table class="gridtable"><tr>
-                            <th>申请单号</th>
-                            <th>申请时间</th>
-                            <th>需求日期</th>
-                            <th>申请数量</th>
-                            <th>下单数量</th>
-                            <th>订单数量</th>
+        	if($val->items_order_number){
+        		$itemInfoData = $order->getItemDetails($val->items_order_number, $val->items_code);
+        	  
+        		$itemInfo = '<table class="gridtable"><tr>
+							<th>申请单号</th>
+							<th>申请时间</th>
+							<th>需求日期</th>
+							<th>申请数量</th>
+							<th>下单数量</th>
+							<th>订单数量</th>
                             <th>客户收件人地址简码</th>
                             <th>客户合同号</th>
-                            </tr>';
-              
-                foreach ($itemInfoData as $d){
-                    $itemInfo .= '<tr>
-                                  <td>'.$d['req_number'].'</td>
-                                  <td>'.$d['req_create_time'].'</td>
-                                  <td>'.$d['req_item_date'].'</td>
-                                  <td>'.$d['req_item_qty'].'</td>
-                                  <td>'.$d['order_req_item_qty'].'</td>
-                                  <td>'.$d['order_item_qty'].'</td>
-                                  <td>'.$d['customer_address'].'</td>
-                                  <td>'.$d['customer_aggrement'].'</td>
-                                  </tr>';
-                }
-              
-                $itemInfo .= '</table>';
-            }
+							</tr>';
+        	  
+        		foreach ($itemInfoData as $d){
+        			$itemInfo .= '<tr>
+							      <td>'.$d['req_number'].'</td>
+							      <td>'.$d['req_create_time'].'</td>
+							      <td>'.$d['req_item_date'].'</td>
+							      <td>'.$d['req_item_qty'].'</td>
+							      <td>'.$d['order_req_item_qty'].'</td>
+							      <td>'.$d['order_item_qty'].'</td>
+							      <td>'.$d['customer_address'].'</td>
+							      <td>'.$d['customer_aggrement'].'</td>
+							      </tr>';
+        		}
+        	  
+        		$itemInfo .= '</table>';
+        	}
         
-            $i++;
-            
-            $supplier = $val->items_order_supplier.' '.$val->items_order_supplier_name;
+        	$i++;
+        	
+        	$supplier = $val->items_order_supplier.' '.$val->items_order_supplier_name;
         
-            $warehouseInfo = $warehouse->getInfoByCode($val->items_warehouse_code);
-            
-            if(!in_array($supplier, $supplierArr)){
-                array_push($supplierArr, $supplier);
-            }
-            
-            $itemsTable .= '<tr>
-                            <td>'.$i.'</td>
-                            <td>'.$supplier.'</td>
-                            <td>'.$val->items_order_number.'</td>
-                            <td>'.$val->items_code.'</td>
-                            <td>'.$val->items_name.'</td>
-                            <td>'.$val->items_description.'</td>
-                            <td>'.$val->items_qty.'</td>
-                            <td>'.$val->items_unit.'</td>
-                            <td>'.$val->items_warehouse_code.' '.$warehouseInfo['name'].'</td>
-                            <td>'.$val->items_remark.'</td>
-                            <td>'.$itemInfo.'</td>
-                            </tr>';
+        	$warehouseInfo = $warehouse->getInfoByCode($val->items_warehouse_code);
+        	
+        	if(!in_array($supplier, $supplierArr)){
+        		array_push($supplierArr, $supplier);
+        	}
+        	
+        	$itemsTable .= '<tr>
+							<td>'.$i.'</td>
+							<td>'.$supplier.'</td>
+							<td>'.$val->items_order_number.'</td>
+							<td>'.$val->items_code.'</td>
+							<td>'.$val->items_name.'</td>
+							<td>'.$val->items_description.'</td>
+							<td>'.$val->items_qty.'</td>
+							<td>'.$val->items_unit.'</td>
+							<td>'.$val->items_warehouse_code.' '.$warehouseInfo['name'].'</td>
+							<td>'.$val->items_remark.'</td>
+							<td>'.$itemInfo.'</td>
+							</tr>';
         }
         $itemsTable .= '</table>';
         
         $mailContent = '<div>采购到货，请登录系统查看：</div>
-                        <div>
-                        <p><b>收货单号：</b>'.$receiveData['number'].'</p>
-                        <p><b>收货日期：</b>'.$receiveData['date'].'</p>
-                        <p><b>收货人：</b>'.$user_session->user_info['user_name'].'</p>
-                        <p><b>描述：</b>'.$receiveData['description'].'</p>
-                        <p><b>备注：</b>'.$receiveData['remark'].'</p>
-                        </div><div>'.$itemsTable.'</div><hr>';
+					    <div>
+					    <p><b>收货单号：</b>'.$receiveData['number'].'</p>
+					    <p><b>收货日期：</b>'.$receiveData['date'].'</p>
+					    <p><b>收货人：</b>'.$user_session->user_info['user_name'].'</p>
+					    <p><b>描述：</b>'.$receiveData['description'].'</p>
+					    <p><b>备注：</b>'.$receiveData['remark'].'</p>
+					    </div><div>'.$itemsTable.'</div><hr>';
         
         $mailData = array(
-                'type'      => '通知',
-                'subject'   => '到货通知 - '.$receiveData['number'].' - '.implode(', ', $supplierArr),
-                'cc'        => $user_session->user_info['user_email'],
-                'content'   => $mailContent,
-                'add_date'  => $now,
-                'to'        => implode(',', $noticeMails),
-                'user_id'   => $user_id
+        		'type'      => '通知',
+        		'subject'   => '到货通知 - '.$receiveData['number'].' - '.implode(', ', $supplierArr),
+        		'cc'        => $user_session->user_info['user_email'],
+        		'content'   => $mailContent,
+        		'add_date'  => $now,
+        		'to'        => implode(',', $noticeMails),
+        		'user_id'   => $user_id
         );
         
         try {
-            // 记录邮件日志并发送邮件
-            $mail->send($mail->insert($mailData));
+        	// 记录邮件日志并发送邮件
+        	$mail->send($mail->insert($mailData));
         } catch (Exception $e) {
-            $result['success'] = false;
-            $result['info'] = $e->getMessage();
+        	$result['success'] = false;
+        	$result['info'] = $e->getMessage();
         }
     
         echo Zend_Json::encode($result);
@@ -727,26 +727,26 @@ table.gridtable td {
         $i = 0;
         $itemsTable = '<style type="text/css">
 table.gridtable {
-    font-family: verdana,arial,sans-serif;
-    font-size:11px;
-    color:#333333;
-    border-width: 1px;
-    border-color: #666666;
-    border-collapse: collapse;
+	font-family: verdana,arial,sans-serif;
+	font-size:11px;
+	color:#333333;
+	border-width: 1px;
+	border-color: #666666;
+	border-collapse: collapse;
 }
 table.gridtable th {
-    border-width: 1px;
-    padding: 8px;
-    border-style: solid;
-    border-color: #666666;
-    background-color: #dedede;
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #dedede;
 }
 table.gridtable td {
-    border-width: 1px;
-    padding: 8px;
-    border-style: solid;
-    border-color: #666666;
-    background-color: #ffffff;
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #ffffff;
 }
 </style><table class="gridtable"><tr>
                                 <th>#</th>
@@ -770,25 +770,25 @@ table.gridtable td {
                 $itemInfoData = $order->getItemDetails($val['items_order_number'], $val['items_code']);
                  
                 $itemInfo = '<table class="gridtable"><tr>
-                            <th>申请单号</th>
-                            <th>申请日期</th>
-                            <th>申请数量</th>
-                            <th>下单数量</th>
-                            <th>订单数量</th>
+							<th>申请单号</th>
+							<th>申请日期</th>
+							<th>申请数量</th>
+							<th>下单数量</th>
+							<th>订单数量</th>
                             <th>客户收件人地址简码</th>
                             <th>客户合同号</th>
-                            </tr>';
+							</tr>';
                  
                 foreach ($itemInfoData as $d){
                     $itemInfo .= '<tr>
-                                  <td>'.$d['req_number'].'</td>
-                                  <td>'.$d['req_item_date'].'</td>
-                                  <td>'.$d['req_item_qty'].'</td>
-                                  <td>'.$d['order_req_item_qty'].'</td>
-                                  <td>'.$d['order_item_qty'].'</td>
-                                  <td>'.$d['customer_address'].'</td>
-                                  <td>'.$d['customer_aggrement'].'</td>
-                                  </tr>';
+							      <td>'.$d['req_number'].'</td>
+							      <td>'.$d['req_item_date'].'</td>
+							      <td>'.$d['req_item_qty'].'</td>
+							      <td>'.$d['order_req_item_qty'].'</td>
+							      <td>'.$d['order_item_qty'].'</td>
+							      <td>'.$d['customer_address'].'</td>
+							      <td>'.$d['customer_aggrement'].'</td>
+							      </tr>';
                 }
                  
                 $itemInfo .= '</table>';
@@ -810,29 +810,29 @@ table.gridtable td {
             $warehouseInfo = $warehouse->getInfoByCode($val['items_warehouse_code']);
             
             $itemsTable .= '<tr>
-                            <td>'.$i.'</td>
-                            <td>'.implode(', ', $supplierArr).'</td>
-                            <td>'.$val['items_order_number'].'</td>
-                            <td>'.$val['items_code'].'</td>
-                            <td>'.$val['items_name'].'</td>
-                            <td>'.$val['items_description'].'</td>
-                            <td>'.$val['items_qty'].'</td>
-                            <td>'.$val['items_unit'].'</td>
-                            <td>'.$val['items_warehouse_code'].' '.$warehouseInfo['name'].'</td>
-                            <td>'.$val['items_remark'].'</td>
-                            <td>'.$itemInfo.'</td>
-                            </tr>';
+							<td>'.$i.'</td>
+							<td>'.implode(', ', $supplierArr).'</td>
+							<td>'.$val['items_order_number'].'</td>
+							<td>'.$val['items_code'].'</td>
+							<td>'.$val['items_name'].'</td>
+							<td>'.$val['items_description'].'</td>
+							<td>'.$val['items_qty'].'</td>
+							<td>'.$val['items_unit'].'</td>
+							<td>'.$val['items_warehouse_code'].' '.$warehouseInfo['name'].'</td>
+							<td>'.$val['items_remark'].'</td>
+							<td>'.$itemInfo.'</td>
+							</tr>';
         }
         $itemsTable .= '</table>';
         
         $mailContent = '<div>采购到货，请登录系统查看：</div>
-                        <div>
-                        <p><b>收货单号：</b>'.$receiveData['number'].'</p>
-                        <p><b>收货日期：</b>'.$receiveData['date'].'</p>
-                        <p><b>收货人：</b>'.$user_session->user_info['user_name'].'</p>
-                        <p><b>描述：</b>'.$receiveData['description'].'</p>
-                        <p><b>备注：</b>'.$receiveData['remark'].'</p>
-                        </div><div>'.$itemsTable.'</div><hr>';
+					    <div>
+					    <p><b>收货单号：</b>'.$receiveData['number'].'</p>
+					    <p><b>收货日期：</b>'.$receiveData['date'].'</p>
+					    <p><b>收货人：</b>'.$user_session->user_info['user_name'].'</p>
+					    <p><b>描述：</b>'.$receiveData['description'].'</p>
+					    <p><b>备注：</b>'.$receiveData['remark'].'</p>
+					    </div><div>'.$itemsTable.'</div><hr>';
         
         $mailData = array(
                 'type'      => '通知',

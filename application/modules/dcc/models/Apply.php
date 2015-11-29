@@ -58,7 +58,7 @@ class Dcc_Model_Apply extends Application_Model_Db
     }
     
     public function getApply($like) {
-        $sql = $this->select()
+    	$sql = $this->select()
                     ->from($this, array('code'))
                     ->where('code like ?', $like)
                     ->order(array('code DESC'))

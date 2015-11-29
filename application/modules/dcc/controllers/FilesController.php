@@ -25,19 +25,19 @@ class Dcc_FilesController extends Zend_Controller_Action {
         foreach ($request as $k => $v) {
             if ($v) {
                 if($k == 'search_tag') {
-                    $cols = array("t1.project_info", "t1.code", "t1.name", "t1.description", "t1.remark", "t2.cname", "t7.model_standard", "t7.model_internal");
-                    $arr=preg_split('/\s+/',trim($v));
-                    for ($i=0;$i<count($arr);$i++) {
-                        $tmp = array();
-                        foreach($cols as $c) {
-                            $tmp[] = "ifnull($c,'')";
-                        }
-                        $arr[$i] = "concat(".implode(',', $tmp).") like '%".$arr[$i]."%'";
-                    }
-                    $where .= " and ".join(' AND ', $arr);
-                    
-//                     $where .= " and (ifnull(t1.project_info,'') like '%$v%' or ifnull(t1.code,'') like '%$v%' or ifnull(t1.name,'') like '%$v%' or ifnull(t1.description,'') like '%$v%' or ifnull(t1.remark,'') like '%$v%' or ifnull(t2.cname,'') like '%$v%' or ifnull(t7.model_standard,'') like '%$v%' or ifnull(t7.model_internal,'') like '%$v%')";
-                } else if ("search_archive_date_from" == $k && $v) {
+            	    $cols = array("t1.project_info", "t1.code", "t1.name", "t1.description", "t1.remark", "t2.cname", "t7.model_standard", "t7.model_internal");
+            	    $arr=preg_split('/\s+/',trim($v));
+            	    for ($i=0;$i<count($arr);$i++) {
+            	        $tmp = array();
+            	        foreach($cols as $c) {
+            	            $tmp[] = "ifnull($c,'')";
+            	        }
+            	        $arr[$i] = "concat(".implode(',', $tmp).") like '%".$arr[$i]."%'";
+            	    }
+            	    $where .= " and ".join(' AND ', $arr);
+            	    
+//             		$where .= " and (ifnull(t1.project_info,'') like '%$v%' or ifnull(t1.code,'') like '%$v%' or ifnull(t1.name,'') like '%$v%' or ifnull(t1.description,'') like '%$v%' or ifnull(t1.remark,'') like '%$v%' or ifnull(t2.cname,'') like '%$v%' or ifnull(t7.model_standard,'') like '%$v%' or ifnull(t7.model_internal,'') like '%$v%')";
+            	} else if ("search_archive_date_from" == $k && $v) {
                     $where .= " and t1.archive_time >= '" . str_replace('T', ' ', $v) . "'";
                 } else if ("search_category" == $k && $v) {
                     $where .= " and t5.category = '$v'";
@@ -58,7 +58,7 @@ class Dcc_FilesController extends Zend_Controller_Action {
 
         $data = $files->getFilesList($where, $start, $limit);
         $tmp = $files->getAdapter()->query("select count(*) as sum from oa_doc_files t1 left join oa_employee t2 on t1.create_user = t2.id left join oa_doc_code t4 on t1.code = t4.code left join oa_doc_type t5 on t4.prefix = t5.id left join oa_product_catalog t7 on t4.project_no = t7.id where $where")->fetchObject();
-        $count = $tmp->sum;
+	    $count = $tmp->sum;
 //        $count = $files->getCount($where, $start, $limit);
         $totalCount = $count;
 
@@ -99,9 +99,9 @@ class Dcc_FilesController extends Zend_Controller_Action {
         $record = new Dcc_Model_Record();
         $upload = new Dcc_Model_Upload();
         $codeModel = new Dcc_Model_Code();
-        $share = new Dcc_Model_Share();
-        $review = new Dcc_Model_Review();
-        $modelUser = new Application_Model_User();
+	    $share = new Dcc_Model_Share();
+	    $review = new Dcc_Model_Review();
+	    $modelUser = new Application_Model_User();
 
         $data = $files->getDataById($id);
         // [id, code, ver, file_id, file_name, file_path, file_view_path]
@@ -123,32 +123,32 @@ class Dcc_FilesController extends Zend_Controller_Action {
             $sub_names = explode('|', $names[$i]);
             $final_codes[$k] = $codes[$i];
             $final_vers[$k] = $vers[$i];
-            if(isset($description[$i]) && $description[$i]) {
+			if(isset($description[$i]) && $description[$i]) {
                 $final_descs[$k] = $description[$i];
-            } else {
-                $final_descs[$k] = "";
-            }
-            if(isset($project_info[$i]) && $project_info[$i]) {
+			} else {
+				$final_descs[$k] = "";
+			}
+			if(isset($project_info[$i]) && $project_info[$i]) {
                 $final_projs[$k] = $project_info[$i];
-            } else {
-                $final_projs[$k] = "";
-            }
+			} else {
+				$final_projs[$k] = "";
+			}
             $final_names[$k] = $sub_names[0];
             $k++;
             for ($j = 1; $j < count($sub_names); $j++) {
                 $final_codes[$k] = $codes[$i];
                 $final_vers[$k] = $vers[$i];
                 $final_names[$k] = $sub_names[$j];
-                if(isset($description[$i]) && $description[$i]) {
-                    $final_descs[$k] = $description[$i];
-                } else {
-                    $final_descs[$k] = "";
-                }
-                if(isset($project_info[$i]) && $project_info[$i]) {
-                    $final_projs[$k] = $project_info[$i];
-                } else {
-                    $final_projs[$k] = "";
-                }
+				if(isset($description[$i]) && $description[$i]) {
+					$final_descs[$k] = $description[$i];
+				} else {
+					$final_descs[$k] = "";
+				}
+				if(isset($project_info[$i]) && $project_info[$i]) {
+					$final_projs[$k] = $project_info[$i];
+				} else {
+					$final_projs[$k] = "";
+				}
                 $k++;
             }
         }
@@ -186,30 +186,30 @@ class Dcc_FilesController extends Zend_Controller_Action {
             $result[$i]['file_view_path'] = $paths[2];
 
             // 权限检查
-            // 有权限的情况：1、本人上传的文件 2、本人提交的文件评审 3、本人参与审核的文件评审 4、共享给我的 5、将要审核的审核人 6、文件管理员、BOM管理员、物料管理员
-            // 首先检查文件是否存在
-            $result[$i]['exists'] = true;
-            if(!file_exists($paths[1])) {
-                $result[$i]['exists'] = false;
-            }
-            $role = false;
-            if($modelUser->checkPermissionByRoleName('物料管理员')
-            || $modelUser->checkPermissionByRoleName('文件管理员')
-            || $modelUser->checkPermissionByRoleName('系统管理员')
-            || $modelUser->checkPermissionByRoleName('BOM管理员')) {
-                $role = true;
-            } else if($row0['create_user'] == $user || $row0['update_user'] == $user) {
-                $role = true;
-            } else if($record->fetchAll("table_id = $id and handle_user = $user and table_name = 'oa_doc_files' and action = '审批'")->count() > 0) {
-                $role = true;
-            } else if($upload->fetchAll("id = ".$row['id']." and (create_user = $user or update_user = $user)")->count() > 0) {
-                $role = true;
-            } else if($share->fetchAll("shared_id = ".$row['id']." and type = 'upload' and share_time_begin <= '$nowDate' and share_time_end >= '$nowDate'  and (FIND_IN_SET($user, share_user) or FIND_IN_SET($myDept, share_dept))")->count() > 0) {
-                $role = true;
-            } else if($review->fetchAll("file_id = $id and FIND_IN_SET($user, plan_user) and type = 'files'")->count() > 0) {
-                $role = true;
-            }
-            $result[$i]['role'] = $role;
+	        // 有权限的情况：1、本人上传的文件 2、本人提交的文件评审 3、本人参与审核的文件评审 4、共享给我的 5、将要审核的审核人 6、文件管理员、BOM管理员、物料管理员
+	        // 首先检查文件是否存在
+	        $result[$i]['exists'] = true;
+	        if(!file_exists($paths[1])) {
+	        	$result[$i]['exists'] = false;
+	        }
+	        $role = false;
+	        if($modelUser->checkPermissionByRoleName('物料管理员')
+	        || $modelUser->checkPermissionByRoleName('文件管理员')
+	        || $modelUser->checkPermissionByRoleName('系统管理员')
+	        || $modelUser->checkPermissionByRoleName('BOM管理员')) {
+	        	$role = true;
+	        } else if($row0['create_user'] == $user || $row0['update_user'] == $user) {
+	        	$role = true;
+	        } else if($record->fetchAll("table_id = $id and handle_user = $user and table_name = 'oa_doc_files' and action = '审批'")->count() > 0) {
+	        	$role = true;
+	        } else if($upload->fetchAll("id = ".$row['id']." and (create_user = $user or update_user = $user)")->count() > 0) {
+	        	$role = true;
+	        } else if($share->fetchAll("shared_id = ".$row['id']." and type = 'upload' and share_time_begin <= '$nowDate' and share_time_end >= '$nowDate'  and (FIND_IN_SET($user, share_user) or FIND_IN_SET($myDept, share_dept))")->count() > 0) {
+	        	$role = true;
+	        } else if($review->fetchAll("file_id = $id and FIND_IN_SET($user, plan_user) and type = 'files'")->count() > 0) {
+	        	$role = true;
+	        }
+	        $result[$i]['role'] = $role;
 
         }
         echo Zend_Json::encode($result);

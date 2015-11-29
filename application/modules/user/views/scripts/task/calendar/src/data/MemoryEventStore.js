@@ -26,9 +26,9 @@ Ext.define('Ext.calendar.data.MemoryEventStore', {
         type: 'ajax',
         api: {
             read: getRootPath() + '/public/user/task/getevent',
-            update: getRootPath() + '/public/user/task/update',
-            create: getRootPath() + '/public/user/task/create',
-            destroy: getRootPath() + '/public/user/task/destroy'
+            update: getRootPath() + '/public/user/task/save',
+            create: getRootPath() + '/public/user/task/save',
+            destroy: getRootPath() + '/public/user/task/remove'
         },
         reader: {
             type: 'json',
@@ -82,7 +82,7 @@ Ext.define('Ext.calendar.data.MemoryEventStore', {
     onProxyLoad: function(operation) {
         var me = this,
             records;
-        
+
         if (me.data && me.data.length > 0) {
             // this store has already been initially loaded, so do not reload
             // and lose updates to the store, just use store's latest data
@@ -100,6 +100,10 @@ Ext.define('Ext.calendar.data.MemoryEventStore', {
                 me.totalCount = resultSet.total;
             }
             if (successful) {
+                for(var i=0;i<resultSet.total;i++){
+                    records[i].data.StartDate=new Date(records[i].data.Start);
+                    records[i].data.EndDate=new Date(records[i].data.End);
+                }
                 me.loadRecords(records, operation);
             }
         }

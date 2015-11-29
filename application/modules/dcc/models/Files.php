@@ -62,20 +62,20 @@ class Dcc_Model_Files extends Application_Model_Db {
 
     public function getFilesListForEdit($where, $start, $limit) {
         $sql = $this->select()
-                    ->setIntegrityCheck(false)
-                    ->from(array('t1' => $this->_name))
-                    ->joinLeft(array('t2' => $this->_dbprefix . 'employee'), "t1.create_user = t2.id", array('creater' => 'cname'))
-                    ->joinLeft(array('t3' => $this->_dbprefix . 'employee'), "t1.update_user = t3.id", array('updater' => 'cname'))
-                    ->joinLeft(array('t4' => $this->_dbprefix . 'doc_code'), "t1.code = t4.code", array('prefix', 'project_no', 'code_description' => 'description'))
-                    ->joinLeft(array('t5' => $this->_dbprefix . 'doc_type'), "t4.prefix = t5.id", array('type_id' => 'id', 'type_code' => 'code', 'type_name' => 'name', 'model_id'))
-                    ->joinLeft(array('t6' => $this->_dbprefix . 'doc_upgrade'), "t1.id = t6.file_id", array('reason', 'reason_type', 'newest_ver' => 'ver_original', 'future_ver' => 'ver'))
-                    ->joinLeft(array('t7' => $this->_dbprefix . 'product_catalog'), "t4.project_no = t7.id", array('project_name' => 'model_internal'))
+	                ->setIntegrityCheck(false)
+	                ->from(array('t1' => $this->_name))
+	                ->joinLeft(array('t2' => $this->_dbprefix . 'employee'), "t1.create_user = t2.id", array('creater' => 'cname'))
+	                ->joinLeft(array('t3' => $this->_dbprefix . 'employee'), "t1.update_user = t3.id", array('updater' => 'cname'))
+	                ->joinLeft(array('t4' => $this->_dbprefix . 'doc_code'), "t1.code = t4.code", array('prefix', 'project_no', 'code_description' => 'description'))
+	                ->joinLeft(array('t5' => $this->_dbprefix . 'doc_type'), "t4.prefix = t5.id", array('type_id' => 'id', 'type_code' => 'code', 'type_name' => 'name', 'model_id'))
+	                ->joinLeft(array('t6' => $this->_dbprefix . 'doc_upgrade'), "t1.id = t6.file_id", array('reason', 'reason_type', 'newest_ver' => 'ver_original', 'future_ver' => 'ver'))
+	                ->joinLeft(array('t7' => $this->_dbprefix . 'product_catalog'), "t4.project_no = t7.id", array('project_name' => 'model_internal'))
                     ->joinLeft(array('t9' => $this->_dbprefix . 'codemaster'), "t5.category = t9.code and t9.type=4", array('category' => 'id', 'category_name' => 'text'))
                     ->joinLeft(array('t10' => $this->_dbprefix . 'codemaster'), "t6.reason_type = t10.code and t10.type=5", array('reason_type_name' => 'text'))
-                    ->where($where)
-                    ->order(array('(select case t1.state when "Reviewing" then 1 when "Return" then 2 else 3 end)', 't1.id desc'));
+	                ->where($where)
+	                ->order(array('(select case t1.state when "Reviewing" then 1 when "Return" then 2 else 3 end)', 't1.id desc'));
         if(isset($limit) && isset($start)) {
-            $sql = $sql->limit($limit, $start);
+        	$sql = $sql->limit($limit, $start);
         }
 
         $data = $this->fetchAll($sql)->toArray();
@@ -233,45 +233,45 @@ class Dcc_Model_Files extends Application_Model_Db {
                     ->where("t1.code like '%,%'")
                     ->where($where);
             if(count($file_ids) > 0) {
-                $sql4_1 = $sql4_1->where("t1.id in (" . implode(',', $file_ids) . ")");
-                $sql4_2 = $sql4_2->where("t1.id in (" . implode(',', $file_ids) . ")");
+            	$sql4_1 = $sql4_1->where("t1.id in (" . implode(',', $file_ids) . ")");
+            	$sql4_2 = $sql4_2->where("t1.id in (" . implode(',', $file_ids) . ")");
             }
         $sql4 = $this->select()->union(array($sql4_1, $sql4_2), Zend_Db_Select::SQL_UNION);
         $sql3 = $this->select()->union(array($sql3_1, $sql3_2), Zend_Db_Select::SQL_UNION);
         
         $sql1 = $this->select()->union(array($sql1_1, $sql1_2), Zend_Db_Select::SQL_UNION);
             if($type == 1) {
-                $sqlArray = array($sql1);
+            	$sqlArray = array($sql1);
             } else if($type == 2) {
-                $ids = $this->getMyId($myId);
-                if($ids) {
-                    $sql2_1 = $sql2_1->where("t1.id in ($ids)");
-                    $sql2_2 = $sql2_2->where("t1.id in ($ids)");
-                } else {
-                    $sql2_1 = $sql2_1->where("t1.id is null");
-                    $sql2_2 = $sql2_2->where("t1.id is null");
-                }
+            	$ids = $this->getMyId($myId);
+            	if($ids) {
+            		$sql2_1 = $sql2_1->where("t1.id in ($ids)");
+            		$sql2_2 = $sql2_2->where("t1.id in ($ids)");
+            	} else {
+            		$sql2_1 = $sql2_1->where("t1.id is null");
+            		$sql2_2 = $sql2_2->where("t1.id is null");
+            	}
                 $sql2 = $this->select()->union(array($sql2_1, $sql2_2), Zend_Db_Select::SQL_UNION);
-                $sqlArray = array($sql2);
+            	$sqlArray = array($sql2);
             } else if($type == 3) {
-                $sqlArray = array($sql3);
+            	$sqlArray = array($sql3);
             } else if($type == 4) {
-                $sqlArray = array($sql4);
+            	$sqlArray = array($sql4);
             } else {
-                $ids = $this->getMyId($myId);
-                if($ids) {
-                    $sql2_1 = $sql2_1->where("t1.id in ($ids)");
-                    $sql2_2 = $sql2_2->where("t1.id in ($ids)");
-                } else {
-                    $sql2_1 = $sql2_1->where("t1.id is null");
-                    $sql2_2 = $sql2_2->where("t1.id is null");
-                }
+            	$ids = $this->getMyId($myId);
+            	if($ids) {
+            		$sql2_1 = $sql2_1->where("t1.id in ($ids)");
+            		$sql2_2 = $sql2_2->where("t1.id in ($ids)");
+            	} else {
+            		$sql2_1 = $sql2_1->where("t1.id is null");
+            		$sql2_2 = $sql2_2->where("t1.id is null");
+            	}
                 $sql2 = $this->select()->union(array($sql2_1, $sql2_2), Zend_Db_Select::SQL_UNION);
-                $sqlArray = array($sql3, $sql1, $sql2, $sql4);
+            	$sqlArray = array($sql3, $sql1, $sql2, $sql4);
             }
-            $selectUnion = $this->select()->union($sqlArray, Zend_Db_Select::SQL_UNION)
-                                ->order('(select case t1.state when "Reviewing" then 1 when "Return" then 2 else 3 end)')
-                                ->limit($limit, $start);
+        	$selectUnion = $this->select()->union($sqlArray, Zend_Db_Select::SQL_UNION)
+        	                    ->order('(select case t1.state when "Reviewing" then 1 when "Return" then 2 else 3 end)')
+        	                    ->limit($limit, $start);
     
             $data = $this->fetchAll($selectUnion)->toArray();
     
@@ -376,43 +376,43 @@ class Dcc_Model_Files extends Application_Model_Db {
                     ->where("t1.code like '%,%'")
                     ->where($where);
             if(count($file_ids) > 0) {
-                $sql4_1 = $sql4_1->where("t1.id in (" . implode(',', $file_ids) . ")");
-                $sql4_2 = $sql4_2->where("t1.id in (" . implode(',', $file_ids) . ")");
+            	$sql4_1 = $sql4_1->where("t1.id in (" . implode(',', $file_ids) . ")");
+            	$sql4_2 = $sql4_2->where("t1.id in (" . implode(',', $file_ids) . ")");
             }
             $sql4 = $this->select()->union(array($sql4_1, $sql4_2), Zend_Db_Select::SQL_UNION);
             $sql3 = $this->select()->union(array($sql3_1, $sql3_2), Zend_Db_Select::SQL_UNION);
             $sql1 = $this->select()->union(array($sql1_1, $sql1_2), Zend_Db_Select::SQL_UNION);
             if($type == 1) {
-                $sqlArray = array($sql1);
+            	$sqlArray = array($sql1);
             } else if($type == 2) {
-                $ids = $this->getMyId($myId);
-                if($ids) {
-                    $sql2_1 = $sql2_1->where("t1.id in ($ids)");
-                    $sql2_2 = $sql2_2->where("t1.id in ($ids)");
-                } else {
-                    $sql2_1 = $sql2_1->where("t1.id is null");
-                    $sql2_2 = $sql2_2->where("t1.id is null");
-                }
+            	$ids = $this->getMyId($myId);
+            	if($ids) {
+            		$sql2_1 = $sql2_1->where("t1.id in ($ids)");
+            		$sql2_2 = $sql2_2->where("t1.id in ($ids)");
+            	} else {
+            		$sql2_1 = $sql2_1->where("t1.id is null");
+            		$sql2_2 = $sql2_2->where("t1.id is null");
+            	}
                 $sql2 = $this->select()->union(array($sql2_1, $sql2_2), Zend_Db_Select::SQL_UNION);
-                $sqlArray = array($sql2);
+            	$sqlArray = array($sql2);
             } else if($type == 3) {
-                $sqlArray = array($sql3);
+            	$sqlArray = array($sql3);
             } else if($type == 4) {
-                $sqlArray = array($sql4);
+            	$sqlArray = array($sql4);
             } else {
-                $ids = $this->getMyId($myId);
-                if($ids) {
-                    $sql2_1 = $sql2_1->where("t1.id in ($ids)");
-                    $sql2_2 = $sql2_2->where("t1.id in ($ids)");
-                } else {
-                    $sql2_1 = $sql2_1->where("t1.id is null");
-                    $sql2_2 = $sql2_2->where("t1.id is null");
-                }
+            	$ids = $this->getMyId($myId);
+            	if($ids) {
+            		$sql2_1 = $sql2_1->where("t1.id in ($ids)");
+            		$sql2_2 = $sql2_2->where("t1.id in ($ids)");
+            	} else {
+            		$sql2_1 = $sql2_1->where("t1.id is null");
+            		$sql2_2 = $sql2_2->where("t1.id is null");
+            	}
                 $sql2 = $this->select()->union(array($sql2_1, $sql2_2), Zend_Db_Select::SQL_UNION);
-                $sqlArray = array($sql3, $sql1, $sql2, $sql4);
+            	$sqlArray = array($sql3, $sql1, $sql2, $sql4);
             }
-            $selectUnion = $this->select()->union($sqlArray, Zend_Db_Select::SQL_UNION)
-                                ->order('create_time desc');
+        	$selectUnion = $this->select()->union($sqlArray, Zend_Db_Select::SQL_UNION)
+        	                    ->order('create_time desc');
     
             $data = $this->fetchAll($selectUnion)->toArray();
     
@@ -420,18 +420,18 @@ class Dcc_Model_Files extends Application_Model_Db {
     }
 
     function getMyId($myId) {
-        if($myId) {
-            $idsData = $this->getAdapter()->query("SELECT group_concat(table_id) as ids from oa_record where handle_user = $myId and table_name = 'oa_doc_files' and action = '审批'")->fetchObject();
-            if($idsData && $idsData->ids) {
-                return $idsData->ids;
-            }
-        }
-        return "";
+    	if($myId) {
+    	    $idsData = $this->getAdapter()->query("SELECT group_concat(table_id) as ids from oa_record where handle_user = $myId and table_name = 'oa_doc_files' and action = '审批'")->fetchObject();
+    	    if($idsData && $idsData->ids) {
+    	    	return $idsData->ids;
+    	    }
+    	}
+    	return "";
     }
 
     public function obsoleteOldFile() {
-        $where = "";
-        $this->update();
+    	$where = "";
+    	$this->update();
     }
 
 }

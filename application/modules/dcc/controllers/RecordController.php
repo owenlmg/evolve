@@ -17,16 +17,16 @@ class Dcc_RecordController extends Zend_Controller_Action
      */
     public function getrecordAction()
     {
-        $model = new Dcc_Model_Record();
+    	$model = new Dcc_Model_Record();
 
-        $request = $this->getRequest()->getParams();
-        $table = $request['table'];
-        $id = $request['id'];
+    	$request = $this->getRequest()->getParams();
+    	$table = $request['table'];
+    	$id = $request['id'];
 
-        $data = $model->getList("table_name = '$table' and table_id = '$id'");
-        for($i = 0; $i < count($data); $i++){
+    	$data = $model->getList("table_name = '$table' and table_id = '$id'");
+    	for($i = 0; $i < count($data); $i++){
             $data[$i]['handle_time'] = strtotime($data[$i]['handle_time']);
-        }
+    	}
 
         echo Zend_Json::encode($data);
 

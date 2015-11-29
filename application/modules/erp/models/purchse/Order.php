@@ -328,8 +328,8 @@ class Erp_Model_Purchse_Order extends Application_Model_Db
                 $data[$i]['req_info'] = implode(',', $reqInfoArr);
             }
             
-            $data[$i]['order_supplier'] = $data[$i]['order_supplier_code'].$data[$i]['order_supplier_name'];
-            
+        	$data[$i]['order_supplier'] = $data[$i]['order_supplier_code'].$data[$i]['order_supplier_name'];
+        	
             $data[$i]['qty_receive'] = 0;
             $data[$i]['receive_info'] = '';
             if($data[$i]['id']){

@@ -279,7 +279,7 @@ class Erp_Model_Stock_Stock extends Application_Model_Db
                     
                     array_push($info, $qty);
                 }
-                
+        		
                 array_push($data_csv, $info);
             }
             

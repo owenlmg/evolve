@@ -20,23 +20,23 @@ class Dcc_TypeController extends Zend_Controller_Action {
         $whereSearch = "1=1";
         foreach ($request as $k => $v) {
             if ($v) {
-                if($k == 'search_tag') {
-                    $whereSearch .= " and (ifnull(t1.code,'') like '%$v%' or ifnull(t1.fullname,'') like '%$v%' or ifnull(t1.name,'') like '%$v%' or ifnull(t1.description,'') like '%$v%' or ifnull(t1.remark,'') like '%$v%' or ifnull(t1.secretlevel,'') like '%$v%')";
-                } else if($k == 'search_type') {
-                    if($v) {
-                        $v = json_decode($v);
-                        $v = implode(',', $v);
-                        if($v) {
-                            $whereSearch .= " and t1.category in ($v)";
-                        }
-                    }
-                } else {
-                    $col = str_replace('search_', '', $k);
-                    if ($col != $k) {
-                        // 查询条件
-                        $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
-                    }
-                }
+            	if($k == 'search_tag') {
+            		$whereSearch .= " and (ifnull(t1.code,'') like '%$v%' or ifnull(t1.fullname,'') like '%$v%' or ifnull(t1.name,'') like '%$v%' or ifnull(t1.description,'') like '%$v%' or ifnull(t1.remark,'') like '%$v%' or ifnull(t1.secretlevel,'') like '%$v%')";
+            	} else if($k == 'search_type') {
+            		if($v) {
+	            		$v = json_decode($v);
+	            		$v = implode(',', $v);
+	            		if($v) {
+	            		    $whereSearch .= " and t1.category in ($v)";
+	            		}
+            		}
+            	} else {
+	                $col = str_replace('search_', '', $k);
+	                if ($col != $k) {
+	                    // 查询条件
+	                    $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
+	                }
+            	}
             }
         }
         $type = new Dcc_Model_Type();
@@ -47,9 +47,9 @@ class Dcc_TypeController extends Zend_Controller_Action {
         for ($i = 0; $i < count($data); $i++) {
             $data[$i]['create_time'] = strtotime($data[$i]['create_time']);
             if($data[$i]['state'] != 1) {
-                $data[$i]['update_time'] = strtotime($data[$i]['update_time']);
+            	$data[$i]['update_time'] = strtotime($data[$i]['update_time']);
             } else {
-                $data[$i]['update_time'] = "";
+            	$data[$i]['update_time'] = "";
             }
 
             $data[$i]['state'] = $data[$i]['state'] == 1 ? true : false;
@@ -94,14 +94,14 @@ class Dcc_TypeController extends Zend_Controller_Action {
                 $data[$i]['resp_emp_name'] = $result->resp_emp_name;
             }
             if ($data[$i]['resp_dept_id']) {
-                $dept = $data[$i]['resp_dept_id'];
+            	$dept = $data[$i]['resp_dept_id'];
                 $sql = "select GROUP_CONCAT(name) as resp_dept_name from oa_employee_dept where id in ($dept)";
                 $db = $step->getAdapter();
                 $result = $db->query($sql)->fetchObject();
                 $data[$i]['resp_dept_name'] = $result->resp_dept_name;
             }
             if ($data[$i]['grant_dept_id']) {
-                $dept = $data[$i]['grant_dept_id'];
+            	$dept = $data[$i]['grant_dept_id'];
                 $sql = "select GROUP_CONCAT(name) as grant_dept_name from oa_employee_dept where id in ($dept)";
                 $db = $step->getAdapter();
                 $result = $db->query($sql)->fetchObject();
@@ -360,23 +360,23 @@ class Dcc_TypeController extends Zend_Controller_Action {
         $whereSearch = "1=1";
         foreach ($request as $k => $v) {
             if ($v) {
-                if($k == 'search_tag') {
-                    $whereSearch .= " and (ifnull(t1.code,'') like '%$v%' or ifnull(t1.fullname,'') like '%$v%' or ifnull(t1.name,'') like '%$v%' or ifnull(t1.description,'') like '%$v%' or ifnull(t1.remark,'') like '%$v%' or ifnull(t1.secretlevel,'') like '%$v%')";
-                } else if($k == 'search_type') {
-                    if($v) {
-                        $v = json_decode($v);
-                        $v = implode(',', $v);
-                        if($v) {
-                            $whereSearch .= " and t1.category in ($v)";
-                        }
-                    }
-                } else {
-                    $col = str_replace('search_', '', $k);
-                    if ($col != $k) {
-                        // 查询条件
-                        $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
-                    }
-                }
+            	if($k == 'search_tag') {
+            		$whereSearch .= " and (ifnull(t1.code,'') like '%$v%' or ifnull(t1.fullname,'') like '%$v%' or ifnull(t1.name,'') like '%$v%' or ifnull(t1.description,'') like '%$v%' or ifnull(t1.remark,'') like '%$v%' or ifnull(t1.secretlevel,'') like '%$v%')";
+            	} else if($k == 'search_type') {
+            		if($v) {
+	            		$v = json_decode($v);
+	            		$v = implode(',', $v);
+	            		if($v) {
+	            		    $whereSearch .= " and t1.category in ($v)";
+	            		}
+            		}
+            	} else {
+	                $col = str_replace('search_', '', $k);
+	                if ($col != $k) {
+	                    // 查询条件
+	                    $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
+	                }
+            	}
             }
         }
         print(chr(0xEF).chr(0xBB).chr(0xBF));
@@ -428,7 +428,7 @@ class Dcc_TypeController extends Zend_Controller_Action {
         for($i = 0; $i < count($data); $i++) {
             if($data[$i]['state'] != 1) {
             } else {
-                $data[$i]['update_time'] = "";
+            	$data[$i]['update_time'] = "";
             }
 
             $data[$i]['state'] = $data[$i]['state'] == 1 ? true : false;
@@ -476,14 +476,14 @@ class Dcc_TypeController extends Zend_Controller_Action {
                 $data[$i]['resp_emp_name'] = $result->resp_emp_name;
             }
             if ($data[$i]['resp_dept_id']) {
-                $dept = $data[$i]['resp_dept_id'];
+            	$dept = $data[$i]['resp_dept_id'];
                 $sql = "select GROUP_CONCAT(name) as resp_dept_name from oa_employee_dept where id in ($dept)";
                 $db = $step->getAdapter();
                 $result = $db->query($sql)->fetchObject();
                 $data[$i]['resp_dept_name'] = $result->resp_dept_name;
             }
             if ($data[$i]['grant_dept_id']) {
-                $dept = $data[$i]['grant_dept_id'];
+            	$dept = $data[$i]['grant_dept_id'];
                 $sql = "select GROUP_CONCAT(name) as grant_dept_name from oa_employee_dept where id in ($dept)";
                 $db = $step->getAdapter();
                 $result = $db->query($sql)->fetchObject();

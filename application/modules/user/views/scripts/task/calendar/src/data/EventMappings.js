@@ -22,11 +22,21 @@ Ext.calendar.data.EventMappings = {
         mapping: 'title',
         type: 'string'
     },
+    Parent: {
+        name: 'Parent',
+        mapping: 'parent',
+        type: 'string'
+    },
     StartDate: {
         name: 'StartDate',
         mapping: 'start',
         type: 'date',
         dateFormat: 'c'
+    },
+    Start: {
+        name: 'Start',
+        mapping: 'start',
+        type: 'string'
     },
     EndDate: {
         name: 'EndDate',
@@ -34,9 +44,14 @@ Ext.calendar.data.EventMappings = {
         type: 'date',
         dateFormat: 'c'
     },
-    Location: {
-        name: 'Location',
-        mapping: 'loc',
+    End: {
+        name: 'End',
+        mapping: 'end',
+        type: 'string'
+    },
+    Important: {
+        name: 'Important',
+        mapping: 'important',
         type: 'string'
     },
     Notes: {
@@ -44,9 +59,14 @@ Ext.calendar.data.EventMappings = {
         mapping: 'notes',
         type: 'string'
     },
-    Url: {
-        name: 'Url',
-        mapping: 'url',
+    Content: {
+        name: 'Content',
+        mapping: 'content',
+        type: 'string'
+    },
+    Priority: {
+        name: 'Priority',
+        mapping: 'priority',
         type: 'string'
     },
     IsAllDay: {
@@ -63,5 +83,65 @@ Ext.calendar.data.EventMappings = {
         name: 'IsNew',
         mapping: 'n',
         type: 'boolean'
+    },
+    State: {
+        name: 'State',
+        mapping: 'state',
+        type: 'string'
+    },
+    Responsible_id: {
+        name: 'Responsible_id',
+        mapping: 'responsible_id',
+        type: 'string'
+    },
+    Responsible: {
+        name: 'Responsible',
+        mapping: 'responsible',
+        type: 'string'
+    },
+    Follow_id: {
+        name: 'Follow_id',
+        mapping: 'follow_id',
+        type: 'string'
+    },
+    Follow: {
+        name: 'Follow',
+        mapping: 'follow',
+        type: 'string'
+    },
+    Location: {
+        name: 'Location',
+        mapping: 'location',
+        type: 'string'
+    },
+    Url: {
+        name: 'Url',
+        mapping: 'url',
+        type: 'string'
+    },
+    Owner: {
+        name: 'Owner',
+        mapping: 'owner',
+        type: 'string'
+    },
+    Follower: {
+        name: 'Follower',
+        mapping: 'follower',
+        type: 'string'
+    },
+    Relation: {
+        name: 'Relation',
+        mapping: 'relation',
+        type: 'string'
+    },
+    Process: {
+        name: 'Process',
+        mapping: 'process',
+        type: 'string'
+    },
+    Type: {
+        name: 'Type',
+        mapping: 'type',
+        type: 'string'
     }
 };

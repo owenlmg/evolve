@@ -14,8 +14,8 @@ class Erp_Model_Purchse_Orderitemsreq extends Application_Model_Db
     
     public function getOrderItemReqInfo($order_item_id)
     {
-        $info = array();
-        
+    	$info = array();
+    	
         $sql = $this->select()
                     ->setIntegrityCheck(false)
                     ->from(array('t1' => $this->_name), array(
@@ -45,8 +45,8 @@ class Erp_Model_Purchse_Orderitemsreq extends Application_Model_Db
                 ));
             }
         }
-        
-        return $info;
+    	
+    	return $info;
     }
     
     // 取消订单处理

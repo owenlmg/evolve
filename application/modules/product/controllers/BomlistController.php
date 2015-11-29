@@ -50,9 +50,9 @@ class Product_BomlistController extends Zend_Controller_Action
         $whereSearch = "1=1";
         foreach ($request as $k => $v) {
             if ($v) {
-                if($k == 'search_key') {
-                    $whereSearch .= " and (ifnull(t1.remark,'') like '%$v%' or ifnull(t3.name,'') like '%$v%' or ifnull(t3.description,'') like '%$v%' or ifnull(t5.model_internal, '') like '%$v%')";
-                } else if ("search_archive_date_from" == $k && $v) {
+            	if($k == 'search_key') {
+            		$whereSearch .= " and (ifnull(t1.remark,'') like '%$v%' or ifnull(t3.name,'') like '%$v%' or ifnull(t3.description,'') like '%$v%' or ifnull(t5.model_internal, '') like '%$v%')";
+            	} else if ("search_archive_date_from" == $k && $v) {
                     $whereSearch .= " and t1.bom_upd_time >= '" . str_replace('T', ' ', $v) . "'";
                 } else if ("search_archive_date_to" == $k && $v) {
                     $whereSearch .= " and t1.bom_upd_time <= '" . str_replace('T00:00:00', ' 23:59:59', $v) . "'";
@@ -62,10 +62,10 @@ class Product_BomlistController extends Zend_Controller_Action
                     $recordkey = "";
                     $sonData = $db->query("select group_concat(recordkey) as recordkey from oa_product_bom_son where code like '%$v%'")->fetchObject();
                     if($sonData && $sonData->recordkey) {
-                        $recordkey = $sonData->recordkey;
+                    	$recordkey = $sonData->recordkey;
                     }
                     if(!$recordkey) {
-                        $recordkey = "0";
+                    	$recordkey = "0";
                     }
                     $whereSearch .= " and t1.recordkey in ($recordkey)";
                 } else if ("search_recordkey" == $k && $v) {
@@ -73,12 +73,12 @@ class Product_BomlistController extends Zend_Controller_Action
                 } else if ("explanded" == $k && $v) {
                     $explanded = json_decode($v);
                 } else {
-                    $col = str_replace('search_', '', $k);
-                    if ($col != $k) {
-                        // 查询条件
-                        $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
-                    }
-                }
+	                $col = str_replace('search_', '', $k);
+	                if ($col != $k) {
+	                    // 查询条件
+	                    $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
+	                }
+            	}
             }
         }
         // 获取物料数据
@@ -136,11 +136,11 @@ class Product_BomlistController extends Zend_Controller_Action
     }
 
     private function ifNull($array, $key) {
-        if(isset($array[$key])) {
-            return $array[$key];
-        } else {
-            return "";
-        }
+    	if(isset($array[$key])) {
+    		return $array[$key];
+    	} else {
+    		return "";
+    	}
     }
 
     /**

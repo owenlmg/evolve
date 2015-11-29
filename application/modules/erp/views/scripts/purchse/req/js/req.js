@@ -44,8 +44,7 @@ var itemsRowEditing = Ext.create('Ext.grid.plugin.CellEditing', {
     		var record = e.record;
     		
     		if(Ext.getCmp('reqSaveBtn').isDisabled() 
-			|| (!Ext.getCmp('transfer').isHidden() && Ext.getCmp('transfer_type').getValue() == '取消')
-			|| (!Ext.getCmp('transfer').isHidden() && e.field == 'items_code' && record.get('items_qty_order') > 0)){
+			|| (!Ext.getCmp('transfer').isHidden() && Ext.getCmp('transfer_type').getValue() == '取消')){
     			return false;
     		}else if((e.field == 'items_name' || e.field == 'items_description') && record.get('items_code') != ""){
     			e.cancel = true;
@@ -638,7 +637,7 @@ var reqForm = Ext.create('Ext.form.Panel', {
            displayField: 'name',
            valueField: 'id',
            triggerAction: 'all',
-           allowBlank: false,
+           value: 1,
            lazyRender: true,
            queryMode: 'local',
            afterLabelTextTpl: required,
@@ -662,19 +661,6 @@ var reqForm = Ext.create('Ext.form.Panel', {
            store: employeeListStore,
            fieldLabel: '申请人',
            labelWidth: 70,
-           listeners: {
-               change: function( sel, newValue, oldValue, eOpts ){
-                   // 提交的时候：选择人员自动带出部门
-                   if(!Ext.getCmp('reqSaveBtn').isDisabled()){
-                       var index = employeeListStore.findExact('id', newValue);
-                       if(index != -1){
-                           var dept_id = parseInt(employeeListStore.getAt(index).data.dept_id);
-                           
-                           this.up('form').getForm().findField('dept_id').setValue(dept_id);
-                       }
-                   }
-               }
-           },
            flex: 1.5
        }, {
            name: 'type_id', 

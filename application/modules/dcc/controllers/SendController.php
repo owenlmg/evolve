@@ -262,10 +262,10 @@ class Dcc_SendController extends Zend_Controller_Action {
                 $sql = "select group_concat(email) as email from oa_employee where dept_id in ($dept)";
                 $data = $employee->getAdapter()->query($sql)->fetchObject();
                 if($data && $data->email) {
-                    $toemail = $data->email;
-                    foreach(explode(',', $toemail) as $t) {
-                        $to[] = $t;
-                    }
+                	$toemail = $data->email;
+                	foreach(explode(',', $toemail) as $t) {
+                	    $to[] = $t;
+                	}
                 }
             }
             
@@ -387,16 +387,16 @@ class Dcc_SendController extends Zend_Controller_Action {
     }
 
     private function getSendCode() {
-        // 编号规则：OGD+年（XXXX）+月（XX）+日（XX）+批次号（XX）
-        $prefix = "OGD".date('Ymd');
-        $like = $prefix."__";
-        $send = new Dcc_Model_Send();
-        $data = $send->getAdapter()->query("select max(code) as code from oa_doc_send where code like '$like'")->fetchObject();
+    	// 编号规则：OGD+年（XXXX）+月（XX）+日（XX）+批次号（XX）
+    	$prefix = "OGD".date('Ymd');
+    	$like = $prefix."__";
+    	$send = new Dcc_Model_Send();
+    	$data = $send->getAdapter()->query("select max(code) as code from oa_doc_send where code like '$like'")->fetchObject();
         if($data && $data->code) {
-            $code = $data->code;
-            $code = $prefix.substr((("1" . str_replace($prefix, "", $code)) + 1), 1);
+        	$code = $data->code;
+        	$code = $prefix.substr((("1" . str_replace($prefix, "", $code)) + 1), 1);
         } else {
-            $code = $prefix."01";
+        	$code = $prefix."01";
         }
         return $code;
     }

@@ -289,8 +289,8 @@ class Application_Model_Log_Mail extends Application_Model_Db
                         /*if(stripos($toMail, '@') != flase) {
                             $mail->addTo($toMail);
                             $sendCnt++;
-                        }*/
-                        if(stripos($toMail, SYS_EMAIL_SUFFIX) != false) {
+                        }
+                        if(stripos($toMail, SYS_EMAIL_SUFFIX) != flase) {
                             // 内部邮箱，检查是否在职
                             if($employeeModel->fetchAll("active = 1 and email = '".$toMail."'")->count() > 0){
                                 $mail->addTo($toMail);
@@ -299,11 +299,11 @@ class Application_Model_Log_Mail extends Application_Model_Db
                         } else {
                             $mail->addTo($toMail);
                             $sendCnt++;
-                        }
-                        /*if($employeeModel->fetchAll("active = 1 and email = '".$toMail."'")->count() > 0){
+                        }*/
+                        if($employeeModel->fetchAll("active = 1 and email = '".$toMail."'")->count() > 0){
                             $mail->addTo($toMail);
                             $sendCnt++;
-                        }*/
+                        }
                     }
                     
                     // 添加抄送人

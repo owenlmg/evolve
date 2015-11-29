@@ -39,15 +39,15 @@ class Erp_Model_Purchse_Transferorderitems extends Application_Model_Db
                 'items_supplier_description'=> $d['supplier_description'],
                 'items_warehouse_code'      => $d['warehouse_code'],
                 'items_qty'                 => $d['qty'],
-                //'items_qty_receive'          => $qty_receive,
+                //'items_qty_receive'      	=> $qty_receive,
                 'items_unit'                => $d['unit'],
                 'items_price'               => $d['price'],
                 'items_total'               => $d['total'],
                 'items_request_date'        => $d['request_date'],
                 'items_dept_id'             => $d['dept_id'],
                 'items_project_info'        => $d['project_info'],
-                'items_req_item_id'            => $d['req_item_id'],
-                'items_req_qty'                => $d['req_qty'],
+                'items_req_item_id'        	=> $d['req_item_id'],
+                'items_req_qty'        		=> $d['req_qty'],
                 'items_remark'              => $d['remark']
             ));
         }

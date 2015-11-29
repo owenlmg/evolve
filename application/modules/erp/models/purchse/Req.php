@@ -42,43 +42,43 @@ class Erp_Model_Purchse_Req extends Application_Model_Db
     // 获取订单项关联人员
     public function getRelatedUsers($numberArr)
     {
-        $userInfo = array();
-        
-        $review = new Dcc_Model_Review();
-        
-        $userIdsAdded = array();
-        
-        foreach ($numberArr as $number){
-            // 获取申请人
-            $sql = $this->select()
-                    ->setIntegrityCheck(false)
-                    ->from(array('t1' => $this->_name), array('id', 'create_user', 'apply_user'))
-                    ->joinLeft(array('t2' => $this->_dbprefix.'user'), "t1.create_user = t2.id", array())
-                    ->joinLeft(array('t3' => $this->_dbprefix.'employee'), "t2.employee_id = t3.id", array('creater_email' => 'email'))
-                    ->joinLeft(array('t4' => $this->_dbprefix.'user'), "t1.apply_user = t4.id", array())
-                    ->joinLeft(array('t5' => $this->_dbprefix.'employee'), "t4.employee_id = t5.id", array('applier_email' => 'email'))
-                    ->where("t1.number = '".$number."'");
-            //echo $sql.'<br><br>';
-            $data = $this->fetchRow($sql)->toArray();
-            
-            array_push($userInfo, array('user_id' => $data['create_user'], 'email' => $data['creater_email']));
-            array_push($userIdsAdded, $data['create_user']);
-            
-            if($data['apply_user'] && !in_array($data['apply_user'], $userIdsAdded)){
-                array_push($userInfo, array('user_id' => $data['apply_user'], 'email' => $data['applier_email']));
-            }
-            
-            // 获取审核人
-            $reviewerInfo = $review->getReviewUserInfo('purchse_req_add', $data['id']);
-            
-            foreach ($reviewerInfo as $info){
-                if(!in_array($info['user_id'], $userIdsAdded)){
-                    array_push($userInfo, $info);
-                }
-            }
-        }
-        
-        return $userInfo;
+    	$userInfo = array();
+    	
+    	$review = new Dcc_Model_Review();
+    	
+    	$userIdsAdded = array();
+    	
+    	foreach ($numberArr as $number){
+    		// 获取申请人
+    		$sql = $this->select()
+			    	->setIntegrityCheck(false)
+			    	->from(array('t1' => $this->_name), array('id', 'create_user', 'apply_user'))
+			    	->joinLeft(array('t2' => $this->_dbprefix.'user'), "t1.create_user = t2.id", array())
+			    	->joinLeft(array('t3' => $this->_dbprefix.'employee'), "t2.employee_id = t3.id", array('creater_email' => 'email'))
+			    	->joinLeft(array('t4' => $this->_dbprefix.'user'), "t1.apply_user = t4.id", array())
+			    	->joinLeft(array('t5' => $this->_dbprefix.'employee'), "t4.employee_id = t5.id", array('applier_email' => 'email'))
+			    	->where("t1.number = '".$number."'");
+    		//echo $sql.'<br><br>';
+    		$data = $this->fetchRow($sql)->toArray();
+    		
+    		array_push($userInfo, array('user_id' => $data['create_user'], 'email' => $data['creater_email']));
+    		array_push($userIdsAdded, $data['create_user']);
+    		
+    		if($data['apply_user'] && !in_array($data['apply_user'], $userIdsAdded)){
+    			array_push($userInfo, array('user_id' => $data['apply_user'], 'email' => $data['applier_email']));
+    		}
+    		
+    		// 获取审核人
+    		$reviewerInfo = $review->getReviewUserInfo('purchse_req_add', $data['id']);
+    		
+    		foreach ($reviewerInfo as $info){
+    			if(!in_array($info['user_id'], $userIdsAdded)){
+    				array_push($userInfo, $info);
+    			}
+    		}
+    	}
+    	
+    	return $userInfo;
     }
     
     public function getReqItemsList($key = null, $option = 'data')
@@ -479,26 +479,26 @@ class Erp_Model_Purchse_Req extends Application_Model_Db
     // 取消申请
     public function cancelReqById($id)
     {
-        if($id){
-            $now = date('Y-m-d H:i:s');
-            $user_session = new Zend_Session_Namespace('user');
-            $user_id = $user_session->user_info['user_id'];
-            
-            $reqData = $this->getData(null, $id);
-            $review_info = $reqData['review_info'].'<br>'.$now.': '.$user_session->user_info['user_name'].' [取消]';
-            
-            $data = array(
-                    'active'        => 0,
-                    'review_info'   => $review_info,
-                    'update_user'   => $user_id,
-                    'update_time'   => $now
-            );
-            // 取消申请
-            $this->update($data, "id = ".$id);
-            // 取消申请项
-            $items = new Erp_Model_Purchse_Reqitems();
-            $items->cancelByReqId($id);
-        }
+    	if($id){
+    		$now = date('Y-m-d H:i:s');
+    		$user_session = new Zend_Session_Namespace('user');
+    		$user_id = $user_session->user_info['user_id'];
+    		
+    		$reqData = $this->getData(null, $id);
+    		$review_info = $reqData['review_info'].'<br>'.$now.': '.$user_session->user_info['user_name'].' [取消]';
+    		
+    		$data = array(
+    				'active'        => 0,
+    				'review_info'   => $review_info,
+    				'update_user'   => $user_id,
+    				'update_time'   => $now
+    		);
+    		// 取消申请
+    		$this->update($data, "id = ".$id);
+    		// 取消申请项
+    		$items = new Erp_Model_Purchse_Reqitems();
+    		$items->cancelByReqId($id);
+    	}
     }
     
     public function getData($condition = array(), $req_id = null)
@@ -529,7 +529,7 @@ class Erp_Model_Purchse_Req extends Application_Model_Db
             }
             
             if($condition['applier']){
-                $sql->where("t10.cname like '%".$condition['applier']."%' or t10.ename like '%".$condition['applier']."%'");
+            	$sql->where("t10.cname like '%".$condition['applier']."%' or t10.ename like '%".$condition['applier']."%'");
             }
             
             if($condition['date_from']){

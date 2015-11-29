@@ -144,7 +144,7 @@ class Product_Model_Fadev extends Application_Model_Db
      * 获取BOM列表
      */
     public function getMy($type, $where, $myId, $start, $limit) {
-        // 该我审批的
+    	// 该我审批的
         $sql3 = $this->select()
                 ->setIntegrityCheck(false)
                 ->from(array('t1' => $this->_name))
@@ -172,18 +172,18 @@ class Product_Model_Fadev extends Application_Model_Db
                 ->where("t1.id in (SELECT t2.table_id from oa_record t2 where t2.handle_user = $myId and t2.type = 'bom' and t2.action = '审批')");
 
         if($type == 1) {
-            $sqlArray = array($sql1);
+        	$sqlArray = array($sql1);
         } else if($type == 2) {
-            $sqlArray = array($sql2);
+        	$sqlArray = array($sql2);
         } else if($type == 3) {
-            $sqlArray = array($sql3);
+        	$sqlArray = array($sql3);
         } else {
-            $sqlArray = array($sql1, $sql2, $sql3);
+        	$sqlArray = array($sql1, $sql2, $sql3);
         }
-        $selectUnion = $this->select()->union($sqlArray, Zend_Db_Select::SQL_UNION)
-                            ->order('state DESC')
-                            ->order('update_time desc')
-                            ->limit($limit, $start);
+    	$selectUnion = $this->select()->union($sqlArray, Zend_Db_Select::SQL_UNION)
+    	                    ->order('state DESC')
+    	                    ->order('update_time desc')
+    	                    ->limit($limit, $start);
 
         $data = $this->fetchAll($selectUnion)->toArray();
 
@@ -231,17 +231,17 @@ class Product_Model_Fadev extends Application_Model_Db
                 ->where("t1.id in (SELECT t2.table_id from oa_record t2 where t2.handle_user = $myId and t2.type = 'bom' and t2.action = '审批')");
 
         if($type == 1) {
-            $sqlArray = array($sql1);
+        	$sqlArray = array($sql1);
         } else if($type == 2) {
-            $sqlArray = array($sql2);
+        	$sqlArray = array($sql2);
         } else if($type == 3) {
-            $sqlArray = array($sql3);
+        	$sqlArray = array($sql3);
         } else {
-            $sqlArray = array($sql1, $sql2, $sql3);
+        	$sqlArray = array($sql1, $sql2, $sql3);
         }
-        $selectUnion = $this->select()->union($sqlArray, Zend_Db_Select::SQL_UNION)
-                            ->order('state DESC')
-                            ->order('update_time desc');
+    	$selectUnion = $this->select()->union($sqlArray, Zend_Db_Select::SQL_UNION)
+    	                    ->order('state DESC')
+    	                    ->order('update_time desc');
 
         $data = $this->fetchAll($selectUnion)->count();
 

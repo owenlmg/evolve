@@ -24,17 +24,17 @@ class Dcc_EditController extends Zend_Controller_Action {
         foreach ($request as $k => $v) {
             if ($v) {
                 if ($k == 'search_tag') {
-                    $cols = array("t1.project_info", "t1.code", "t1.name", "t1.description", "t1.remark", "t2.cname", "t7.model_standard", "t7.model_internal");
-                    $arr=preg_split('/\s+/',trim($v));
-                    for ($i=0;$i<count($arr);$i++) {
-                        $tmp = array();
-                        foreach($cols as $c) {
-                            $tmp[] = "ifnull($c,'')";
-                        }
-                        $arr[$i] = "concat(".implode(',', $tmp).") like '%".$arr[$i]."%'";
-                    }
-                    $where .= " and ".join(' AND ', $arr);
-                    
+            	    $cols = array("t1.project_info", "t1.code", "t1.name", "t1.description", "t1.remark", "t2.cname", "t7.model_standard", "t7.model_internal");
+            	    $arr=preg_split('/\s+/',trim($v));
+            	    for ($i=0;$i<count($arr);$i++) {
+            	        $tmp = array();
+            	        foreach($cols as $c) {
+            	            $tmp[] = "ifnull($c,'')";
+            	        }
+            	        $arr[$i] = "concat(".implode(',', $tmp).") like '%".$arr[$i]."%'";
+            	    }
+            	    $where .= " and ".join(' AND ', $arr);
+            	    
 //                     $where .= " and (ifnull(t1.project_info,'') like '%$v%' or ifnull(t1.code,'') like '%$v%' or ifnull(t1.name,'') like '%$v%' or ifnull(t1.description,'') like '%$v%' or ifnull(t1.remark,'') like '%$v%' or ifnull(t2.cname,'') like '%$v%')";
                 } else if ("search_category" == $k && $v) {
                     $where .= " and t5.category = '$v'";
@@ -238,19 +238,19 @@ class Dcc_EditController extends Zend_Controller_Action {
 
         if (count($deleted) > 0) {
             foreach ($deleted as $val) {
-                if(!$val->id) continue;
-                $row = $files->getOne($val->id);
+            	if(!$val->id) continue;
+            	$row = $files->getOne($val->id);
                 try {
-                    if($row['state'] == 'Reviewing' || $row['state'] == 'Return' || $row['state'] == 'Obsolete' || $row['state'] == 'Deleted') {
-                        $files->delete("id = " . $val->id);
-                    } else {
-                        $data = array(
-                            'state' => 'Deleted',
-                            'update_time' => $now,
-                            'update_user' => $user
-                        );
-                        $files->update($data, "id = " . $val->id);
-                    }
+	            	if($row['state'] == 'Reviewing' || $row['state'] == 'Return' || $row['state'] == 'Obsolete' || $row['state'] == 'Deleted') {
+	            		$files->delete("id = " . $val->id);
+	            	} else {
+		                $data = array(
+		                    'state' => 'Deleted',
+		                    'update_time' => $now,
+		                    'update_user' => $user
+		                );
+		                $files->update($data, "id = " . $val->id);
+	            	}
                 } catch (Exception $e) {
                     $result['result'] = false;
                     $result['info'] = $e->getMessage();
@@ -323,15 +323,15 @@ class Dcc_EditController extends Zend_Controller_Action {
             $where = "id = " . $id;
             $up = false;
             if($val->ver && $val->ver > 1.0) {
-                $up = true;
-                // 修改升版记录
-                $upgradeData = array(
-                    'reason' => $val->reason,
-                    'reason_type' => $val->reason_type,
-                    'update_time' => $now,
-                    'update_user' => $user
-                );
-                $upgradeWhere = "file_id = $id";
+            	$up = true;
+	            // 修改升版记录
+	            $upgradeData = array(
+	                'reason' => $val->reason,
+	                'reason_type' => $val->reason_type,
+	                'update_time' => $now,
+	                'update_user' => $user
+	            );
+	            $upgradeWhere = "file_id = $id";
             }
             // 更新旧版文件的状态为已作废
             if ($val->ver != '1.0' && $val->state == 'Active') {
@@ -347,7 +347,7 @@ class Dcc_EditController extends Zend_Controller_Action {
                     $files->update($obsoluteData, $obsoluteWhere);
                 }
                 if($up) {
-                    $upgrade->update($upgradeData, $upgradeWhere);
+                	$upgrade->update($upgradeData, $upgradeWhere);
                 }
                 $files->update($data, $where);
                 $code->update($projectData, $projectWhere);
@@ -462,31 +462,31 @@ class Dcc_EditController extends Zend_Controller_Action {
             try {
                 $id = $files->insert($data);
                 if($id && $val->ver && $val->ver > 1.0) {
-                    // 升版记录
-                    $upgradeData = array(
-                        'file_id' => $id,
-                        'reason' => $val->reason,
-                        'reason_type' => $val->reason_type,
-                        'create_time' => $now,
-                        'create_user' => $user,
-                        'update_time' => $now,
-                        'update_user' => $user
-                    );
-                    $upgrade->insert($upgradeData);
+	                // 升版记录
+	                $upgradeData = array(
+	                    'file_id' => $id,
+	                    'reason' => $val->reason,
+	                    'reason_type' => $val->reason_type,
+	                    'create_time' => $now,
+	                    'create_user' => $user,
+	                    'update_time' => $now,
+	                    'update_user' => $user
+	                );
+	                $upgrade->insert($upgradeData);
                 }
                 if (isset($obsoluteData) && isset($obsoluteWhere)) {
                     $files->update($obsoluteData, $obsoluteWhere);
                 }
                 if(isset($val->file_ids) && $val->file_ids != "") {
-                    // 更新文件状态为已归档
-                    $uploadData = array(
-                        "archive" => 1
-                    );
-                    $upload = new Dcc_Model_Upload();
-                    // 获取上传文件id
-                    $ids = $val->file_ids;
-                    $uploadWhere = "id in ($ids)";
-                    $upload->update($uploadData, $uploadWhere);
+	                // 更新文件状态为已归档
+	                $uploadData = array(
+	                    "archive" => 1
+	                );
+	                $upload = new Dcc_Model_Upload();
+	                // 获取上传文件id
+	                $ids = $val->file_ids;
+	                $uploadWhere = "id in ($ids)";
+	                $upload->update($uploadData, $uploadWhere);
                 }
 
                 if ($id) {

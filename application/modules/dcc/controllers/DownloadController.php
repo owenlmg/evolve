@@ -36,11 +36,11 @@ class Dcc_DownloadController extends Zend_Controller_Action {
         $name = $file['name'];
         
         if($source == 'edit') {
-            $source = '日常维护';
+        	$source = '日常维护';
         } else if($source == 'files') {
-            $source = '文件检索';
+        	$source = '文件检索';
         } else if($source == 'mine') {
-            $source = '我的文档';
+        	$source = '我的文档';
         }
         if (count($file) > 0 && $path) {
             $data = array(

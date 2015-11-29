@@ -661,8 +661,8 @@ class Erp_Sale_OrderController extends Zend_Controller_Action
         $review_transfer = $request['review_transfer'] == 1 ? true : false;
         
         if($review_id && $review_operate){
-            $transfer = new Erp_Model_Purchse_Transfer();
-            
+        	$transfer = new Erp_Model_Purchse_Transfer();
+        	
             $now = date('Y-m-d H:i:s');
             $user_session = new Zend_Session_Namespace('user');
             $user_id = $user_session->user_info['user_id'];
@@ -682,9 +682,9 @@ class Erp_Sale_OrderController extends Zend_Controller_Action
                 // 更新采购申请状态
                 $review_info = $now.': '.$user_session->user_info['user_name'].' [审核-拒绝] ['.$review_info.']';
                 $data = array(
-                        'state'                 => 1,
-                        'transfer_description'    => null,
-                        'review_info'           => $orderData['review_info'].'<br>'.$review_info
+                        'state'         		=> 1,
+                        'transfer_description'	=> null,
+                        'review_info'   		=> $orderData['review_info'].'<br>'.$review_info
                 );
                 
                 // 更新订单状态
@@ -1001,7 +1001,7 @@ class Erp_Sale_OrderController extends Zend_Controller_Action
                     'date_from' => isset($request['date_from']) ? $request['date_from'] : null,
                     'date_to'   => isset($request['date_to']) ? $request['date_to'] : null,
                     'active'    => (isset($request['active']) && $request['active'] != 'null') ? $request['active'] : 1,
-                    'state'        => (isset($request['state']) && $request['state'] != 'null') ? $request['state'] : 0,
+                    'state'    	=> (isset($request['state']) && $request['state'] != 'null') ? $request['state'] : 0,
                     'type'      => (isset($request['type']) && $request['type'] != 'null') ? $request['type'] : null,
                     'page'      => isset($request['page']) ? $request['page'] : 1,
                     'limit'     => isset($request['limit']) ? $request['limit'] : 0
@@ -1028,7 +1028,7 @@ class Erp_Sale_OrderController extends Zend_Controller_Action
         $typeArr = array(
                 'new'       => '新建',
                 'edit'      => '修改',
-                'transfer'    => '变更'
+                'transfer'	=> '变更'
         );
         /* $result['success'] = false;
          echo '<pre>';
@@ -1075,7 +1075,7 @@ class Erp_Sale_OrderController extends Zend_Controller_Action
                     'delvery_clause'        => $request['delvery_clause'],
                     'remark'                => $request['remark'],
                     'description'           => $request['description'],
-                    'responsible'            => $request['responsible'],
+                    'responsible'        	=> $request['responsible'],
                     'update_time'           => $now,
                     'update_user'           => $user_id
             );
@@ -1186,9 +1186,9 @@ class Erp_Sale_OrderController extends Zend_Controller_Action
         $type = isset($request['operate']) ? $request['operate'] : '';// 操作类别
         
         $typeArr = array(
-                'new'        => '新建',
-                'edit'        => '修改',
-                'transfer'    => '变更'
+        		'new'		=> '新建',
+        		'edit'		=> '修改',
+        		'transfer'	=> '变更'
         );
     
         $now = date('Y-m-d H:i:s');
@@ -1258,7 +1258,7 @@ class Erp_Sale_OrderController extends Zend_Controller_Action
                 }
             }
         }
-        
+    	
         // 插入
         if(count($items_inserted) > 0){
             foreach ($items_inserted as $val){
@@ -1435,130 +1435,130 @@ class Erp_Sale_OrderController extends Zend_Controller_Action
                 $transferContent = '';
                 
                 if($type == 'transfer'){
-                    $transferContent .= '<div><style type="text/css">
+                	$transferContent .= '<div><style type="text/css">
 table.gridtable {
-    font-family: verdana,arial,sans-serif;
-    font-size:12px;
-    color:#333333;
-    border-width: 1px;
-    border-color: #666666;
-    border-collapse: collapse;
+	font-family: verdana,arial,sans-serif;
+	font-size:12px;
+	color:#333333;
+	border-width: 1px;
+	border-color: #666666;
+	border-collapse: collapse;
 }
 table.gridtable th {
-    border-width: 1px;
-    padding: 8px;
-    border-style: solid;
-    border-color: #666666;
-    background-color: #dedede;
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #dedede;
 }
 table.gridtable td {
-    border-width: 1px;
-    padding: 8px;
-    border-style: solid;
-    border-color: #666666;
-    background-color: #ffffff;
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #ffffff;
 }
 .delete{
-    text-decoration: line-through;
-    color: #FF0000;
+	text-decoration: line-through;
+	color: #FF0000;
 }
 .update{
-    font-weight: bold;
-    color: #000093;
+	font-weight: bold;
+	color: #000093;
 }
 .inactive{
-    font-weight: bold;
-    color: #999999;
+	font-weight: bold;
+	color: #999999;
 }
 </style><table class="gridtable">
-                            <tr>
-                            <th>#</th>
-                            <th>操作类别</th>
-                            <th>启用</th>
-                            <th>物料号</th>
-                            <th>名称</th>
-                            <th>描述</th>
-                            <th>数量</th>
-                            <th>已交货</th>
-                            <th>需求日期</th>
-                            <th>客户产品型号</th>
-                            <th>客户产品描述</th>
-                            <th>备注</th>
-                            </tr>';
-                    $i = 1;
-                     
-                    foreach ($items_inserted as $val){
-                        $active = $val->items_active ? '是' : '否';
-                        
-                        $transferContent .= '<tr>
-                            <td>'.$i.'</td>
-                            <td>新增</td>
-                            <td>'.$active.'</td>
-                            <td>'.$val->items_code.'</td>
-                            <td>'.$val->items_name.'</td>
-                            <td>'.$val->items_description.'</td>
-                            <td>'.$val->items_qty.'</td>
-                            <td>0</td>
-                            <td>'.date('Y-m-d', strtotime($val->items_request_date)).'</td>
-                            <td>'.$val->items_customer_code.'</td>
-                            <td>'.$val->items_customer_description.'</td>
-                            <td>'.$val->items_remark.'</td>
-                            </tr>';
+                			<tr>
+                			<th>#</th>
+                			<th>操作类别</th>
+                			<th>启用</th>
+                			<th>物料号</th>
+                			<th>名称</th>
+                			<th>描述</th>
+                			<th>数量</th>
+                			<th>已交货</th>
+                			<th>需求日期</th>
+                			<th>客户产品型号</th>
+                			<th>客户产品描述</th>
+                			<th>备注</th>
+                			</tr>';
+                	$i = 1;
+                	 
+                	foreach ($items_inserted as $val){
+                		$active = $val->items_active ? '是' : '否';
+                		
+                		$transferContent .= '<tr>
+                			<td>'.$i.'</td>
+                			<td>新增</td>
+                			<td>'.$active.'</td>
+                			<td>'.$val->items_code.'</td>
+                			<td>'.$val->items_name.'</td>
+                			<td>'.$val->items_description.'</td>
+                			<td>'.$val->items_qty.'</td>
+                			<td>0</td>
+                			<td>'.date('Y-m-d', strtotime($val->items_request_date)).'</td>
+                			<td>'.$val->items_customer_code.'</td>
+                			<td>'.$val->items_customer_description.'</td>
+                			<td>'.$val->items_remark.'</td>
+                			</tr>';
                 
-                        $i++;
-                    }
-                     
-                    foreach ($items_updated as $val){
-                        $tr = '<tr>';
-                        
-                        if(!$val->items_active){
-                            $tr = '<tr class="inactive">';
-                        }else{
-                            $tr = '<tr class="update">';
-                        }
-                        
-                        $active = $val->items_active ? '是' : '否';
-                        
-                        $transferContent .= $tr.'
-                            <td>'.$i.'</td>
-                            <td>更新</td>
-                            <td>'.$active.'</td>
-                            <td>'.$val->items_code.'</td>
-                            <td>'.$val->items_name.'</td>
-                            <td>'.$val->items_description.'</td>
-                            <td>'.$val->items_qty.'</td>
-                            <td>'.$val->items_qty_send.'</td>
-                            <td>'.$val->items_request_date.'</td>
-                            <td>'.$val->items_customer_code.'</td>
-                            <td>'.$val->items_customer_description.'</td>
-                            <td>'.$val->items_remark.'</td>
-                            </tr>';
+                		$i++;
+                	}
+                	 
+                	foreach ($items_updated as $val){
+                		$tr = '<tr>';
+                		
+                		if(!$val->items_active){
+                			$tr = '<tr class="inactive">';
+                		}else{
+                			$tr = '<tr class="update">';
+                		}
+                		
+                		$active = $val->items_active ? '是' : '否';
+                		
+                		$transferContent .= $tr.'
+                			<td>'.$i.'</td>
+                			<td>更新</td>
+                			<td>'.$active.'</td>
+                			<td>'.$val->items_code.'</td>
+                			<td>'.$val->items_name.'</td>
+                			<td>'.$val->items_description.'</td>
+                			<td>'.$val->items_qty.'</td>
+                			<td>'.$val->items_qty_send.'</td>
+                			<td>'.$val->items_request_date.'</td>
+                			<td>'.$val->items_customer_code.'</td>
+                			<td>'.$val->items_customer_description.'</td>
+                			<td>'.$val->items_remark.'</td>
+                			</tr>';
                 
-                        $i++;
-                    }
-                     
-                    foreach ($items_deleted as $val){
-                        $active = $val->items_active ? '是' : '否';
-                        
-                        $transferContent .= '<tr class="delete">
-                            <td>'.$i.'</td>
-                            <td>删除</td>
-                            <td>'.$active.'</td>
-                            <td>'.$val->items_code.'</td>
-                            <td>'.$val->items_name.'</td>
-                            <td>'.$val->items_description.'</td>
-                            <td>'.$val->items_qty.'</td>
-                            <td>0</td>
-                            <td>'.$val->items_request_date.'</td>
-                            <td>'.$val->items_customer_code.'</td>
-                            <td>'.$val->items_customer_description.'</td>
-                            <td>'.$val->items_remark.'</td>
-                            </tr>';
+                		$i++;
+                	}
+                	 
+                	foreach ($items_deleted as $val){
+                		$active = $val->items_active ? '是' : '否';
+                		
+                		$transferContent .= '<tr class="delete">
+                			<td>'.$i.'</td>
+                			<td>删除</td>
+                			<td>'.$active.'</td>
+                			<td>'.$val->items_code.'</td>
+                			<td>'.$val->items_name.'</td>
+                			<td>'.$val->items_description.'</td>
+                			<td>'.$val->items_qty.'</td>
+                			<td>0</td>
+                			<td>'.$val->items_request_date.'</td>
+                			<td>'.$val->items_customer_code.'</td>
+                			<td>'.$val->items_customer_description.'</td>
+                			<td>'.$val->items_remark.'</td>
+                			</tr>';
                 
-                        $i++;
-                    }
-                     
-                    $transferContent .= '</table></div>';
+                		$i++;
+                	}
+                	 
+                	$transferContent .= '</table></div>';
                 }
                 
                 $mailData = array(
@@ -1585,47 +1585,47 @@ table.gridtable td {
     
     public function gettransferinfoAction()
     {
-        $info = '';
-        
-        $request = $this->getRequest()->getParams();
-        
-        $id = isset($request['id']) && $request['id'] != '' ? $request['id'] : null;
-        
-        if($id){
-            $transfer = new Erp_Model_Purchse_Transfer();
-            
-            $transferData = $transfer->getTransfer('sale_order', $id);
-            
-            $i = count($transferData);
-            
-            foreach ($transferData as $t){
-                $stateInfo = '<span style="color: #006000;font-weight: bold;">已批准</span>';
-                
-                if($t['state'] == 0){
-                    $stateInfo = '<span style="color: #FF0000;font-weight: bold;">未审核</span>';
-                }else if($t['state'] == 1){
-                    $stateInfo = '<span style="color: #FF0000;font-weight: bold;">已拒绝</span>';
-                }
-                
-                $content = '';
-                
-                if($t['transfer_type'] == '修改'){
-                    $content = $t['transfer_content'];
-                }
-                
-                $info .= '<div style="font-size: 12px;">['.$i.'] ['.$stateInfo.'] [用户：'.$t['creater'].'] [时间：'.$t['create_time'].'] [<b>类别：'.$t['transfer_type'].'</b>] [说明：'.$t['transfer_description'].']<div>'.$content.'<hr>';
-                
-                $i--;
-            }
-            
-            $result['info'] = $info;
-        }
-        
-        $info = $info == '' ? '无' : $info;
-        
-        echo $info;
-        
-        exit;
+    	$info = '';
+    	
+    	$request = $this->getRequest()->getParams();
+    	
+    	$id = isset($request['id']) && $request['id'] != '' ? $request['id'] : null;
+    	
+    	if($id){
+    		$transfer = new Erp_Model_Purchse_Transfer();
+    		
+    		$transferData = $transfer->getTransfer('sale_order', $id);
+    		
+    		$i = count($transferData);
+    		
+    		foreach ($transferData as $t){
+    			$stateInfo = '<span style="color: #006000;font-weight: bold;">已批准</span>';
+    			
+    			if($t['state'] == 0){
+    				$stateInfo = '<span style="color: #FF0000;font-weight: bold;">未审核</span>';
+    			}else if($t['state'] == 1){
+    				$stateInfo = '<span style="color: #FF0000;font-weight: bold;">已拒绝</span>';
+    			}
+    			
+    			$content = '';
+    			
+    			if($t['transfer_type'] == '修改'){
+    			    $content = $t['transfer_content'];
+    			}
+    			
+    			$info .= '<div style="font-size: 12px;">['.$i.'] ['.$stateInfo.'] [用户：'.$t['creater'].'] [时间：'.$t['create_time'].'] [<b>类别：'.$t['transfer_type'].'</b>] [说明：'.$t['transfer_description'].']<div>'.$content.'<hr>';
+    			
+    			$i--;
+    		}
+    		
+    		$result['info'] = $info;
+    	}
+    	
+    	$info = $info == '' ? '无' : $info;
+    	
+    	echo $info;
+    	
+    	exit;
     }
     
     // 获取销售类别列表
