@@ -805,6 +805,20 @@ class Product_UpdbomController extends Zend_Controller_Action
         echo Zend_Json::encode($return);
         exit;
     }
+    
+
+
+    /**
+     * 获取流程
+     */
+    public function getflowforcomboAction() {
+        $flow = new Admin_Model_Flow();
+
+        $data = $flow->getBomListForCombo();
+        echo Zend_Json::encode($data);
+
+        exit;
+    }
 
 }
 

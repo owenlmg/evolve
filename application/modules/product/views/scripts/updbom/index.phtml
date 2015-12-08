@@ -143,6 +143,16 @@ Ext.onReady(function() {
         autoLoad: true
     });
 
+    var flowStore = Ext.create('Ext.data.Store', {
+        model: 'codemaster',
+        proxy: {
+            type: 'ajax',
+            reader: 'json',
+            url: '<?php echo HOME_PATH; ?>/public/product/updbom/getflowforcombo'
+        },
+        autoLoad: true
+    });
+
     var materielStore = Ext.create('Ext.data.Store', {
         pageSize: 50,
         model: 'materiel',
@@ -394,6 +404,27 @@ Ext.onReady(function() {
 		                displayField: 'text',
 		                valueField: 'id',
 		                store: [['Active', '已归档'], ['Reviewing', '审核中'], ['Return', '退回']]
+		            }]
+                }]
+        }, {
+            layout: 'column',
+            border: 0,
+            items: [{
+                    columnWidth: 0.5,
+                    border: 0,
+                    layout: 'form',
+                    items: [{
+		                xtype: 'combobox',
+		                fieldLabel: '审核流程',
+		                hidden: false,
+		                id: 'review_flow',
+		                name: 'review_flow',
+		                typeAhead: true,
+		                editable: false,
+		                triggerAction: 'all',
+		                displayField: 'text',
+		                valueField: 'id',
+	                    store: flowStore
 		            }]
                 }]
         }, {

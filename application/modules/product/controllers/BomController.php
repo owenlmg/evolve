@@ -1053,10 +1053,16 @@ class Product_BomController extends Zend_Controller_Action
 
         // 根据BOM获取审批流
         $flow_id = "";
-        $flowRow = $db->query("select t1.* from oa_admin_flow t1 inner join oa_product_bom_config t2 on t1.flow_name=t2.flow where t2.type='$type'")->fetchObject();
-    	if($flowRow) {
-    		$flow_id = $flowRow->id;
-    	}
+        if(isset($val->review_flow)) {
+            $flow_id = $val->review_flow;
+            $flowRow = $db->query("select t1.* from oa_admin_flow t1 where t1.id='$flow_id'")->fetchObject();
+        }
+        if(!$flow_id) {
+	        $flowRow = $db->query("select t1.* from oa_admin_flow t1 inner join oa_product_bom_config t2 on t1.flow_name=t2.flow where t2.type='$type'")->fetchObject();
+	    	if($flowRow) {
+	    		$flow_id = $flowRow->id;
+	    	}
+        }
         if(!$flow_id) {
         	$result['result'] = false;
             $result['info'] = "还没有配置BOM审核流程，请联系管理员配置";
@@ -1167,7 +1173,7 @@ class Product_BomController extends Zend_Controller_Action
 	                    	$tmpUser = $employee->getAdapter()->query("select group_concat(employee_id) as users from oa_user where active = 1 and id in ( " . implode(',', $tmpUser) . ")")->fetchObject();
 	                    	$users = $tmpUser->users;
 	                    }
-	                    if ($users) {
+	                    if (isset($users) && $users) {
 	                        if ($plan_user)
 	                            $plan_user .= ",";
 	                        $plan_user .= $users;

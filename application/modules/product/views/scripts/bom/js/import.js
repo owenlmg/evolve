@@ -31,7 +31,7 @@ var importBomWin = Ext.create('Ext.window.Window', {
                 }*/
             }, {
                 xtype: 'displayfield',
-                value: '使用逗号分隔符的CSV文件，<a>模版下载</a>'
+                value: '使用逗号分隔符的CSV文件，<a href="' + getRootPath() + '/application/modules/product/views/scripts/bom/js/bom_import_template.csv' + '">模版下载</a>'
             }],
 
             buttons: [{

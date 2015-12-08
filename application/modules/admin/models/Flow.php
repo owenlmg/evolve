@@ -3,7 +3,7 @@
 /**
  * 2013-8-6 10:21:10
  * @author mg.luo
- * @abstract 
+ * @abstract
  */
 class Admin_Model_Flow extends Application_Model_Db {
 
@@ -18,6 +18,19 @@ class Admin_Model_Flow extends Application_Model_Db {
 
         $sql = $this->select()
                 ->from($this, array('id', 'text' => 'flow_name'))
+                ->order(array('flow_name'));
+
+        $data = $this->fetchAll($sql)->toArray();
+
+        return $data;
+    }
+
+    public function getBomListForCombo() {
+        $data = array();
+
+        $sql = $this->select()
+                ->from($this, array('id', 'text' => 'flow_name'))
+                ->where("flow_name like 'BOM%'")
                 ->order(array('flow_name'));
 
         $data = $this->fetchAll($sql)->toArray();
