@@ -45,7 +45,7 @@ class Product_BomviewController extends Zend_Controller_Action
 	                    'state'         => $row['state'],
 	                    'count'          => 1,
 	                    'leaf'          => false,
-	                    'children'      => $this->getData($fa, $son, $recordkey, 2)
+	                    'children'      => $this->getData($fa, $son, $recordkey, 2, $row['sid'])
 	            );
 	        }
         }
@@ -80,7 +80,7 @@ class Product_BomviewController extends Zend_Controller_Action
      * @param       boolen  $root       是否为最上级
      * @return      array   $dept
      */
-    private function getData($fa, $son, $recordkey, $count)
+    private function getData($fa, $son, $recordkey, $count, $sid)
     {
         $data = $son->getSon($recordkey);
 
@@ -95,14 +95,14 @@ class Product_BomviewController extends Zend_Controller_Action
                 $data[$i]['leaf'] = false;
                 $data[$i]['state'] = $faRow['state'];
                 $data[$i]['count'] = $count;
-                $data[$i]['children'] = $this->getData($fa, $son, $faRow['recordkey'], $count++);
+                $data[$i]['children'] = $this->getData($fa, $son, $faRow['recordkey'], $count++, $data[$i]['sid']);
             }else{
                 $data[$i]['leaf'] = true;
                 $data[$i]['count'] = 0;
                 $data[$i]['state'] = $data[$i]['mstate'];
             }
+            $data[$i]['sid'] = $sid.'-'.$data[$i]['sid'];
         }
-
         return $data;
     }
 

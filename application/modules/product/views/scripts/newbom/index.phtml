@@ -111,6 +111,16 @@ Ext.onReady(function() {
         autoLoad: false
     });
 
+    var flowStore = Ext.create('Ext.data.Store', {
+        model: 'codemaster',
+        proxy: {
+            type: 'ajax',
+            reader: 'json',
+            url: '<?php echo HOME_PATH; ?>/public/product/updbom/getflowforcombo'
+        },
+        autoLoad: true
+    });
+
     var treeStore = Ext.create('Ext.data.TreeStore', {
         proxy: {
             type: 'ajax',
@@ -270,6 +280,27 @@ Ext.onReady(function() {
                 name: 'ismanager',
                 hidden: true
             }]
+        }, {
+            layout: 'column',
+            border: 0,
+            items: [{
+                    columnWidth: 0.5,
+                    border: 0,
+                    layout: 'form',
+                    items: [{
+		                xtype: 'combobox',
+		                fieldLabel: '审核流程',
+		                hidden: false,
+		                id: 'review_flow',
+		                name: 'review_flow',
+		                typeAhead: true,
+		                editable: false,
+		                triggerAction: 'all',
+		                displayField: 'text',
+		                valueField: 'id',
+	                    store: flowStore
+		            }]
+                }]
         }, {
             layout: 'form',
             border: 0,
