@@ -1096,6 +1096,9 @@ class Product_ApplyController extends Zend_Controller_Action {
                 exit;
             }
             $review_id = $materielData->review_id;
+            if(isset($materielData['code']) && $materielData['code']) {
+            	$code = $materielData['code'];
+            }
 
             // 获取当前审核情况
             // 如果record记录被删除或状态已改变，报错
