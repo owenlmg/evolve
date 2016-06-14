@@ -78,6 +78,10 @@
                 var applyStore = Ext.create('Ext.data.Store', {
                     pageSize: 50,
                     model: 'files',
+                    sorters: [{
+				         property: 'state',
+				         direction: 'DESC'
+				     }],
                     proxy: {
                         type: 'ajax',
                         reader: {

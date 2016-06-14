@@ -46,6 +46,10 @@
                     pageSize: 100,
                     model: 'files',
                     //        remoteSort: true,
+                    sorters: [{
+				         property: 'state',
+				         direction: 'DESC'
+				     }],
                     proxy: {
                         type: 'ajax',
                         reader: {

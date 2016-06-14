@@ -13,6 +13,7 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
         defined("SYS_NAME") || define("SYS_NAME", $config->sys->name);
         defined("SYS_COPYRIGHT") || define("SYS_COPYRIGHT", $config->sys->copyright.date('Y'));
         defined("SYS_EMAIL_SUFFIX") || define("SYS_EMAIL_SUFFIX", $config->sys->email_suffix);
+        defined("SYS_REVIEW_EMAIL") || define("SYS_REVIEW_EMAIL", $config->email->review);
 
         $page_head = '<title>'.SYS_NAME.'</title>
                       <link type="image/x-icon" rel=icon href="'.HOME_PATH.'/public/images/favicon.ico">
