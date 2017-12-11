@@ -275,7 +275,9 @@ class Product_ListController extends Zend_Controller_Action
                     'supply2'     => $val->supply2,
                     'mpq'           => $val->mpq,
                     'moq'           => $val->moq,
-                    'tod'           => $val->tod
+                    'tod'           => $val->tod,
+                    'hum_level'           => $val->hum_level,
+                    'rosh'           => $val->rosh
             );
             $id = $val->id;
             $where = "id = ".$id;
@@ -769,6 +771,8 @@ class Product_ListController extends Zend_Controller_Action
                 'mpq'               => 'MPQ',
                 'moq'               => 'MOQ',
                 'tod'               => '标准货期',
+                'hum_level'         => '潮敏等级',
+                'rosh'              => 'RoHS符合情况',
                 'data_file'         => '数据手册',
                 'tsr'               => 'TSR',
                 'first_report'      => '样品检验报告',
@@ -824,6 +828,8 @@ class Product_ListController extends Zend_Controller_Action
                 'mpq'               => $d['mpq'],
                 'moq'               => $d['moq'],
                 'tod'               => $d['tod'],
+                'hum_level'         => $d['hum_level'],
+                'rosh'              => $d['rosh'],
                 'data_file'         => $d['data_file'],
                 'tsr'               => $d['tsr'],
                 'first_report'      => $d['first_report'],

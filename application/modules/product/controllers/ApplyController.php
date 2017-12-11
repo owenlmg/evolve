@@ -289,6 +289,7 @@ class Product_ApplyController extends Zend_Controller_Action {
         if ($typeId) {
             $type = new Product_Model_Type();
             // 获取当前物料类别对应的流程ID 如果找不到，继续往上搜索
+            $typeData = $type->fetchRow("id = $typeId");
             $flow_id = $type->getFlowId($typeId, 'new');
 
             if ($flow_id) {
@@ -354,7 +355,8 @@ class Product_ApplyController extends Zend_Controller_Action {
                     'update_time' => $now,
                     'data_file_id' => $val->data_file_id,
                     'first_report_id' => $val->first_report_id,
-                    'tsr_id' => $val->tsr_id
+                    'tsr_id' => $val->tsr_id,
+                    'hum_level' => $typeData->hum_level > 0 ? $typeData->hum_level : '其它'
                 );
                 if(isset($val->mcode) && $val->mcode) {
                     $data['code'] = $val->mcode;
@@ -370,7 +372,8 @@ class Product_ApplyController extends Zend_Controller_Action {
                     'update_time' => $now,
                     'data_file_id' => $val->data_file_id,
                     'first_report_id' => $val->first_report_id,
-                    'tsr_id' => $val->tsr_id
+                    'tsr_id' => $val->tsr_id,
+                    'hum_level' => $typeData->hum_level > 0 ? $typeData->hum_level : '其它'
                 );
                 if(isset($val->mcode) && $val->mcode) {
                     $data['code'] = $val->mcode;
@@ -515,7 +518,8 @@ class Product_ApplyController extends Zend_Controller_Action {
                 'update_time' => $now,
                 'data_file_id' => $val->data_file_id,
                 'first_report_id' => $val->first_report_id,
-                'tsr_id' => $val->tsr_id
+                'tsr_id' => $val->tsr_id,
+                'hum_level' => $typeData->hum_level > 0 ? $typeData->hum_level : '其它'
             );
 
             try {
@@ -732,6 +736,7 @@ class Product_ApplyController extends Zend_Controller_Action {
         if ($typeId) {
             $type = new Product_Model_Type();
             // 获取当前物料类别对应的流程ID 如果找不到，继续往上搜索
+            $typeData = $type->fetchRow("id = $typeId");
             $flow_id = $type->getFlowId($typeId, 'new');
 
             if ($flow_id) {
@@ -765,7 +770,8 @@ class Product_ApplyController extends Zend_Controller_Action {
                 'moq' => $val->moq,
                 'tod' => $val->tod,
                 'data_file_id' => $val->data_file_id,
-                'first_report_id' => $val->first_report_id
+                'first_report_id' => $val->first_report_id,
+                'hum_level' => $typeData->hum_level > 0 ? $typeData->hum_level : '其它'
             );
             $id = $val->id;
             $where = "id = " . $id;
@@ -881,7 +887,8 @@ class Product_ApplyController extends Zend_Controller_Action {
                 'data_file_id' => $val->data_file_id,
                 'first_report_id' => $val->first_report_id,
                 'create_user' => $user,
-                'create_time' => $now
+                'create_time' => $now,
+                'hum_level' => $typeData->hum_level > 0 ? $typeData->hum_level : '其它'
             );
 
             try {
@@ -1063,6 +1070,23 @@ class Product_ApplyController extends Zend_Controller_Action {
         $remark = $val->remark1;
         $pass = $val->review_result;
         $publish = false;
+        
+        // 检测是不是该自己审核 防止多次点击
+        
+        $nextReviewer = $review->getFirstNoReview("materiel", $id);
+        $nextuser = explode(',', $nextReviewer['plan_user']);
+        $isMyTurn = false;
+        foreach($nextuser as $nu) {
+        	if($nu == $user) {
+        		$isMyTurn = true;
+        	}
+        }
+        if(!$isMyTurn) {
+        	$result['result'] = false;
+            $result['info'] = "你没有权限审核当前物料";
+            echo Zend_Json::encode($result);
+            exit;
+        }
 
         if (isset($val->code) && $val->code != '') {
             $code = $val->code;
@@ -1273,6 +1297,7 @@ class Product_ApplyController extends Zend_Controller_Action {
             // 如果所有record的记录的finish_flg 都为1，则发布
             if ($finish_flg == 1 && $review->fetchAll("type = 'materiel' and finish_flg = 0 and file_id = $id")->count() == 1) {
                 $publish = true;
+                
                 if (!isset($code) || !$code) {
                     // 自动生成物料编码
                     $code = $this->getCode($materielData->type, $materielData->project_no);
@@ -1458,6 +1483,8 @@ class Product_ApplyController extends Zend_Controller_Action {
         // 获取流水号长度
         $data = $type->fetchRow("id = $id");
         $sn_length = $data->sn_length;
+        // 潮敏等级
+        $hum_level = $data->hum_level;
         if ($proj) {
             // 从产品清单获取内部型号
             $projData = $materiel->getAdapter()->query("select model_internal from oa_product_catalog where id = '$proj'")->fetchObject();
@@ -1470,6 +1497,10 @@ class Product_ApplyController extends Zend_Controller_Action {
             $like = "";
             for ($i = 0; $i < $sn_length; $i++) {
                 $like .= "_";
+            }
+            if($hum_level > 0) {
+            	$code = $code.$hum_level;
+            	$sn_length = $sn_length-1;
             }
             $reg = $code."[0-9]"."{".$sn_length."}";
             $mData = $materiel->getAdapter()->query("select max(code) as maxcode from oa_product_materiel where code regexp '$reg'")->fetchObject();

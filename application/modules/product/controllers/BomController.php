@@ -68,7 +68,10 @@ class Product_BomController extends Zend_Controller_Action
                     	}
                     	$recordkeys = array_unique($recordkeys);
                     }
-                    $whereSearch .= " and t1.recordkey in (".implode(',', $recordkeys).")";
+                    $tmp = implode(',', $recordkeys);
+                    $tmp = str_replace(",,",",", $tmp);
+                    
+                    $whereSearch .= " and t1.recordkey in (".$tmp.")";
                 } else {
 	                $col = str_replace('search_', '', $k);
 	                if ($col != $k) {
@@ -1916,38 +1919,61 @@ class Product_BomController extends Zend_Controller_Action
         $db = $fa->getAdapter();
         $explanded = array();
         $whereSearch = "1=1";
-        foreach ($request as $k => $v) {
-            if ($v) {
-            	if($k == 'search_key') {
-            		$whereSearch .= " and (ifnull(t1.remark,'') like '%$v%' or ifnull(t3.name,'') like '%$v%' or ifnull(t3.description,'') like '%$v%' or ifnull(t5.model_internal, '') like '%$v%')";
-            	} else if ("search_archive_date_from" == $k && $v) {
-                    $whereSearch .= " and t1.bom_upd_time >= '" . str_replace('T', ' ', $v) . "'";
-                } else if ("search_archive_date_to" == $k && $v) {
-                    $whereSearch .= " and t1.bom_upd_time <= '" . str_replace('T00:00:00', ' 23:59:59', $v) . "'";
-                } else if ("search_fa" == $k && $v) {
-                    $whereSearch .= " and t1.code like '%" . $v . "%'";
-                } else if ("search_son" == $k && $v) {
-                    $recordkey = "";
-                    $sonData = $db->query("select group_concat(recordkey) as recordkey from oa_product_bom_son where code like '%$v%'")->fetchObject();
-                    if($sonData && $sonData->recordkey) {
-                    	$recordkey = $sonData->recordkey;
-                    }
-                    if(!$recordkey) {
-                    	$recordkey = "0";
-                    }
-                    $whereSearch .= " and t1.recordkey in ($recordkey)";
-                } else if ("search_recordkey" == $k && $v) {
-                    $whereSearch .= " and t1.recordkey = '$v'";
-                } else if ("explanded" == $k && $v) {
-                    $explanded = json_decode($v);
-                } else {
-	                $col = str_replace('search_', '', $k);
-	                if ($col != $k) {
-	                    // 查询条件
-	                    $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
-	                }
-            	}
-            }
+        if(isset($request['recordkey']) && $request['recordkey'] != '') {
+        	$whereSearch .= " and t1.recordkey in (".$request['recordkey'].")";
+        } else {
+	        foreach ($request as $k => $v) {
+	            if ($v) {
+	            	if($k == 'search_key') {
+	            		$whereSearch .= " and (ifnull(t1.remark,'') like '%$v%' or ifnull(t3.name,'') like '%$v%' or ifnull(t3.description,'') like '%$v%' or ifnull(t5.model_internal, '') like '%$v%')";
+	            	} else if ("search_archive_date_from" == $k && $v) {
+	                    $whereSearch .= " and t1.bom_upd_time >= '" . str_replace('T', ' ', $v) . "'";
+	                } else if ("search_archive_date_to" == $k && $v) {
+	                    $whereSearch .= " and t1.bom_upd_time <= '" . str_replace('T00:00:00', ' 23:59:59', $v) . "'";
+	                } else if ("search_fa" == $k && $v) {
+	                    $whereSearch .= " and t1.code like '%" . $v . "%'";
+	                } else if ("search_son" == $k && $v) {
+//	                    $recordkey = "";
+//	                    $sonData = $db->query("select group_concat(recordkey) as recordkey from oa_product_bom_son where code like '%$v%'")->fetchObject();
+//	                    if($sonData && $sonData->recordkey) {
+//	                    	$recordkey = $sonData->recordkey;
+//	                    }
+//	                    if(!$recordkey) {
+//	                    	$recordkey = "0";
+//	                    }
+//	                    $whereSearch .= " and t1.recordkey in ($recordkey)";
+	                    $recordkey = "";
+	                    $sonData = $db->query("select group_concat(DISTINCT recordkey) as recordkey from oa_product_bom_son where code like '%$v%'")->fetchObject();
+	                    if($sonData && $sonData->recordkey) {
+	                    	$recordkey = $sonData->recordkey;
+	                    }
+	                    if(!$recordkey) {
+	                    	$recordkey = "0";
+	                    	$recordkeys = array("0");
+	                    } else {
+	                    	$recordkeys = array();
+	                    	foreach(explode(',', $recordkey) as $rk) {
+	                    		$recordkeys = $this->getRecordkeyRecursive($rk, $recordkeys);
+	                    	}
+	                    	$recordkeys = array_unique($recordkeys);
+	                    }
+	                    $tmp = implode(',', $recordkeys);
+	                    $tmp = str_replace(",,",",", $tmp);
+	                    
+	                    $whereSearch .= " and t1.recordkey in (".$tmp.")";
+	                } else if ("search_recordkey" == $k && $v) {
+	                    $whereSearch .= " and t1.recordkey = '$v'";
+	                } else if ("explanded" == $k && $v) {
+	                    $explanded = json_decode($v);
+	                } else {
+		                $col = str_replace('search_', '', $k);
+		                if ($col != $k) {
+		                    // 查询条件
+		                    $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
+		                }
+	            	}
+	            }
+	        }
         }
         $updflg = false;
         if(isset($request['upd_flg']) && $request['upd_flg'] == 1) {
@@ -2091,16 +2117,20 @@ class Product_BomController extends Zend_Controller_Action
         if(isset($zipPath)) {
             $zip=new ZipArchive();
             $helper = new Application_Model_Helpers();
-            if($zip->open($zipFile, ZipArchive::OVERWRITE)=== TRUE){
-                $datalist = $this->list_dir($zipPath);
-                foreach( $datalist as $val){
-                    if(file_exists($val)){
-                        $zip->addFile( $val, basename($val));//第二个参数是放在压缩包中的文件名称，如果文件可能会有重复，就需要注意一下
-                    }
-                }
-                $zip->close();//关闭
+            try {
+	            if($zip->open($zipFile, ZipArchive::CREATE)=== TRUE){
+	                $datalist = $this->list_dir($zipPath);
+	                foreach( $datalist as $val){
+	                    if(file_exists($val)){
+	                        $zip->addFile( $val, basename($val));//第二个参数是放在压缩包中的文件名称，如果文件可能会有重复，就需要注意一下
+	                    }
+	                }
+	                $zip->close();//关闭
+	            }
+                echo $zipFileName;
+            } catch(Exception $e) {
+            	echo $e;
             }
-            echo $zipFileName;
         } else {
             echo $filename;
         }
@@ -2118,38 +2148,62 @@ class Product_BomController extends Zend_Controller_Action
         $db = $fa->getAdapter();
         $explanded = array();
         $whereSearch = "1=1";
-        foreach ($request as $k => $v) {
-            if ($v) {
-            	if($k == 'search_key') {
-            		$whereSearch .= " and (ifnull(t1.remark,'') like '%$v%' or ifnull(t3.name,'') like '%$v%' or ifnull(t3.description,'') like '%$v%' or ifnull(t5.model_internal, '') like '%$v%')";
-            	} else if ("search_archive_date_from" == $k && $v) {
-                    $whereSearch .= " and t1.bom_upd_time >= '" . str_replace('T', ' ', $v) . "'";
-                } else if ("search_archive_date_to" == $k && $v) {
-                    $whereSearch .= " and t1.bom_upd_time <= '" . str_replace('T00:00:00', ' 23:59:59', $v) . "'";
-                } else if ("search_fa" == $k && $v) {
-                    $whereSearch .= " and t1.code like '%" . $v . "%'";
-                } else if ("search_son" == $k && $v) {
-                    $recordkey = "";
-                    $sonData = $db->query("select group_concat(recordkey) as recordkey from oa_product_bom_son where code like '%$v%'")->fetchObject();
-                    if($sonData && $sonData->recordkey) {
-                    	$recordkey = $sonData->recordkey;
-                    }
-                    if(!$recordkey) {
-                    	$recordkey = "0";
-                    }
-                    $whereSearch .= " and t1.recordkey in ($recordkey)";
-                } else if ("search_recordkey" == $k && $v) {
-                    $whereSearch .= " and t1.recordkey = '$v'";
-                } else if ("explanded" == $k && $v) {
-                    $explanded = json_decode($v);
-                } else {
-	                $col = str_replace('search_', '', $k);
-	                if ($col != $k) {
-	                    // 查询条件
-	                    $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
-	                }
-            	}
-            }
+        if(isset($request['recordkey']) && $request['recordkey'] != '') {
+        	$whereSearch .= " and t1.recordkey in (".$request['recordkey'].")";
+        } else {
+	        foreach ($request as $k => $v) {
+	            if ($v) {
+	            	if($k == 'search_key') {
+	            		$whereSearch .= " and (ifnull(t1.remark,'') like '%$v%' or ifnull(t3.name,'') like '%$v%' or ifnull(t3.description,'') like '%$v%' or ifnull(t5.model_internal, '') like '%$v%')";
+	            	} else if ("search_archive_date_from" == $k && $v) {
+	                    $whereSearch .= " and t1.bom_upd_time >= '" . str_replace('T', ' ', $v) . "'";
+	                } else if ("search_archive_date_to" == $k && $v) {
+	                    $whereSearch .= " and t1.bom_upd_time <= '" . str_replace('T00:00:00', ' 23:59:59', $v) . "'";
+	                } else if ("search_fa" == $k && $v) {
+	                    $whereSearch .= " and t1.code like '%" . $v . "%'";
+	                } else if ("search_son" == $k && $v) {
+	//                    $recordkey = "";
+	//                    $sonData = $db->query("select group_concat(recordkey) as recordkey from oa_product_bom_son where code like '%$v%'")->fetchObject();
+	//                    if($sonData && $sonData->recordkey) {
+	//                    	$recordkey = $sonData->recordkey;
+	//                    }
+	//                    if(!$recordkey) {
+	//                    	$recordkey = "0";
+	//                    }
+	//                    $whereSearch .= " and t1.recordkey in ($recordkey)";
+	                    
+	                    $recordkey = "";
+	                    $sonData = $db->query("select group_concat(DISTINCT recordkey) as recordkey from oa_product_bom_son where code like '%$v%'")->fetchObject();
+	                    if($sonData && $sonData->recordkey) {
+	                    	$recordkey = $sonData->recordkey;
+	                    }
+	                    if(!$recordkey) {
+	                    	$recordkey = "0";
+	                    	$recordkeys = array("0");
+	                    } else {
+	                    	$recordkeys = array();
+	                    	foreach(explode(',', $recordkey) as $rk) {
+	                    		$recordkeys = $this->getRecordkeyRecursive($rk, $recordkeys);
+	                    	}
+	                    	$recordkeys = array_unique($recordkeys);
+	                    }
+	                    $tmp = implode(',', $recordkeys);
+	                    $tmp = str_replace(",,",",", $tmp);
+	                    
+	                    $whereSearch .= " and t1.recordkey in (".$tmp.")";
+	                } else if ("search_recordkey" == $k && $v) {
+	                    $whereSearch .= " and t1.recordkey = '$v'";
+	                } else if ("explanded" == $k && $v) {
+	                    $explanded = json_decode($v);
+	                } else {
+		                $col = str_replace('search_', '', $k);
+		                if ($col != $k) {
+		                    // 查询条件
+		                    $whereSearch .= " and ifnull(t1." . $col . ",'') like '%" . $v . "%'";
+		                }
+	            	}
+	            }
+	        }
         }
         $updflg = false;
         if(isset($request['upd_flg']) && $request['upd_flg'] == 1) {
@@ -2287,7 +2341,7 @@ class Product_BomController extends Zend_Controller_Action
 	            $row['description'] = $data[$i]['description'];
 	            $row['project_no_name'] = $faRow['project_no_name'];
 	            $row['qty'] = $data[$i]['qty'];
-	            $row['replace'] = $data[$i]['replace'];
+	            $row['replace'] = $data[$i]['replace'] ? "'".$data[$i]['replace'] : '';
 	            $row['partposition'] = $data[$i]['partposition'];
 	            $row['remark'] = $data[$i]['remark'];
 	            $row['count'] = $count;
@@ -2302,7 +2356,7 @@ class Product_BomController extends Zend_Controller_Action
 	            $row['description'] = $data[$i]['description'];
 	            $row['project_no_name'] = "";
 	            $row['qty'] = $data[$i]['qty'];
-	            $row['replace'] = $data[$i]['replace'];
+	            $row['replace'] = $data[$i]['replace'] ? "'".$data[$i]['replace'] : '';
 	            $row['partposition'] = $data[$i]['partposition'];
 	            $row['remark'] = $data[$i]['remark'];
 	            $row['count'] = $count;

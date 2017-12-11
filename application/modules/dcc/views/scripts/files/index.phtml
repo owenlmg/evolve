@@ -298,8 +298,12 @@
                             sortable: true,
                             dataIndex: 'ver',
                             renderer: function(val) {
-                                if (val)
+                                if (val && val.indexOf("B") == -1)
                                     return "V" + val;
+                                else if(val) {
+                                	return val;
+                                }
+                                return "";
                             }
                         }, {
                             text: '文件名称',

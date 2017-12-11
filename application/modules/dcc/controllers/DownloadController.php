@@ -41,6 +41,8 @@ class Dcc_DownloadController extends Zend_Controller_Action {
         	$source = '文件检索';
         } else if($source == 'mine') {
         	$source = '我的文档';
+        } else if($source=='materiel') {
+        	$source = '物料清单';
         }
         if (count($file) > 0 && $path) {
             $data = array(

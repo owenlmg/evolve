@@ -131,6 +131,12 @@ lib.dcc = lib.dcc || {};
                             		removeCompleted: false,
                             		uploadLimit: 99,
                             		fileSizeLimit: '500MB',
+                            		'onUploadStart' : function(file) {
+                            			if(file.name.indexOf(',') >= 0) {
+                            				Ext.Msg.alert('提示', '文件名中不能包含英文逗号:' + file.name);
+                            				$("#uploadFiles").uploadify('cancel', file.id);
+                            			}
+                            		},
                             		'onUploadSuccess' : function(file, data, response) {
                             			if(data) {
                             				var json = Ext.JSON.decode(data);

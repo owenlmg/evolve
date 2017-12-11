@@ -18,6 +18,7 @@ Ext.onReady(function() {
             {name: "parent_id"},
             {name: "name"},
             {name: "description"},
+            {name: "hum_level"},
             {name: "remark"},
             {name: "sn_length"},
             {name: "active"},
@@ -382,6 +383,23 @@ Ext.onReady(function() {
                 }else{
                     return '无';
                 }
+            }
+        },{
+            text: '潮敏等级',
+            width: 80,
+            dataIndex: 'hum_level',
+            editor: new Ext.form.field.ComboBox({
+                editable: false,
+                displayField: 'text',
+                valueField: 'id',
+                triggerAction: 'all',
+                store: [[1,'1'],[2,'2'],[3,'3'],[0,'其它']]
+            }),
+            renderer: function(val) {
+            	if(!val || val == '0') {
+            		return '其它';
+            	}
+            	return val;
             }
         },{
             xtype: 'checkcolumn',
