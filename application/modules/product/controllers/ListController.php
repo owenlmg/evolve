@@ -275,7 +275,8 @@ class Product_ListController extends Zend_Controller_Action
                     'supply2'     => $val->supply2,
                     'mpq'           => $val->mpq,
                     'moq'           => $val->moq,
-                    'tod'           => $val->tod
+                    'tod'           => $val->tod,
+                    'eccn'           => $val->eccn
             );
             $id = $val->id;
             $where = "id = ".$id;
@@ -765,6 +766,7 @@ class Product_ListController extends Zend_Controller_Action
                 'project_name'      => '产品型号',
                 'supply1'           => '供应商1',
                 'supply2'           => '供应商2',
+                'eccn'              => 'ECCN',
                 'manufacturers'     => '制造商',
                 'mpq'               => 'MPQ',
                 'moq'               => 'MOQ',
@@ -820,6 +822,7 @@ class Product_ListController extends Zend_Controller_Action
                 'project_name'      => $d['project_name'],
                 'supply1'           => $d['supply_code1'].$d['supply_cname1'],
                 'supply2'           => $d['supply_code2'].$d['supply_cname2'],
+                'eccn'              => $d['eccn'],
                 'manufacturers'     => $d['manufacturers'],
                 'mpq'               => $d['mpq'],
                 'moq'               => $d['moq'],

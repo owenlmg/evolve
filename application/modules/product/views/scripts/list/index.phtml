@@ -91,7 +91,8 @@
                         {name: "tsr_flg"},
                         {name: "edit_count"},
                         {name: "project_no"},
-                        {name: "project_name"}
+                        {name: "project_name"},
+                        {name: "eccn"}
                     ]
                 });
                 Ext.define('bpartner', {
@@ -390,6 +391,10 @@
                                     fieldLabel: '制造商',
                                     name: 'manufacturers'
                                 }, {
+                                xtype: 'textfield',
+                                fieldLabel: 'ECCN',
+                                name: 'eccn'
+                            }, {
                                     xtype: 'textarea',
                                     fieldLabel: '备注',
                                     rows: 2,
@@ -874,6 +879,11 @@
                                     v += record.data.supply_ename2;
                                 return v;
                             }
+                        }, {
+                            text: 'ECCN',
+                            width: 100,
+                            dataIndex: 'eccn',
+                            renderer: showTitle
                         }, {
                             text: '制造商',
                             width: 180,

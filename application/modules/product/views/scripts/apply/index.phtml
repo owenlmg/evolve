@@ -121,7 +121,8 @@ Ext.onReady(function () {
             {name: "record"},
             {name: "example"},
             {name: "project_no"},
-            {name: "project_name"}
+            {name: "project_name"},
+            {name: "eccn"}
         ]
     });
     Ext.define('bpartner', {
@@ -619,6 +620,21 @@ Ext.onReady(function () {
                         hiddenLabel: true,
                         id: 'remain',
                         name: 'remain',
+                        value: ''
+                    },
+                    {
+                        xtype: 'textfield',
+                        fieldLabel: 'ECCN',
+                        id: 'eccn',
+                        name: 'eccn'
+                    },
+                    {
+                        xtype: 'displayfield',
+                        fieldLabel: ' ',
+                        labelSeparator: "",
+                        hiddenLabel: true,
+                        id: 'markx',
+                        name: 'markx',
                         value: ''
                     },
                     {
@@ -1317,6 +1333,12 @@ Ext.onReady(function () {
                         v += record.data.supply_ename2;
                     return v;
                 }
+            },
+            {
+                text: 'ECCN',
+                width: 100,
+                dataIndex: 'eccn',
+                renderer: showTitle
             },
             {
                 text: '制造商',

@@ -354,7 +354,8 @@ class Product_ApplyController extends Zend_Controller_Action {
                     'update_time' => $now,
                     'data_file_id' => $val->data_file_id,
                     'first_report_id' => $val->first_report_id,
-                    'tsr_id' => $val->tsr_id
+                    'tsr_id' => $val->tsr_id,
+                    'eccn' => $val->eccn
                 );
                 if(isset($val->mcode) && $val->mcode) {
                     $data['code'] = $val->mcode;
@@ -370,7 +371,8 @@ class Product_ApplyController extends Zend_Controller_Action {
                     'update_time' => $now,
                     'data_file_id' => $val->data_file_id,
                     'first_report_id' => $val->first_report_id,
-                    'tsr_id' => $val->tsr_id
+                    'tsr_id' => $val->tsr_id,
+                    'eccn' => $val->eccn
                 );
                 if(isset($val->mcode) && $val->mcode) {
                     $data['code'] = $val->mcode;
@@ -515,7 +517,8 @@ class Product_ApplyController extends Zend_Controller_Action {
                 'update_time' => $now,
                 'data_file_id' => $val->data_file_id,
                 'first_report_id' => $val->first_report_id,
-                'tsr_id' => $val->tsr_id
+                'tsr_id' => $val->tsr_id,
+                'eccn' => $val->eccn
             );
 
             try {

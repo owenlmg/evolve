@@ -34,7 +34,8 @@ class Product_Model_Newbom extends Application_Model_Db
                     ->from(array('t1' => $this->_name))
                     ->join(array('t2' => $this->_dbprefix . 'review'), "t1.id = t2.file_id and t2.finish_flg = 0 and t2.type = 'bom'", array("review_id" => "id"))
                     ->joinLeft(array('t4' => $this->_dbprefix.'employee'), "t1.create_user = t4.id", array('creater' => 'cname'))
-                    ->where("t1.id=?", $id);
+                    ->where("t1.id=?", $id)
+                    ->order(array('t2.id'));
         $data = $this->fetchRow($sql);
 
         return $data;

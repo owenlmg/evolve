@@ -36,7 +36,8 @@ class Product_Model_Updbom extends Application_Model_Db
                     ->join(array('t2' => $this->_dbprefix . 'review'), "t1.id = t2.file_id and t2.finish_flg = 0 and (t2.type = 'updbom' or t2.type = 'devbom' or t2.type = 'ecobom')", array("review_id" => "id"))
                     ->joinLeft(array('t4' => $this->_dbprefix.'employee'), "t1.create_user = t4.id", array('creater' => 'cname'))
                     ->joinLeft(array('t5' => $this->_dbprefix.'codemaster'), "t5.code = t1.reason_type and t5.type=6", array('reason_type_name' => 'text'))
-                    ->where("t1.id=?", $id);
+                    ->where("t1.id=?", $id)
+                    ->order(array('t2.id'));
         $data = $this->fetchRow($sql);
 
         return $data;
