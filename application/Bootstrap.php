@@ -54,9 +54,9 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
                     'path' => 'models/',
                     'namespace' => 'Model_',
                 ),
-                'model_db' => array(
-                    'path' => 'models/db',
-                    'namespace' => 'Model_Db_'
+                'model_log' => array(
+                    'path' => 'models/log',
+                    'namespace' => 'Model_Log_'
                 )
             )
         ));
