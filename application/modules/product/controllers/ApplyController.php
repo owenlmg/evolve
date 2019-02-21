@@ -1274,6 +1274,9 @@ class Product_ApplyController extends Zend_Controller_Action {
             if ($finish_flg == 1 && $review->fetchAll("type = 'materiel' and finish_flg = 0 and file_id = $id")->count() == 1) {
                 $publish = true;
                 if (!isset($code) || !$code) {
+                    $code =  $materielData['code'];
+                }
+                if (!isset($code) || !$code) {
                     // 自动生成物料编码
                     $code = $this->getCode($materielData->type, $materielData->project_no);
                     if (!$code) {
