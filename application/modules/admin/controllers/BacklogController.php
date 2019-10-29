@@ -16,7 +16,7 @@ class Admin_BacklogController extends Zend_Controller_Action {
         $user = $user_session->user_info['employee_id'];
 
         // 清理无效数据
-        $where1 = " type='files' and file_id in (select id from oa_doc_files where state = 'Return' or state = 'Delete')";
+        $where1 = " type='files' and file_id in (select id from oa_doc_files where state = 'Return' or state = 'Delete' or state = 'Obsolete')";
         $review->delete($where1);
 
         $where2 = " type='materiel' and file_id in (select id from oa_product_materiel where state = 'Return' or state = 'Delete')";

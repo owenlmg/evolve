@@ -231,7 +231,7 @@ class Product_DescController extends Zend_Controller_Action
                 if($data[$i]['data_file_id_before'] && in_array($data[$i]['data_file_id_before'], $fileIds)) {
                     $data[$i]['data_file_before'] = $files[$data[$i]['data_file_id_before']];
                 }
-                if($data[$i]['data_file_id_after'] && in_array($data[$i]['data_file_id_after'], $fileIds)) {
+                if($data[$i]['data_file_id_after'] && in_array($data[$i]['data_file_id_after'], $fileIds) && isset($files[$data[$i]['data_file_id_after']])) {
                     $data[$i]['data_file_after'] = $files[$data[$i]['data_file_id_after']];
                 }
                 if($data[$i]['tsr_id_before'] && in_array($data[$i]['tsr_id_before'], $fileIds)) {

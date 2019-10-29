@@ -206,7 +206,7 @@ class Dcc_MineController extends Zend_Controller_Action {
                 $tmp['reason_type_name'] = $reason_type_name;
             }
             // int转换为字符串
-            $tmp['mytype'] = " " + $mytype;
+            $tmp['mytype'] = " ".$mytype;
 
             $data[] = $tmp;
 
@@ -760,7 +760,7 @@ class Dcc_MineController extends Zend_Controller_Action {
 
         $code = $code_file_code[0];
         $stepRows = array();
-        if (count($code) > 0 && $code) {
+        if ($code) {
             $codeModel = new Dcc_Model_Code();
             // 获取当前文件类别对应的流程ID
             $row = $codeModel->getTypeInfo("t1.code = '$code'");
@@ -782,10 +782,24 @@ class Dcc_MineController extends Zend_Controller_Action {
         // 获取所有文件的版本号
         $vers = array();
         foreach ($code_file_code as $c) {
-            $d = $files->getAdapter()->query("select max(ver)+0.1 as ver from oa_doc_files where code = :code and state = 'Active' and del_flg = 0", array('code' => $c))->fetch();
-            $v = round($d['ver'], 1);
+            $d = $files->getAdapter()->query("select code, max(ver) as ver from oa_doc_files where (code = :code or FIND_IN_SET(:code, code)) and state = 'Active' and del_flg = 0", array('code' => $c))->fetch();
+            $ver = $d['ver'];
+            $oldVers = explode(',', $ver);
+            $oldCodes = explode(',', $d['code']);
+
+            if(count($oldVers) > 1 && count($oldCodes) > 1) {
+                for($i=0;$i<count($oldCodes);$i++) {
+                    if($oldCodes[$i] == $c) {
+                        $v = round($oldVers[$i] + 0.1, 1);
+                        break;
+                    }
+                }
+            } else {
+                $v = round($d['ver'] + 0.1, 1);
+
+            }
             if(strcmp($v , (int)$v) === 0) {
-            	$v .= ".0";
+                $v .= ".0";
             }
             $vers[] = $v;
         }

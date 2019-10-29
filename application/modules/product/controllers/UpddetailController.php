@@ -152,8 +152,11 @@ class Product_UpddetailController extends Zend_Controller_Action
         $code = $request['code'];
         $result = array("");
         if($code) {
-            $where = "code = '$code'";
-            $data = $fa->getJoinList($where, array(), array('id' => 'ver', 'text' => 'ver'), array('ver desc'));
+            $sql = "SELECT ver as id,ver as text FROM `oa_product_bom_fa_dev` fa where code='$code' and (ver > 1.0 and nid in (select id from oa_product_bom_upd) or (ver = 1.0 and nid in (select id from oa_product_bom_new)) ) union  SELECT ver as id,ver as text FROM `oa_product_bom_fa` fa where code='$code' and (ver > 1.0 and nid in (select id from oa_product_bom_upd) or (ver = 1.0 and nid in (select id from oa_product_bom_new)) ) order by id";
+            $data = $db->query($sql)->fetchAll();
+
+//            $where = "code = '$code' and (ver > 1.0 and nid in (select id from oa_product_bom_upd) or (ver = 1.0 and nid in (select id from oa_product_bom_new)) )";
+//            $data = $fa->getJoinList($where, array(), array('id' => 'ver', 'text' => 'ver'), array('ver desc'));
             if($data && count($data) > 0) {
                 $result = $data;
             }

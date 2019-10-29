@@ -245,8 +245,8 @@ class Dcc_Model_Files extends Application_Model_Db {
             } else if($type == 2) {
             	$ids = $this->getMyId($myId);
             	if($ids) {
-            		$sql2_1 = $sql2_1->where("t1.id in ($ids)");
-            		$sql2_2 = $sql2_2->where("t1.id in ($ids)");
+            		$sql2_1 = $sql2_1->where("t1.id in (SELECT table_id from oa_record where handle_user = $myId and table_name = 'oa_doc_files' and action = '审批')");
+            		$sql2_2 = $sql2_2->where("t1.id in (SELECT table_id from oa_record where handle_user = $myId and table_name = 'oa_doc_files' and action = '审批')");
             	} else {
             		$sql2_1 = $sql2_1->where("t1.id is null");
             		$sql2_2 = $sql2_2->where("t1.id is null");
@@ -260,8 +260,8 @@ class Dcc_Model_Files extends Application_Model_Db {
             } else {
             	$ids = $this->getMyId($myId);
             	if($ids) {
-            		$sql2_1 = $sql2_1->where("t1.id in ($ids)");
-            		$sql2_2 = $sql2_2->where("t1.id in ($ids)");
+            		$sql2_1 = $sql2_1->where("t1.id in (SELECT table_id from oa_record where handle_user = $myId and table_name = 'oa_doc_files' and action = '审批')");
+            		$sql2_2 = $sql2_2->where("t1.id in (SELECT table_id from oa_record where handle_user = $myId and table_name = 'oa_doc_files' and action = '审批')");
             	} else {
             		$sql2_1 = $sql2_1->where("t1.id is null");
             		$sql2_2 = $sql2_2->where("t1.id is null");
@@ -387,8 +387,8 @@ class Dcc_Model_Files extends Application_Model_Db {
             } else if($type == 2) {
             	$ids = $this->getMyId($myId);
             	if($ids) {
-            		$sql2_1 = $sql2_1->where("t1.id in ($ids)");
-            		$sql2_2 = $sql2_2->where("t1.id in ($ids)");
+            		$sql2_1 = $sql2_1->where("t1.id in (SELECT table_id from oa_record where handle_user = $myId and table_name = 'oa_doc_files' and action = '审批')");
+            		$sql2_2 = $sql2_2->where("t1.id in (SELECT table_id from oa_record where handle_user = $myId and table_name = 'oa_doc_files' and action = '审批')");
             	} else {
             		$sql2_1 = $sql2_1->where("t1.id is null");
             		$sql2_2 = $sql2_2->where("t1.id is null");
@@ -402,8 +402,8 @@ class Dcc_Model_Files extends Application_Model_Db {
             } else {
             	$ids = $this->getMyId($myId);
             	if($ids) {
-            		$sql2_1 = $sql2_1->where("t1.id in ($ids)");
-            		$sql2_2 = $sql2_2->where("t1.id in ($ids)");
+            		$sql2_1 = $sql2_1->where("t1.id in (SELECT table_id from oa_record where handle_user = $myId and table_name = 'oa_doc_files' and action = '审批')");
+            		$sql2_2 = $sql2_2->where("t1.id in (SELECT table_id from oa_record where handle_user = $myId and table_name = 'oa_doc_files' and action = '审批')");
             	} else {
             		$sql2_1 = $sql2_1->where("t1.id is null");
             		$sql2_2 = $sql2_2->where("t1.id is null");

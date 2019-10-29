@@ -717,7 +717,7 @@
                                         field.removeAll();
                                         var params = new Array();
                                         params["model_id"] = "model_id";
-                                        field.add(createCodeFile(code_file_store, rowEditing, step, params));
+                                        field.add(createCodeFile(code_file_store, rowEditing, step, params, <?=$user?>));
                                     } else {
                                         form = upgradeForm;
                                         prifix = "upgradeform_";
@@ -730,7 +730,7 @@
                                         field.removeAll();
                                         var params = new Array();
                                         params["dev_model_id"] = "upgradeform_model_id";
-                                        field.add(createCodeFile(code_file_store, rowEditing, step, params));
+                                        field.add(createCodeFile(code_file_store, rowEditing, step, params, <?=$user?>));
                                     }
 
                                     form.getForm().reset();

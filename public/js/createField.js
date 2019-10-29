@@ -360,7 +360,7 @@ function createRecordGrid(table, id, autoLoad) {
             {text: '时间', dataIndex: 'handle_time', renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s'), width: 120},
             {text: '类型', dataIndex: 'action', width: 60},
             {text: '结果', dataIndex: 'result', width: 60},
-            {text: '意见', dataIndex: 'remark', editor: 'textfield', flex: 1}
+            {text: '意见', dataIndex: 'remark', editor: 'textfield', flex: 1, renderer: showTitle }
         ]
     });
 

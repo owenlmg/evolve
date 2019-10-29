@@ -77,7 +77,7 @@ class Dcc_Model_Code extends Application_Model_Db {
                 ->setIntegrityCheck(false)
                 ->from(array('t1' => $this->_name))
                 ->join(array('t2' => $this->_dbprefix . 'doc_type'), "t1.prefix = t2.id", array('type_id' => 'id', 'type_code' => 'code', 'model_id', 'dev_model_id'))
-                ->join(array('t3' => $this->_dbprefix . 'doc_files'), "FIND_IN_SET(t1.code, t3.code) and (t3.state = 'Active')", array('ver' => 'max(ver)'))
+                ->join(array('t3' => $this->_dbprefix . 'doc_files'), "FIND_IN_SET(t1.code, t3.code) and (t3.state = 'Active')", array('ver' => 'max(ver)', 'old_code' => 'code'))
                 ->joinLeft(array('t5' => $this->_dbprefix . 'product_catalog'), "t1.project_no = t5.id", array('project_name' => 'model_internal'))
                 ->where($where)
                 ->where(" not EXISTS (select 1 from oa_doc_files t4 where FIND_IN_SET(t1.code,t4.code) and (t4.state = 'Reviewing' or t4.state = 'Return'))")

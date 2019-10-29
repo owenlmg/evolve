@@ -88,6 +88,18 @@ class Dcc_CodeController extends Zend_Controller_Action {
             $data[$i]['create_time'] = strtotime($data[$i]['create_time']);
             $data[$i]['update_time'] = strtotime($data[$i]['update_time']);
             $data[$i]['active'] = $data[$i]['active'] == 1 ? true : false;
+            if(isset($data[$i]['ver'])) {
+                $vers = explode(',', $data[$i]['ver']);
+                if (count($vers) > 1) {
+                    $codes = explode(',', $data[$i]['old_code']);
+                    for ($k = 0; $k < count($codes); $k++) {
+                        if ($codes[$k] == $data[$i]['code']) {
+                            $data[$i]['ver'] = $vers[$k];
+                            break;
+                        }
+                    }
+                }
+            }
         }
         if (isset($totalCount)) {
             $resutl = array(
