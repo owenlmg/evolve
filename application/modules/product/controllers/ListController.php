@@ -276,7 +276,8 @@ class Product_ListController extends Zend_Controller_Action
                     'mpq'           => $val->mpq,
                     'moq'           => $val->moq,
                     'tod'           => $val->tod,
-                    'eccn'           => $val->eccn
+                    'hum_level'           => $val->hum_level,
+                    'rosh'           => $val->rosh
             );
             $id = $val->id;
             $where = "id = ".$id;
@@ -766,11 +767,12 @@ class Product_ListController extends Zend_Controller_Action
                 'project_name'      => '产品型号',
                 'supply1'           => '供应商1',
                 'supply2'           => '供应商2',
-                'eccn'              => 'ECCN',
                 'manufacturers'     => '制造商',
                 'mpq'               => 'MPQ',
                 'moq'               => 'MOQ',
                 'tod'               => '标准货期',
+                'hum_level'         => '潮敏等级',
+                'rosh'              => 'RoHS符合情况',
                 'data_file'         => '数据手册',
                 'tsr'               => 'TSR',
                 'first_report'      => '样品检验报告',
@@ -822,11 +824,12 @@ class Product_ListController extends Zend_Controller_Action
                 'project_name'      => $d['project_name'],
                 'supply1'           => $d['supply_code1'].$d['supply_cname1'],
                 'supply2'           => $d['supply_code2'].$d['supply_cname2'],
-                'eccn'              => $d['eccn'],
                 'manufacturers'     => $d['manufacturers'],
                 'mpq'               => $d['mpq'],
                 'moq'               => $d['moq'],
                 'tod'               => $d['tod'],
+                'hum_level'         => $d['hum_level'],
+                'rosh'              => $d['rosh'],
                 'data_file'         => $d['data_file'],
                 'tsr'               => $d['tsr'],
                 'first_report'      => $d['first_report'],

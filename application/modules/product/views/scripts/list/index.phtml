@@ -92,7 +92,8 @@
                         {name: "edit_count"},
                         {name: "project_no"},
                         {name: "project_name"},
-                        {name: "eccn"}
+                        {name: "hum_level"},
+                        {name: "rosh"}
                     ]
                 });
                 Ext.define('bpartner', {
@@ -356,6 +357,39 @@
                                     border: 0,
                                     layout: 'form',
                                     items: [{
+                                            xtype: 'textfield',
+                                            fieldLabel: '潮敏等级',
+                                            id: 'hum_level',
+                                            name: 'hum_level'
+                                        }]
+                                }, {
+                                    columnWidth: .5,
+                                    border: 0,
+                                    layout: 'form',
+                                    items: [{
+                                            fieldLabel: 'RoHS符合情况',
+                                            xtype: "combo",
+                                            name: 'rosh',
+                                            id: 'rosh',
+                                            editable: false,
+                                            store: [['RoHS 6项', 'RoHS 6项'], ['RoHS 10项', 'RoHS 10项'], ['非RoHS', ' 非RoHS']],
+                                            forceSelection: true,
+                                            selectOnFocus: true,
+                                            typeAhead: true,
+                                            triggerAction: 'all',
+                                            emptyText: '请选择...',
+                                            mode: 'local'
+
+                                        }]
+                                }]
+                        }, {
+                            layout: 'column', //第二行
+                            border: 0,
+                            items: [{
+                                    columnWidth: .5,
+                                    border: 0,
+                                    layout: 'form',
+                                    items: [{
                                             fieldLabel: '状态',
                                             xtype: "combo",
                                             afterLabelTextTpl: required,
@@ -391,10 +425,6 @@
                                     fieldLabel: '制造商',
                                     name: 'manufacturers'
                                 }, {
-                                xtype: 'textfield',
-                                fieldLabel: 'ECCN',
-                                name: 'eccn'
-                            }, {
                                     xtype: 'textarea',
                                     fieldLabel: '备注',
                                     rows: 2,
@@ -880,11 +910,6 @@
                                 return v;
                             }
                         }, {
-                            text: 'ECCN',
-                            width: 100,
-                            dataIndex: 'eccn',
-                            renderer: showTitle
-                        }, {
                             text: '制造商',
                             width: 180,
                             dataIndex: 'manufacturers',
@@ -902,6 +927,14 @@
                             width: 80,
                             dataIndex: 'tod'
                         }, {
+                            text: '潮敏等级',
+                            width: 80,
+                            dataIndex: 'hum_level'
+                        }, {
+                            text: 'RoHS符合情况',
+                            width: 80,
+                            dataIndex: 'rosh'
+                        }, {
                             text: '数据手册',
                             width: 180,
                             dataIndex: 'data_file',
@@ -913,7 +946,7 @@
                                 var id = record.data.data_file_id;
                                 icon = "";
                                 if (record.data.data_file_path) {
-                                    icon += '<img src="<?php echo HOME_PATH; ?>/public/images/icons/download.png" onclick="download(' + id + ', \'物料清单\')" style="cursor:pointer;"></img>';
+                                    icon += '<img src="<?php echo HOME_PATH; ?>/public/images/icons/download.png" onclick="download(' + id + ', \'materiel\')" style="cursor:pointer;"></img>';
                                 }
                                 return icon + " " + val;
                             }
@@ -929,7 +962,7 @@
                                 var id = record.data.tsr_id;
                                 icon = "";
                                 if (record.data.tsr_path) {
-                                    icon += '<img src="<?php echo HOME_PATH; ?>/public/images/icons/download.png" onclick="download(' + id + ', \'物料清单\')" style="cursor:pointer;"></img>';
+                                    icon += '<img src="<?php echo HOME_PATH; ?>/public/images/icons/download.png" onclick="download(' + id + ', \'materiel\')" style="cursor:pointer;"></img>';
                                 }
                                 return icon + " " + val;
                             }
@@ -945,7 +978,7 @@
                                 var id = record.data.first_report_id;
                                 icon = "";
                                 if (record.data.first_report_path) {
-                                    icon += '<img src="<?php echo HOME_PATH; ?>/public/images/icons/download.png" onclick="download(' + id + ', \'物料清单\')" style="cursor:pointer;"></img>';
+                                    icon += '<img src="<?php echo HOME_PATH; ?>/public/images/icons/download.png" onclick="download(' + id + ', \'materiel\')" style="cursor:pointer;"></img>';
                                 }
                                 return icon + " " + val;
                             }

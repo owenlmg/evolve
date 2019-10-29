@@ -237,6 +237,24 @@ class Dcc_MineController extends Zend_Controller_Action {
 
         exit;
     }
+    
+    	function array_sort($array,$keys,$type='asc'){  
+			//$array为要排序的数组,$keys为要用来排序的键名,$type默认为升序排序  
+			$keysvalue = $new_array = array();  
+			foreach ($array as $k=>$v){  
+			$keysvalue[$k] = $v[$keys];  
+			}  
+			if($type == 'asc'){  
+			asort($keysvalue);  
+			}else{  
+			arsort($keysvalue);  
+			}  
+			reset($keysvalue);  
+			foreach ($keysvalue as $k=>$v){  
+			$new_array[$k] = $array[$k];  
+			}  
+			return $new_array;  
+	  }  	
 
     /**
      * @abstract    删除文件
@@ -442,7 +460,8 @@ class Dcc_MineController extends Zend_Controller_Action {
                             // 如果不存在项目号，则直接取角色中的用户 否则根据角色id和项目号获取roleset id
                             $tmpUser = array();
                             $tmpBool = true;
-                            if ($projectno) {
+                            // 2016/06/12 客户要求去掉从产品中心获取审核人
+                            if (false && $projectno) {
                                 // 根据角色id和项目号获取roleset id
                                 $rolesetTmp = $employee->getAdapter()->query("select group_concat(id) as id from oa_product_catalog_roleset where active=1 and catalog_id='$projectno' and role_id in ( " . $roleid . ")")->fetchObject();
                                 $rolesetid = $rolesetTmp->id;
@@ -506,7 +525,7 @@ class Dcc_MineController extends Zend_Controller_Action {
                                 'type' => '新文件',
                                 'subject' => '新文件评审',
                                 'to' => $to->mail_to,
-                                'cc' => '',
+                                'cc' => SYS_REVIEW_EMAIL,
                                 'content' => $content,
                                 'send_time' => $now,
                                 'add_date' => $now
@@ -594,7 +613,8 @@ class Dcc_MineController extends Zend_Controller_Action {
                             // 如果不存在项目号，则直接取角色中的用户 否则根据角色id和项目号获取roleset id
                             $tmpUser = array();
                             $tmpBool = true;
-                            if ($projectno) {
+                            // 2016/06/12 客户要求去掉从产品中心获取审核人
+                            if (false && $projectno) {
                                 // 根据角色id和项目号获取roleset id
                                 $rolesetTmp = $employee->getAdapter()->query("select group_concat(id) as id from oa_product_catalog_roleset where active=1 and catalog_id='$projectno' and role_id in ( " . $roleid . ")")->fetchObject();
                                 $rolesetid = $rolesetTmp->id;
@@ -659,7 +679,7 @@ class Dcc_MineController extends Zend_Controller_Action {
                                 'type' => '新文件',
                                 'subject' => '新文件评审',
                                 'to' => $to->mail_to,
-                                'cc' => '',
+                                'cc' => SYS_REVIEW_EMAIL,
                                 'content' => $content,
                                 'send_time' => $now,
                                 'add_date' => $now
@@ -887,7 +907,7 @@ class Dcc_MineController extends Zend_Controller_Action {
                             // 如果不存在项目号，则直接取角色中的用户 否则根据角色id和项目号获取roleset id
                             $tmpUser = array();
                             $tmpBool = true;
-                            if ($projectno) {
+                            if (false && $projectno) {
                                 // 根据角色id和项目号获取roleset id
                                 $rolesetTmp = $employee->getAdapter()->query("select group_concat(id) as id from oa_product_catalog_roleset where active=1 and catalog_id='$projectno' and role_id in ( " . $roleid . ")")->fetchObject();
                                 $rolesetid = $rolesetTmp->id;
@@ -948,7 +968,7 @@ class Dcc_MineController extends Zend_Controller_Action {
                                 'type' => '升版文件',
                                 'subject' => '升版文件评审',
                                 'to' => $to->mail_to,
-                                'cc' => '',
+                                'cc' => SYS_REVIEW_EMAIL,
                                 'content' => $content,
                                 'send_time' => $now,
                                 'add_date' => $now
@@ -1081,7 +1101,7 @@ class Dcc_MineController extends Zend_Controller_Action {
                             // 如果不存在项目号，则直接取角色中的用户 否则根据角色id和项目号获取roleset id
                             $tmpUser = array();
                             $tmpBool = true;
-                            if ($projectno) {
+                            if (false && $projectno) {
                                 // 根据角色id和项目号获取roleset id
                                 $rolesetTmp = $employee->getAdapter()->query("select group_concat(id) as id from oa_product_catalog_roleset where active=1 and catalog_id='$projectno' and role_id in ( " . $roleid . ")")->fetchObject();
                                 $rolesetid = $rolesetTmp->id;
@@ -1142,7 +1162,7 @@ class Dcc_MineController extends Zend_Controller_Action {
                                 'type' => '升版文件',
                                 'subject' => '升版文件评审',
                                 'to' => $to->mail_to,
-                                'cc' => '',
+                                'cc' => SYS_REVIEW_EMAIL,
                                 'content' => $content,
                                 'send_time' => $now,
                                 'add_date' => $now
@@ -1679,7 +1699,7 @@ class Dcc_MineController extends Zend_Controller_Action {
                 'type' => $type,
                 'subject' => $subject,
                 'to' => $to['email'],
-                'cc' => $cc,
+                'cc' => $cc.','.SYS_REVIEW_EMAIL,
                 'content' => $content,
                 'send_time' => $now,
                 'add_date' => $now

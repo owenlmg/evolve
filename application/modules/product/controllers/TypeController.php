@@ -136,7 +136,8 @@ class Product_TypeController extends Zend_Controller_Action
                         'tsr_flg' => $val->tsr_flg,
                         'checkreport_flg' => $val->checkreport_flg,
                         'update_time' => $now,
-                        'update_user' => $user
+                        'update_user' => $user,
+                        'hum_level' => $val->hum_level
                 );
 
                 $where = "id = " . $val->id;
@@ -187,7 +188,8 @@ class Product_TypeController extends Zend_Controller_Action
                         'create_time' => $now,
                         'create_user' => $user,
                         'update_time' => $now,
-                        'update_user' => $user
+                        'update_user' => $user,
+                        'hum_level' => $val->hum_level
                 );
 
                 try {

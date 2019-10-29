@@ -25,7 +25,7 @@ class Dcc_Model_Files extends Application_Model_Db {
                 ->joinLeft(array('t7' => $this->_dbprefix . 'product_catalog'), "t4.project_no = t7.id", array('project_name' => 'model_internal'))
                 ->joinLeft(array('t8' => $this->_dbprefix . 'codemaster'), "t5.category = t8.code and t8.type=4", array('category' => 'id', 'category_name' => 'text'))
                 ->where($where)
-                ->order(array('t1.archive_time desc', 't1.code desc', 't1.ver desc'))
+                ->order(array('(select case t1.state when "Reviewing" then 1 when "Return" then 2 else 3 end)','t1.archive_time desc', 't1.code desc', 't1.ver desc'))
                 ->limit($limit, $start);
         $data = $this->fetchAll($sql)->toArray();
 

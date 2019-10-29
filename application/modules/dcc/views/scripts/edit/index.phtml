@@ -100,6 +100,10 @@
                 var filesStore = Ext.create('Ext.data.Store', {
                     pageSize: 100,
                     model: 'files',
+                    sorters: [{
+				         property: 'state',
+				         direction: 'DESC'
+				     }],
                     proxy: {
                         type: 'ajax',
                         reader: {
@@ -137,6 +141,10 @@
 
                 var uploadStore = Ext.create('Ext.data.Store', {
                     model: 'upload',
+                    sorters: [{
+				         property: 'state',
+				         direction: 'DESC'
+				     }],
                     proxy: {
                         type: 'ajax',
                         reader: 'json',
@@ -1011,8 +1019,8 @@
                     store: filesStore,
                     border:0,
                     selType: 'checkboxmodel',
-                    stateful: true, //true为启用cookie保存grid状态
-                    stateId: "dcc-mine-index-cookie-grid", //这将被用于生成cookie的id
+//                    stateful: true, //true为启用cookie保存grid状态
+//                    stateId: "dcc-mine-index-cookie-grid", //这将被用于生成cookie的id
                     columnLines: true,
                     viewConfig: {
                         stripeRows: false, // 取消偶数行背景色
@@ -1279,8 +1287,12 @@
                             sortable: true,
                             dataIndex: 'ver',
                             renderer: function(val) {
-                                if (val)
+                                if (val && val.indexOf("B") == -1)
                                     return "V" + val;
+                                else if(val) {
+                                	return val;
+                                }
+                                return "";
                             }
                         }, {
                             text: '文件名称',

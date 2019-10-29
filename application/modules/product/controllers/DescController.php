@@ -108,7 +108,7 @@ class Product_DescController extends Zend_Controller_Action
                     'cols' => array('creater' => 'cname')
                 )
             );
-            $data = $desc->getJoinList($whereSearch, $join, null, array($desc->getName().'.state desc'), $start, $limit);
+            $data = $desc->getJoinList($whereSearch, $join, null, array($desc->getName().'.state desc',$desc->getName().'.create_time desc'), $start, $limit);
         } else {
             $data = array();
         }
@@ -531,7 +531,7 @@ class Product_DescController extends Zend_Controller_Action
                                 'subject' => '物料号变更审批',
                                 'to' => $to->mail_to,
                                 'cc' => '',
-                                'content' => '你有新物料号变更申请需要审核，请登录系统查看详情',
+                                'content' => '你有新物料号变更申请(物料代码：'.$md["code"].')需要审核，请登录系统查看详情',
                                 'send_time' => $now,
                                 'add_date' => $now
                             );
@@ -858,7 +858,7 @@ class Product_DescController extends Zend_Controller_Action
             // 文件提交者或更新人
             $owner = $materielData['create_user'];
             $dev = false;
-            $type = "物料变更申请";
+            $type = "物料变更申请(物料代码：".$materielData['code'].")";
             // 发邮件的情况：
             // 1、单站审核结束 $finish_flg = 1 && $publish = false
             if ($finish_flg == 1 && !$publish) {
@@ -879,7 +879,7 @@ class Product_DescController extends Zend_Controller_Action
                 $cc = $employee->getInfosByOneLine($record->getEmployeeIds($materielData['id'], 'materiel_desc'));
                 $cc = $cc['email'];
 //                 $cc = "";
-                $detail = "";
+                $detail = "物料代码：".$materielData['code'];
                 if($materielData['name_before'] != $materielData['name_after']) {
                     if($detail) {
                         $detail .= '<br>';
